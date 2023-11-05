@@ -1,0 +1,12 @@
+*
+!.gitignore
+!Makefile
+
+!LICENSES.md
+!TESTING.md
+
+!render/
+!logs/
+
+!8.40/
+!8.50/
