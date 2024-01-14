@@ -30,6 +30,7 @@ struct trc_recording_trp {
     uint32_t PacketCount;
 
     struct trc_data_reader Reader;
+    struct trc_data_reader InitialReader;
 };
 
 static bool trp_ProcessNextPacket(struct trc_recording_trp *recording,
@@ -141,9 +142,19 @@ static bool trp_Open(struct trc_recording_trp *recording,
 
     recording->Reader = reader;
     recording->PacketCount = frames;
+
+    recording->InitialReader = reader;
     recording->PacketNumber = 0;
 
     return true;
+}
+
+static void trp_Rewind(struct trc_recording_trp *recording) {
+    recording->Base.NextPacketTimestamp = 0;
+    recording->Base.HasReachedEnd = 0;
+
+    recording->Reader = recording->InitialReader;
+    recording->PacketNumber = 0;
 }
 
 static void trp_Free(struct trc_recording_trp *recording) {
@@ -160,6 +171,7 @@ struct trc_recording *trp_Create() {
     recording->Base.Open = (bool (*)(struct trc_recording *,
                                      const struct trc_data_reader *,
                                      struct trc_version *))trp_Open;
+    recording->Base.Rewind = (void (*)(struct trc_recording *))trp_Rewind;
     recording->Base.ProcessNextPacket =
             (bool (*)(struct trc_recording *,
                       struct trc_game_state *))trp_ProcessNextPacket;

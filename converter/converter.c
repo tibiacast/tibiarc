@@ -131,8 +131,7 @@ static struct argp_option options[] = {
          ARGUMENT_OUTPUT_BACKEND,
          "backend",
          0,
-         "which output back-end to use, defaults to 'libav' but 'sdl2' can "
-         "also be used to \"encode\" the video directly to the screen.",
+         "which output back-end to use, defaults to 'libav'.",
          4},
         {"output-encoding",
          ARGUMENT_OUTPUT_ENCODING,
@@ -292,9 +291,6 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
         unsigned max_args;
 
         switch (settings->EncodeLibrary) {
-        case ENCODE_LIBRARY_SDL2:
-            max_args = 2;
-            break;
         case ENCODE_LIBRARY_INERT:
         case ENCODE_LIBRARY_LIBAV:
             max_args = 3;
@@ -314,7 +310,6 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
 
         switch (settings->EncodeLibrary) {
         case ENCODE_LIBRARY_INERT:
-        case ENCODE_LIBRARY_SDL2:
             min_args = 2;
             break;
         case ENCODE_LIBRARY_LIBAV:
@@ -416,17 +411,11 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
 #    else
             argp_error(state, "'libav' backend has been explicitly disabled");
 #    endif
-        } else if (!strcmp(arg, "sdl2")) {
-#    ifndef DISABLE_SDL2
-            settings->EncodeLibrary = ENCODE_LIBRARY_SDL2;
-#    else
-            argp_error(state, "'sdl2' backend has been explicitly disabled");
-#    endif
         } else if (!strcmp(arg, "inert")) {
             settings->EncodeLibrary = ENCODE_LIBRARY_INERT;
         } else {
             /* Deliberately don't mention 'inert', it's only for debugging. */
-            argp_error(state, "output-backend must be 'libav' or 'sdl2'");
+            argp_error(state, "output-backend must be 'libav'");
         }
 
         break;

@@ -109,6 +109,10 @@ bool recording_Open(struct trc_recording *recording,
     return recording->Open(recording, reader, version);
 }
 
+void recording_Rewind(struct trc_recording *recording) {
+    recording->Rewind(recording);
+}
+
 bool recording_ProcessNextPacket(struct trc_recording *recording,
                                  struct trc_game_state *gamestate) {
     return recording->ProcessNextPacket(recording, gamestate);
