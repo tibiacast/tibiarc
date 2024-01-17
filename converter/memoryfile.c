@@ -122,7 +122,7 @@ bool memoryfile_Open(const char *path, struct memory_file *file) {
 
 void memoryfile_Close(struct memory_file *file) {
     /* These can only fail due to some funny corruption of internal state, and
-     * there's nothing sensible we can do abfile that besides dumping core. */
+     * there's nothing sensible we can do about that besides dumping core. */
 #if defined(_WIN32)
     ABORT_UNLESS(CloseHandle(file->Mapping));
     ABORT_UNLESS(CloseHandle(file->Handle));
