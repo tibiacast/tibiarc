@@ -1483,6 +1483,8 @@ static void renderer_DrawNumericalEffects(
         struct trc_canvas *canvas,
         int viewOffsetX,
         int viewOffsetY,
+        float scaleX,
+        float scaleY,
         struct trc_position *tilePosition,
         struct trc_tile *currentTile) {
     const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
@@ -1513,18 +1515,16 @@ static void renderer_DrawNumericalEffects(
 
             renderer_Convert8BitColor(effect->Color, &foregroundColor);
 
-            textCenterX = ((tilePosition->X * 32 + viewOffsetX - 16) *
-                           options->ScaleX) +
+            textCenterX = ((tilePosition->X * 32 + viewOffsetX - 16) * scaleX) +
                           2 + effectShuntX;
-            textCenterY = ((tilePosition->Y * 32 + viewOffsetY - 32) *
-                           options->ScaleY) +
+            textCenterY = ((tilePosition->Y * 32 + viewOffsetY - 32) * scaleY) +
                           2 - effectShuntY;
             textCenterY -=
                     (((gamestate->CurrentTick - effect->StartTick) / 750.0f) *
                      32.0f);
 
             /* Yes, they actually do get shunted this far. */
-            effectShuntX += 2 + (int)(options->ScaleX * 9.0f);
+            effectShuntX += 2 + (int)(scaleX * 9.0f);
             effectShuntY += 0;
 
             textLength = (uint16_t)snprintf(textBuffer,
@@ -1547,6 +1547,8 @@ static void renderer_DrawTextEffects(const struct trc_render_options *options,
                                      struct trc_canvas *canvas,
                                      int viewOffsetX,
                                      int viewOffsetY,
+                                     float scaleX,
+                                     float scaleY,
                                      struct trc_position *tilePosition,
                                      struct trc_tile *currentTile) {
     const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
@@ -1575,18 +1577,16 @@ static void renderer_DrawTextEffects(const struct trc_render_options *options,
 
             renderer_Convert8BitColor(effect->Color, &foregroundColor);
 
-            textCenterX = ((tilePosition->X * 32 + viewOffsetX - 16) *
-                           options->ScaleX) +
+            textCenterX = ((tilePosition->X * 32 + viewOffsetX - 16) * scaleX) +
                           2 + effectShuntX;
-            textCenterY = ((tilePosition->Y * 32 + viewOffsetY - 32) *
-                           options->ScaleY) +
+            textCenterY = ((tilePosition->Y * 32 + viewOffsetY - 32) * scaleY) +
                           2 - effectShuntY;
             textCenterY -=
                     (((gamestate->CurrentTick - effect->StartTick) / 750.0f) *
                      32.0f);
 
             /* Yes, they actually do get shunted this far. */
-            effectShuntX += 2 + (int)(options->ScaleX * 9.0f);
+            effectShuntX += 2 + (int)(scaleX * 9.0f);
             effectShuntY += 0;
 
             textrenderer_DrawCenteredString(&fonts->GameFont,
@@ -1608,6 +1608,8 @@ static bool renderer_DrawCreatureOverlay(
         int heightDisplacement,
         int rightX,
         int bottomY,
+        float scaleX,
+        float scaleY,
         struct trc_creature *creature) {
     const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
 
@@ -1668,10 +1670,8 @@ static bool renderer_DrawCreatureOverlay(
           !IS_PLAYER_CREATURE(creature->Id))) {
         int nameCenterX, nameCenterY;
 
-        nameCenterX = MAX(2,
-                          (creatureRX - 32) * options->ScaleX +
-                                  (16 * options->ScaleX));
-        nameCenterY = MAX(2, (creatureBY - 32) * options->ScaleY - 16);
+        nameCenterX = MAX(2, (creatureRX - 32) * scaleX + (16 * scaleX));
+        nameCenterY = MAX(2, (creatureBY - 32) * scaleY - 16);
 
         textrenderer_DrawCenteredProperCaseString(&fonts->GameFont,
                                                   &foregroundColor,
@@ -1685,10 +1685,9 @@ static bool renderer_DrawCreatureOverlay(
     if (!options->SkipRenderingCreatureHealthBars) {
         int healthBarAbsoluteX, healthBarAbsoluteY;
 
-        healthBarAbsoluteX = MAX(2,
-                                 (creatureRX - 32) * options->ScaleX +
-                                         (16 * options->ScaleX) - 14);
-        healthBarAbsoluteY = MAX(14, (creatureBY - 32) * options->ScaleY - 4);
+        healthBarAbsoluteX =
+                MAX(2, (creatureRX - 32) * scaleX + (16 * scaleX) - 14);
+        healthBarAbsoluteY = MAX(14, (creatureBY - 32) * scaleY - 4);
 
         canvas_DrawRectangle(canvas,
                              &backgroundColor,
@@ -1707,10 +1706,8 @@ static bool renderer_DrawCreatureOverlay(
     if (!options->SkipRenderingCreatureIcons) {
         int iconAbsoluteX, iconAbsoluteY;
 
-        iconAbsoluteX = MAX(2,
-                            (creatureRX - 32) * options->ScaleX +
-                                    (16 * options->ScaleX) + 9);
-        iconAbsoluteY = MAX(2, (creatureBY - 32) * options->ScaleY + 1);
+        iconAbsoluteX = MAX(2, (creatureRX - 32) * scaleX + (16 * scaleX) + 9);
+        iconAbsoluteY = MAX(2, (creatureBY - 32) * scaleY + 1);
 
         switch (creature->Type) {
         case CREATURE_TYPE_NPC:
@@ -1822,6 +1819,8 @@ static bool renderer_DrawTileOverlay(const struct trc_render_options *options,
                                      int isObscured,
                                      int rightX,
                                      int bottomY,
+                                     float scaleX,
+                                     float scaleY,
                                      struct trc_tile *currentTile) {
     int heightDisplacement = 0;
 
@@ -1870,6 +1869,8 @@ static bool renderer_DrawTileOverlay(const struct trc_render_options *options,
                                               heightDisplacement,
                                               rightX,
                                               bottomY,
+                                              scaleX,
+                                              scaleY,
                                               creature)) {
                 return trc_ReportError("Failed to draw creature overlay");
             }
@@ -1883,7 +1884,9 @@ static bool renderer_DrawMapOverlay(const struct trc_render_options *options,
                                     struct trc_game_state *gamestate,
                                     struct trc_canvas *canvas,
                                     int viewOffsetX,
-                                    int viewOffsetY) {
+                                    int viewOffsetY,
+                                    float scaleX,
+                                    float scaleY) {
     for (int xIdx = 0; xIdx < TILE_BUFFER_WIDTH; xIdx++) {
         for (int yIdx = 0; yIdx < TILE_BUFFER_HEIGHT; yIdx++) {
             int isObscured, rightX, bottomY;
@@ -1929,6 +1932,8 @@ static bool renderer_DrawMapOverlay(const struct trc_render_options *options,
                                          isObscured,
                                          rightX,
                                          bottomY,
+                                         scaleX,
+                                         scaleY,
                                          currentTile);
             }
 
@@ -1939,6 +1944,8 @@ static bool renderer_DrawMapOverlay(const struct trc_render_options *options,
                                                   canvas,
                                                   viewOffsetX,
                                                   viewOffsetY,
+                                                  scaleX,
+                                                  scaleY,
                                                   &tilePosition,
                                                   currentTile);
                 } else {
@@ -1951,6 +1958,8 @@ static bool renderer_DrawMapOverlay(const struct trc_render_options *options,
                                              canvas,
                                              viewOffsetX,
                                              viewOffsetY,
+                                             scaleX,
+                                             scaleY,
                                              &tilePosition,
                                              currentTile);
                 }
@@ -2004,7 +2013,9 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                                   struct trc_game_state *gamestate,
                                   struct trc_canvas *canvas,
                                   int viewOffsetX,
-                                  int viewOffsetY) {
+                                  int viewOffsetY,
+                                  float scaleX,
+                                  float scaleY) {
     const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
     struct trc_pixel foregroundColor;
     struct trc_message *message;
@@ -2128,41 +2139,40 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
             case MESSAGEMODE_YELL:
                 centerX = MIN(MAX(2,
                                   (message->Position.X * 32 + viewOffsetX -
-                                   16) * options->ScaleX),
-                              (NATIVE_RESOLUTION_X * options->ScaleX));
+                                   16) * scaleX),
+                              (NATIVE_RESOLUTION_X * scaleX));
                 bottomY = MIN(MAX(2,
                                   (message->Position.Y * 32 + viewOffsetY -
-                                   32) * options->ScaleY),
-                              (NATIVE_RESOLUTION_Y * options->ScaleY));
+                                   32) * scaleY),
+                              (NATIVE_RESOLUTION_Y * scaleY));
 
                 /* Shift above the message a bit above the health bar. */
-                bottomY -= (int)(8 * options->ScaleY);
+                bottomY -= (int)(8 * scaleY);
                 break;
             case MESSAGEMODE_MONSTER_SAY:
             case MESSAGEMODE_MONSTER_YELL:
                 centerX = MIN(MAX(2,
                                   (message->Position.X * 32 + viewOffsetX -
-                                   16) * options->ScaleX),
-                              (NATIVE_RESOLUTION_X * options->ScaleX));
+                                   16) * scaleX),
+                              (NATIVE_RESOLUTION_X * scaleX));
                 bottomY = MIN(MAX(2,
                                   (message->Position.Y * 32 + viewOffsetY -
-                                   32) * options->ScaleY),
-                              (NATIVE_RESOLUTION_Y * options->ScaleY));
+                                   32) * scaleY),
+                              (NATIVE_RESOLUTION_Y * scaleY));
                 break;
             case MESSAGEMODE_GAME:
                 /* White, center screen above player character */
-                centerX = MIN(MAX(2, (options->ScaleX * 32) * 15 / 2),
-                              (NATIVE_RESOLUTION_X * options->ScaleX));
-                bottomY = MIN(MAX(2, (options->ScaleY * 32) * 11 / 2) - 32,
-                              (NATIVE_RESOLUTION_Y * options->ScaleY));
+                centerX = MIN(MAX(2, (scaleX * 32) * 15 / 2),
+                              (NATIVE_RESOLUTION_X * scaleX));
+                bottomY = MIN(MAX(2, (scaleY * 32) * 11 / 2) - 32,
+                              (NATIVE_RESOLUTION_Y * scaleY));
                 break;
             case MESSAGEMODE_PRIVATE_IN:
                 /* Light-blue, top-center screen */
-                centerX = MIN(MAX(2, (options->ScaleX * 32) * 15 / 2),
-                              (NATIVE_RESOLUTION_X * options->ScaleX));
-                bottomY = MIN(MAX(2, (options->ScaleY * 32) * 11 / 2) -
-                                      (options->ScaleY * 128),
-                              (NATIVE_RESOLUTION_Y * options->ScaleY));
+                centerX = MIN(MAX(2, (scaleX * 32) * 15 / 2),
+                              (NATIVE_RESOLUTION_X * scaleX));
+                bottomY = MIN(MAX(2, (scaleY * 32) * 11 / 2) - (scaleY * 128),
+                              (NATIVE_RESOLUTION_Y * scaleY));
                 break;
             case MESSAGEMODE_WARNING:
             case MESSAGEMODE_HOTKEY:
@@ -2171,18 +2181,18 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
             case MESSAGEMODE_LOOT:
             case MESSAGEMODE_LOOK:
                 /* Center screen */
-                centerX = MIN(MAX(2, (options->ScaleX * 32) * 15 / 2),
-                              (NATIVE_RESOLUTION_X * options->ScaleX));
-                bottomY = MIN(MAX(2, (options->ScaleY * 32) * 11 / 2),
-                              (NATIVE_RESOLUTION_Y * options->ScaleY));
+                centerX = MIN(MAX(2, (scaleX * 32) * 15 / 2),
+                              (NATIVE_RESOLUTION_X * scaleX));
+                bottomY = MIN(MAX(2, (scaleY * 32) * 11 / 2),
+                              (NATIVE_RESOLUTION_Y * scaleY));
                 break;
             case MESSAGEMODE_FAILURE:
             case MESSAGEMODE_STATUS:
                 /* Bottom-center screen */
-                centerX = MIN(MAX(2, (options->ScaleX * 32) * 15 / 2),
-                              (NATIVE_RESOLUTION_X * options->ScaleX));
-                bottomY = NATIVE_RESOLUTION_Y * options->ScaleY;
-                lineMaxLength = ~0;
+                centerX = MIN(MAX(2, (scaleX * 32) * 15 / 2),
+                              (NATIVE_RESOLUTION_X * scaleX));
+                bottomY = NATIVE_RESOLUTION_Y * scaleY;
+                lineMaxLength = INT16_MAX;
                 break;
             default:
                 break;
@@ -2214,7 +2224,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                             &foregroundColor,
                             centerX,
                             bottomY,
-                            39,
+                            lineMaxLength,
                             message->TextLength,
                             message->Text,
                             canvas);
@@ -2274,6 +2284,7 @@ bool renderer_DrawOverlay(const struct trc_render_options *options,
                           struct trc_canvas *canvas) {
     struct trc_creature *playerCreature;
     int viewOffsetX, viewOffsetY;
+    float scaleX, scaleY;
 
     if (!creaturelist_GetCreature(&gamestate->CreatureList,
                                   gamestate->Player.Id,
@@ -2286,12 +2297,17 @@ bool renderer_DrawOverlay(const struct trc_render_options *options,
     viewOffsetY = (6 - gamestate->Map.Position.Y) * 32 -
                   playerCreature->MovementInformation.WalkOffsetY;
 
+    scaleX = canvas->Width / (float)NATIVE_RESOLUTION_X;
+    scaleY = canvas->Height / (float)NATIVE_RESOLUTION_Y;
+
     if (!options->SkipRenderingCreatures) {
         if (!renderer_DrawMapOverlay(options,
                                      gamestate,
                                      canvas,
                                      viewOffsetX,
-                                     viewOffsetY)) {
+                                     viewOffsetY,
+                                     scaleX,
+                                     scaleY)) {
             return trc_ReportError("Failed to render creature overlay");
         }
     }
@@ -2301,7 +2317,9 @@ bool renderer_DrawOverlay(const struct trc_render_options *options,
                                    gamestate,
                                    canvas,
                                    viewOffsetX,
-                                   viewOffsetY)) {
+                                   viewOffsetY,
+                                   scaleX,
+                                   scaleY)) {
             return trc_ReportError("Failed to render message overlay");
         }
     }
@@ -2309,15 +2327,18 @@ bool renderer_DrawOverlay(const struct trc_render_options *options,
     return true;
 }
 
-static bool renderer_DrawIconBar(const struct trc_render_options *options,
-                                 struct trc_game_state *gamestate,
-                                 struct trc_canvas *canvas,
-                                 int offsetX,
-                                 int offsetY) {
+bool renderer_DrawIconBar(const struct trc_render_options *options,
+                          struct trc_game_state *gamestate,
+                          struct trc_canvas *canvas,
+                          int *offsetX,
+                          int *offsetY) {
     const struct trc_icons *icons = &(gamestate->Version)->Icons;
     struct trc_creature *playerCreature;
+    int baseX, baseY;
+    int iconOffset;
 
-    int iconOffset = offsetX;
+    baseX = *offsetX;
+    baseY = *offsetY;
 
     if (!creaturelist_GetCreature(&gamestate->CreatureList,
                                   gamestate->Player.Id,
@@ -2325,17 +2346,13 @@ static bool renderer_DrawIconBar(const struct trc_render_options *options,
         return trc_ReportError("Failed to get the player creature");
     }
 
-    if (!options->SkipRenderingInventory) {
-        iconOffset += 16;
-    }
-
     canvas_Draw(canvas,
                 &icons->IconBarBackground,
-                iconOffset,
-                offsetY,
+                baseX + 16,
+                baseY,
                 icons->IconBarBackground.Width,
                 icons->IconBarBackground.Height);
-    iconOffset += 2;
+    iconOffset = baseX + 2 + 16;
 
     for (int statusIdx = STATUS_ICON_FIRST; statusIdx < STATUS_ICON_LAST;
          statusIdx++) {
@@ -2355,7 +2372,7 @@ static bool renderer_DrawIconBar(const struct trc_render_options *options,
             canvas_Draw(canvas,
                         statusIconSprite,
                         iconOffset,
-                        offsetY + 2,
+                        baseY + 2,
                         statusIconSprite->Width,
                         statusIconSprite->Height);
 
@@ -2371,7 +2388,7 @@ static bool renderer_DrawIconBar(const struct trc_render_options *options,
         canvas_Draw(canvas,
                     iconBarSkull,
                     iconOffset,
-                    offsetY + 2,
+                    baseY + 2,
                     iconBarSkull->Width,
                     iconBarSkull->Height);
 
@@ -2382,13 +2399,14 @@ static bool renderer_DrawIconBar(const struct trc_render_options *options,
         canvas_Draw(canvas,
                     &icons->IconBarWar,
                     iconOffset,
-                    offsetY + 2,
+                    baseY + 2,
                     icons->IconBarWar.Width,
                     icons->IconBarWar.Height);
 
         iconOffset += icons->IconBarWar.Width;
     }
 
+    *offsetY = baseY + 2 + icons->IconBarBackground.Height;
     return true;
 }
 
@@ -2477,327 +2495,320 @@ static bool renderer_DrawIconArea(const struct trc_render_options *options,
     return true;
 }
 
-bool renderer_DrawInterface(const struct trc_render_options *options,
-                            struct trc_game_state *gamestate,
-                            struct trc_canvas *canvas) {
+bool renderer_DrawStatusBars(const struct trc_render_options *options,
+                             struct trc_game_state *gamestate,
+                             struct trc_canvas *canvas,
+                             int *offsetX,
+                             int *offsetY) {
     const struct trc_icons *icons = &(gamestate->Version)->Icons;
     const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
-
-    const int sidebarOffset = (canvas->Width - options->Width) + 1;
     struct trc_pixel foregroundColor;
-    int offsetX, offsetY;
 
-    if (!options->SkipRenderingInventory) {
-        /* 140 = width of the sidebar stuff */
-        offsetX = (canvas->Width - sidebarOffset + (sidebarOffset - 140) / 2);
-        offsetY = 4;
+    pixel_SetRGB(&foregroundColor, 0xFF, 0xFF, 0xFF);
 
-        for (int xIdx = (140 / icons->ClientBackground.Width) + 1; xIdx >= 0;
-             xIdx--) {
-            for (int yIdx = canvas->Height / icons->ClientBackground.Height;
-                 yIdx >= 0;
-                 yIdx--) {
-                canvas_Draw(canvas,
-                            &icons->ClientBackground,
-                            (canvas->Width - sidebarOffset) +
-                                    xIdx * icons->ClientBackground.Width,
-                            yIdx * icons->ClientBackground.Height,
-                            icons->ClientBackground.Width,
-                            icons->ClientBackground.Height);
-            }
-        }
-    } else {
-        offsetX = 4;
-        offsetY = 4;
-    }
+    int statusBarX, statusBarY, baseX, baseY;
+    uint16_t textLength;
+    char textBuffer[32];
 
-    if (!options->SkipRenderingStatusBars) {
-        int statusBarX, statusBarY;
-        uint16_t textLength;
-        char textBuffer[32];
+    baseX = *offsetX;
+    baseY = *offsetY;
 
-        statusBarX = offsetX + 12;
-        statusBarY = offsetY;
+    statusBarX = baseX + 24;
+    statusBarY = baseY;
 
-        if (!options->SkipRenderingInventory) {
-            statusBarX += 12;
-        }
+    canvas_Draw(canvas,
+                &icons->HealthIcon,
+                baseX,
+                baseY + 2,
+                icons->HealthIcon.Width,
+                icons->HealthIcon.Height);
+    canvas_Draw(canvas,
+                &icons->ManaIcon,
+                baseX,
+                baseY + 15,
+                icons->ManaIcon.Width,
+                icons->ManaIcon.Height);
 
+    /* Draw health and mana bar background. */
+    canvas_Draw(canvas,
+                &icons->EmptyStatusBar,
+                statusBarX + 2,
+                statusBarY + 2,
+                icons->EmptyStatusBar.Width,
+                icons->EmptyStatusBar.Height);
+    canvas_Draw(canvas,
+                &icons->EmptyStatusBar,
+                statusBarX + 2,
+                statusBarY + 15,
+                icons->EmptyStatusBar.Width,
+                icons->EmptyStatusBar.Height);
+
+    if (gamestate->Player.Stats.MaxHealth > 0) {
         canvas_Draw(canvas,
-                    &icons->HealthIcon,
-                    offsetX,
-                    offsetY + 2,
-                    icons->HealthIcon.Width,
-                    icons->HealthIcon.Height);
-        canvas_Draw(canvas,
-                    &icons->ManaIcon,
-                    offsetX,
-                    offsetY + 15,
-                    icons->ManaIcon.Width,
-                    icons->ManaIcon.Height);
-
-        /* Draw health and mana bar background. */
-        canvas_Draw(canvas,
-                    &icons->EmptyStatusBar,
-                    statusBarX + 2,
-                    statusBarY + 2,
-                    icons->EmptyStatusBar.Width,
-                    icons->EmptyStatusBar.Height);
-        canvas_Draw(canvas,
-                    &icons->EmptyStatusBar,
-                    statusBarX + 2,
-                    statusBarY + 15,
-                    icons->EmptyStatusBar.Width,
-                    icons->EmptyStatusBar.Height);
-
-        if (gamestate->Player.Stats.MaxHealth > 0) {
-            canvas_Draw(
-                    canvas,
                     &icons->HealthBar,
                     statusBarX + 2,
                     statusBarY + 2,
                     (icons->HealthBar.Width * gamestate->Player.Stats.Health) /
                             gamestate->Player.Stats.MaxHealth,
                     11);
-        }
-
-        if (gamestate->Player.Stats.MaxMana > 0) {
-            canvas_Draw(canvas,
-                        &icons->ManaBar,
-                        statusBarX + 2,
-                        statusBarY + 15,
-                        (icons->ManaBar.Width * gamestate->Player.Stats.Mana) /
-                                gamestate->Player.Stats.MaxMana,
-                        11);
-        }
-
-        pixel_SetRGB(&foregroundColor, 0xFF, 0xFF, 0xFF);
-
-        textLength = (uint16_t)snprintf(textBuffer,
-                                        sizeof(textBuffer),
-                                        "%hu / %hu",
-                                        gamestate->Player.Stats.Health,
-                                        gamestate->Player.Stats.MaxHealth);
-        textrenderer_DrawCenteredString(&fonts->GameFont,
-                                        &foregroundColor,
-                                        statusBarX + 2 +
-                                                icons->HealthBar.Width / 2,
-                                        statusBarY + 2,
-                                        textLength,
-                                        textBuffer,
-                                        canvas);
-
-        textLength = (uint16_t)snprintf(textBuffer,
-                                        sizeof(textBuffer),
-                                        "%hu / %hu",
-                                        gamestate->Player.Stats.Mana,
-                                        gamestate->Player.Stats.MaxMana);
-        textrenderer_DrawCenteredString(&fonts->GameFont,
-                                        &foregroundColor,
-                                        statusBarX + 2 +
-                                                icons->ManaBar.Width / 2,
-                                        statusBarY + 15,
-                                        textLength,
-                                        textBuffer,
-                                        canvas);
-
-        /* Update the render position */
-        offsetY += 18 + icons->EmptyStatusBar.Height;
     }
 
-    if (!options->SkipRenderingInventory) {
-        static const struct {
-            int X, Y;
-        } inventoryOffsets[] = {
-                {53, 0} /* INVENTORY_SLOT_HEAD */,
-                {16, 15} /* INVENTORY_SLOT_AMULET */,
-                {90, 15} /* INVENTORY_SLOT_BACKPACK */,
-                {53, 38} /* INVENTORY_SLOT_CHEST */,
-                {90, 52} /* INVENTORY_SLOT_RIGHTARM */,
-                {16, 52} /* INVENTORY_SLOT_LEFTARM */,
-                {53, 75} /* INVENTORY_SLOT_LEGS */,
-                {53, 112} /* INVENTORY_SLOT_BOOTS */,
-                {16, 89} /* INVENTORY_SLOT_RING */,
-                {90, 89} /* INVENTORY_SLOT_QUIVER */
-        };
+    if (gamestate->Player.Stats.MaxMana > 0) {
+        canvas_Draw(canvas,
+                    &icons->ManaBar,
+                    statusBarX + 2,
+                    statusBarY + 15,
+                    (icons->ManaBar.Width * gamestate->Player.Stats.Mana) /
+                            gamestate->Player.Stats.MaxMana,
+                    11);
+    }
 
-        uint16_t textLength;
-        char textBuffer[32];
+    textLength = (uint16_t)snprintf(textBuffer,
+                                    sizeof(textBuffer),
+                                    "%hu / %hu",
+                                    gamestate->Player.Stats.Health,
+                                    gamestate->Player.Stats.MaxHealth);
+    textrenderer_DrawCenteredString(&fonts->GameFont,
+                                    &foregroundColor,
+                                    statusBarX + 2 + icons->HealthBar.Width / 2,
+                                    statusBarY + 2,
+                                    textLength,
+                                    textBuffer,
+                                    canvas);
 
-        _Static_assert(INVENTORY_SLOT_FIRST == INVENTORY_SLOT_HEAD &&
-                               INVENTORY_SLOT_LAST == INVENTORY_SLOT_PURSE,
-                       "Inventory coordinate array must be up to date");
-        for (int slot = INVENTORY_SLOT_HEAD; slot < INVENTORY_SLOT_LAST;
-             slot++) {
-            renderer_DrawInventorySlot(gamestate,
-                                       (enum TrcInventorySlot)slot,
-                                       offsetX + inventoryOffsets[slot].X,
-                                       offsetY + inventoryOffsets[slot].Y,
-                                       canvas);
-        }
+    textLength = (uint16_t)snprintf(textBuffer,
+                                    sizeof(textBuffer),
+                                    "%hu / %hu",
+                                    gamestate->Player.Stats.Mana,
+                                    gamestate->Player.Stats.MaxMana);
+    textrenderer_DrawCenteredString(&fonts->GameFont,
+                                    &foregroundColor,
+                                    statusBarX + 2 + icons->ManaBar.Width / 2,
+                                    statusBarY + 15,
+                                    textLength,
+                                    textBuffer,
+                                    canvas);
 
-        pixel_SetRGB(&foregroundColor, 0xAF, 0xAF, 0xAF);
+    /* Update the render position */
+    baseY += 18 + icons->EmptyStatusBar.Height;
 
-        if ((gamestate->Version)->Features.IconBar) {
-            /* The small client font doesn't do bordering or tinting, so
-             * we're not passing any colors. */
-            canvas_Draw(canvas,
-                        &icons->SecondaryStatBackground,
-                        16 + offsetX,
-                        offsetY + 125,
-                        icons->SecondaryStatBackground.Width,
-                        icons->SecondaryStatBackground.Height);
+    (*offsetY) = baseY;
+    return true;
+}
 
-            textrenderer_DrawCenteredString(&fonts->InterfaceFontSmall,
-                                            NULL,
-                                            16 + offsetX + 17,
-                                            offsetY + 127,
-                                            CONSTSTRLEN("Soul:"),
-                                            "Soul:",
-                                            canvas);
+bool renderer_DrawInventoryArea(const struct trc_render_options *options,
+                                struct trc_game_state *gamestate,
+                                struct trc_canvas *canvas,
+                                int *offsetX,
+                                int *offsetY) {
+    const struct trc_icons *icons = &(gamestate->Version)->Icons;
+    const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
 
-            textLength = (uint16_t)snprintf(textBuffer,
-                                            sizeof(textBuffer),
-                                            "%hhu",
-                                            gamestate->Player.Stats.SoulPoints);
-            textrenderer_DrawCenteredString(&fonts->InterfaceFontLarge,
-                                            &foregroundColor,
-                                            16 + offsetX + 17,
-                                            offsetY + 135,
-                                            textLength,
-                                            textBuffer,
-                                            canvas);
-        }
+    static const struct {
+        int X, Y;
+    } inventoryOffsets[] = {
+            {53, 0} /* INVENTORY_SLOT_HEAD */,
+            {16, 13} /* INVENTORY_SLOT_AMULET */,
+            {90, 13} /* INVENTORY_SLOT_BACKPACK */,
+            {53, 37} /* INVENTORY_SLOT_CHEST */,
+            {90, 50} /* INVENTORY_SLOT_RIGHTARM */,
+            {16, 50} /* INVENTORY_SLOT_LEFTARM */,
+            {53, 74} /* INVENTORY_SLOT_LEGS */,
+            {53, 111} /* INVENTORY_SLOT_BOOTS */,
+            {16, 87} /* INVENTORY_SLOT_RING */,
+            {90, 87} /* INVENTORY_SLOT_QUIVER */
+    };
 
+    struct trc_pixel foregroundColor;
+    uint16_t textLength;
+    char textBuffer[32];
+    int baseX, baseY;
+
+    baseX = *offsetX;
+    baseY = *offsetY;
+
+    _Static_assert(INVENTORY_SLOT_FIRST == INVENTORY_SLOT_HEAD &&
+                           INVENTORY_SLOT_LAST == INVENTORY_SLOT_PURSE,
+                   "Inventory coordinate array must be up to date");
+    for (int slot = INVENTORY_SLOT_HEAD; slot < INVENTORY_SLOT_LAST; slot++) {
+        renderer_DrawInventorySlot(gamestate,
+                                   (enum TrcInventorySlot)slot,
+                                   baseX + inventoryOffsets[slot].X,
+                                   baseY + inventoryOffsets[slot].Y,
+                                   canvas);
+    }
+
+    baseY += 124;
+
+    pixel_SetRGB(&foregroundColor, 0xAF, 0xAF, 0xAF);
+
+    if ((gamestate->Version)->Features.IconBar) {
+        /* The small client font doesn't do bordering or tinting, so
+         * we're not passing any colors. */
         canvas_Draw(canvas,
                     &icons->SecondaryStatBackground,
-                    16 + offsetX + 74,
-                    offsetY + 125,
+                    16 + baseX,
+                    baseY,
                     icons->SecondaryStatBackground.Width,
                     icons->SecondaryStatBackground.Height);
+
         textrenderer_DrawCenteredString(&fonts->InterfaceFontSmall,
                                         NULL,
-                                        16 + offsetX + 90,
-                                        offsetY + 127,
-                                        CONSTSTRLEN("Cap:"),
-                                        "Cap:",
+                                        16 + baseX + 17,
+                                        baseY + 2,
+                                        CONSTSTRLEN("Soul:"),
+                                        "Soul:",
                                         canvas);
 
         textLength = (uint16_t)snprintf(textBuffer,
                                         sizeof(textBuffer),
-                                        "%u",
-                                        gamestate->Player.Stats.Capacity / 100);
+                                        "%hhu",
+                                        gamestate->Player.Stats.SoulPoints);
         textrenderer_DrawCenteredString(&fonts->InterfaceFontLarge,
                                         &foregroundColor,
-                                        16 + offsetX + 90,
-                                        offsetY + 135,
+                                        16 + baseX + 17,
+                                        baseY + 10,
                                         textLength,
                                         textBuffer,
                                         canvas);
-
-        if (!(gamestate->Version)->Features.IconBar) {
-            if (!renderer_DrawIconArea(options,
-                                       gamestate,
-                                       canvas,
-                                       offsetX,
-                                       offsetY)) {
-                return trc_ReportError("Failed to render the icon area");
-            }
-        }
-
-        /* Update the render position */
-        offsetY += 148;
     }
 
-    if (!options->SkipRenderingIconBar) {
-        if ((gamestate->Version)->Features.IconBar) {
-            if (!renderer_DrawIconBar(options,
-                                      gamestate,
-                                      canvas,
-                                      offsetX,
-                                      offsetY)) {
-                return trc_ReportError("Failed to render the icon bar");
-            }
+    canvas_Draw(canvas,
+                &icons->SecondaryStatBackground,
+                16 + baseX + 74,
+                baseY,
+                icons->SecondaryStatBackground.Width,
+                icons->SecondaryStatBackground.Height);
+    textrenderer_DrawCenteredString(&fonts->InterfaceFontSmall,
+                                    NULL,
+                                    16 + baseX + 90,
+                                    baseY + 2,
+                                    CONSTSTRLEN("Cap:"),
+                                    "Cap:",
+                                    canvas);
 
-            offsetY += 2 + icons->IconBarBackground.Height;
+    textLength = (uint16_t)snprintf(textBuffer,
+                                    sizeof(textBuffer),
+                                    "%u",
+                                    gamestate->Player.Stats.Capacity / 100);
+    textrenderer_DrawCenteredString(&fonts->InterfaceFontLarge,
+                                    &foregroundColor,
+                                    16 + baseX + 90,
+                                    baseY + 10,
+                                    textLength,
+                                    textBuffer,
+                                    canvas);
+
+    if (!(gamestate->Version)->Features.IconBar) {
+        if (!renderer_DrawIconArea(options, gamestate, canvas, baseX, baseY)) {
+            return trc_ReportError("Failed to render the icon area");
         }
     }
 
-    if (!options->SkipRenderingInventory) {
-        struct trc_container *containerIterator;
-        int maxContainerY;
+    /* Update the render position */
+    *offsetY = baseY + icons->SecondaryStatBackground.Height + 3;
+    return true;
+}
 
-        maxContainerY = (canvas->Height - 4) - 32;
+bool renderer_DrawContainer(const struct trc_render_options *options,
+                            struct trc_game_state *gamestate,
+                            struct trc_canvas *canvas,
+                            struct trc_container *container,
+                            bool collapsed,
+                            int maxX,
+                            int maxY,
+                            int *offsetX,
+                            int *offsetY) {
+    const struct trc_icons *icons = &(gamestate->Version)->Icons;
+    const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
 
-        pixel_SetRGB(&foregroundColor, 0xBF, 0xBF, 0xBF);
+    struct trc_pixel foregroundColor;
+    int baseX, baseY;
 
-        for (containerIterator = gamestate->ContainerList;
-             containerIterator != NULL;
-             containerIterator =
-                     (struct trc_container *)(containerIterator->hh.next)) {
-            int itemIdx;
+    baseX = *offsetX;
+    baseY = *offsetY;
 
-            /* Skip out if we can't draw the container header + at least one
-             * slot */
-            if ((offsetY + 32 + fonts->InterfaceFontLarge.Height) >=
-                maxContainerY) {
+    pixel_SetRGB(&foregroundColor, 0xBF, 0xBF, 0xBF);
+
+    textrenderer_DrawProperCaseString(&fonts->InterfaceFontLarge,
+                                      &foregroundColor,
+                                      baseX,
+                                      baseY + 2,
+                                      container->NameLength,
+                                      container->Name,
+                                      canvas);
+
+    baseY += fonts->InterfaceFontLarge.Height;
+
+    if (!collapsed) {
+        const int slotSize = (32 + 4);
+        const int slotsPerRow = (maxX - baseX) / slotSize;
+        int itemIdx;
+
+        for (itemIdx = 0; itemIdx < container->SlotsPerPage; itemIdx++) {
+            int slotX, slotY;
+
+            slotX = baseX + (itemIdx % slotsPerRow) * slotSize;
+            slotY = baseY + (itemIdx / slotsPerRow) * slotSize;
+
+            if (slotX > maxX || slotY > maxY) {
                 break;
             }
 
-            textrenderer_DrawProperCaseString(&fonts->InterfaceFontLarge,
-                                              &foregroundColor,
-                                              offsetX,
-                                              offsetY + 2,
-                                              containerIterator->NameLength,
-                                              containerIterator->Name,
-                                              canvas);
-
-            offsetY += fonts->InterfaceFontLarge.Height;
-
-            for (itemIdx = 0; itemIdx < containerIterator->SlotsPerPage;
-                 itemIdx++) {
-                int slotX, slotY;
-
-                slotX = offsetX + (itemIdx % 4) * (32 + 4);
-                slotY = offsetY + (itemIdx / 4) * (32 + 4);
-
-                if (slotY >= maxContainerY) {
+            if (itemIdx >= container->ItemCount) {
+                if (itemIdx % slotsPerRow == 0 && itemIdx > 0) {
                     break;
-                }
-
-                if (itemIdx >= containerIterator->ItemCount) {
-                    if (itemIdx % 4 == 0 && itemIdx > 0) {
-                        break;
-                    } else {
-                        canvas_Draw(canvas,
-                                    &icons->InventoryBackground,
-                                    slotX,
-                                    slotY,
-                                    icons->InventoryBackground.Width,
-                                    icons->InventoryBackground.Height);
-                    }
                 } else {
-                    if (!renderer_DrawInventoryItem(
-                                gamestate,
-                                &containerIterator->Items[itemIdx],
+                    canvas_Draw(canvas,
+                                &icons->InventoryBackground,
                                 slotX,
                                 slotY,
-                                canvas)) {
-                        return trc_ReportError(
-                                "Failed to render container item");
-                    }
+                                icons->InventoryBackground.Width,
+                                icons->InventoryBackground.Height);
+                }
+            } else {
+                if (!renderer_DrawInventoryItem(gamestate,
+                                                &container->Items[itemIdx],
+                                                slotX,
+                                                slotY,
+                                                canvas)) {
+                    return trc_ReportError("Failed to render container item");
                 }
             }
-
-            /* Round up to avoid having the next container overdraw this
-             * one, in case the container size wasn't a clean multiple of 4.
-             */
-            offsetY = offsetY + ((itemIdx + 3) / 4) * (32 + 4);
         }
+
+        /* Round up to avoid having the next container overdraw this one, in
+         * case the container size wasn't a clean multiple of the slot
+         * modulus. */
+        baseY += ((itemIdx + slotsPerRow - 1) / slotsPerRow) * slotSize;
     }
 
-    /* TODO: Render battle list? */
+    *offsetY = baseY;
     return true;
+}
+
+void renderer_RenderClientBackground(struct trc_game_state *gamestate,
+                                     struct trc_canvas *canvas,
+                                     int leftX,
+                                     int topY,
+                                     int rightX,
+                                     int bottomY) {
+    const struct trc_icons *icons = &(gamestate->Version)->Icons;
+    int height, width;
+
+    height = icons->ClientBackground.Height;
+    width = icons->ClientBackground.Height;
+
+    for (int toY = topY; toY < bottomY; toY += height) {
+        for (int toX = leftX; toX < rightX; toX += width) {
+            canvas_Draw(canvas,
+                        &icons->ClientBackground,
+                        toX,
+                        toY,
+                        MIN(width, rightX - toX),
+                        MIN(height, bottomY - toY));
+        }
+    }
 }
 
 bool renderer_DumpItem(struct trc_version *version,

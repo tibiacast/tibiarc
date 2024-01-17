@@ -25,6 +25,17 @@
 
 #include "utils.h"
 
+#ifndef LEVEL1_DCACHE_LINESIZE
+#    error "LEVEL1_DCACHE_LINESIZE must be #defined"
+#endif
+
+#ifdef DEBUG
+/* Cache alignment can hide out-of-bounds reads, so we'll turn it off in debug
+ * mode. */
+#    undef LEVEL1_DCACHE_LINESIZE
+#    define LEVEL1_DCACHE_LINESIZE 1
+#endif
+
 #define LEVEL1_DCACHE_LINEMASK (LEVEL1_DCACHE_LINESIZE - 1)
 
 struct trc_canvas *canvas_Create(int width, int height) {
@@ -40,10 +51,11 @@ struct trc_canvas *canvas_Create(int width, int height) {
      * sloppy with regards to out-of-bound reads. */
     stride = (width * sizeof(struct trc_pixel) + LEVEL1_DCACHE_LINEMASK) &
              ~LEVEL1_DCACHE_LINEMASK;
-    canvas = (struct trc_canvas *)checked_aligned_allocate(
-            LEVEL1_DCACHE_LINESIZE,
-            sizeof(struct trc_canvas) + (height + 1) * stride);
 
+    canvas =
+            (struct trc_canvas *)checked_allocate(1, sizeof(struct trc_canvas));
+    canvas->Buffer = checked_aligned_allocate(LEVEL1_DCACHE_LINESIZE,
+                                              (height + 1) * stride);
     canvas->Width = width;
     canvas->Height = height;
     canvas->Stride = stride;
@@ -51,8 +63,21 @@ struct trc_canvas *canvas_Create(int width, int height) {
     return canvas;
 }
 
+void canvas_Slice(struct trc_canvas *source,
+                  int leftX,
+                  int topY,
+                  int rightX,
+                  int bottomY,
+                  struct trc_canvas *out) {
+    out->Width = (rightX - leftX);
+    out->Height = (bottomY - topY);
+    out->Stride = source->Stride;
+    out->Buffer = (uint8_t *)canvas_GetPixel(source, leftX, topY);
+}
+
 void canvas_Free(struct trc_canvas *canvas) {
-    checked_aligned_deallocate(canvas);
+    checked_aligned_deallocate(canvas->Buffer);
+    checked_deallocate(canvas);
 }
 
 static size_t canvas_Extract(const struct trc_canvas *canvas,
@@ -609,12 +634,14 @@ void canvas_RescaleClone(struct trc_canvas *canvas,
                          int bottomY,
                          const struct trc_canvas *from) {
     float scaleFactorX, scaleFactorY;
+    int width, height;
 
-    ASSERT((rightX - leftX) >= 0);
-    ASSERT((bottomY - topY) >= 0);
+    width = rightX - leftX;
+    height = bottomY - topY;
+    ASSERT(width >= 0 && height >= 0);
 
-    scaleFactorX = (float)(rightX - leftX) / (float)from->Width;
-    scaleFactorY = (float)(bottomY - topY) / (float)from->Height;
+    scaleFactorX = (float)width / (float)from->Width;
+    scaleFactorY = (float)height / (float)from->Height;
 
     if (scaleFactorX == 1 && scaleFactorY == 1) {
         /* Hacky fast path for when we don't need rescaling, speeds up testing
@@ -630,12 +657,12 @@ void canvas_RescaleClone(struct trc_canvas *canvas,
         return;
     }
 
-    for (int toY = topY; toY < bottomY; toY++) {
+    for (int toY = 0; toY < height; toY++) {
         const int fromY0 = MIN(toY / scaleFactorY, from->Height - 1);
         const int fromY1 = MIN(fromY0 + 1, from->Height - 1);
         const float subOffsY = (toY / scaleFactorY) - fromY0;
 
-        for (int toX = leftX; toX < rightX; toX++) {
+        for (int toX = 0; toX < width; toX++) {
             const int fromX0 = MIN(toX / scaleFactorX, from->Width - 1);
             const int fromX1 = MIN(fromX0 + 1, from->Width - 1);
             const float subOffsX = (toX / scaleFactorX) - fromX0;
@@ -670,7 +697,7 @@ void canvas_RescaleClone(struct trc_canvas *canvas,
             outBlue += srcPixels[3]->Blue * (subOffsX) * (subOffsY);
             outAlpha += srcPixels[3]->Alpha * (subOffsX) * (subOffsY);
 
-            dstPixel = canvas_GetPixel(canvas, toX, toY);
+            dstPixel = canvas_GetPixel(canvas, toX + leftX, toY + topY);
 
             dstPixel->Red = (uint8_t)(outRed + 0.5);
             dstPixel->Green = (uint8_t)(outGreen + 0.5);
