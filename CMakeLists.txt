@@ -1,5 +1,5 @@
-# FIXME: Currently only tested with cmake 3.28.1
-cmake_minimum_required(VERSION 3.28)
+# note: this is the oldest version tested against, even older versions might work
+cmake_minimum_required(VERSION 3.13)
 
 project(tibiarc
   VERSION 0.1
@@ -20,7 +20,7 @@ if(RET AND NOT RET EQUAL 0)
   set(LEVEL1_DCACHE_LINESIZE "128")
 endif()
 
-add_compile_definitions("-D_REENTRANT" "-D_GNU_SOURCE")
+add_compile_definitions("_REENTRANT" "_GNU_SOURCE")
 
 # tibiarc
 add_library(tibiarc
