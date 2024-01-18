@@ -54,6 +54,17 @@ void gamestate_AddTextMessage(struct trc_game_state *gamestate,
                            message);
 }
 
+void gamestate_Reset(struct trc_game_state *gamestate) {
+    containerlist_Free(&gamestate->ContainerList);
+    gamestate->ContainerList = NULL;
+
+    creaturelist_Free(&gamestate->CreatureList);
+    gamestate->CreatureList = NULL;
+
+    messagelist_Free(&gamestate->MessageList);
+    messagelist_Initialize(&gamestate->MessageList);
+}
+
 struct trc_game_state *gamestate_Create(const struct trc_version *version) {
     struct trc_game_state *gamestate = (struct trc_game_state *)
             checked_allocate(1, sizeof(struct trc_game_state));
