@@ -23,8 +23,7 @@
 #    include "encoding.h"
 
 #    ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #    endif
 
 #    include <libavcodec/avcodec.h>

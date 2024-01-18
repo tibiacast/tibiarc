@@ -25,10 +25,12 @@
 
 const static struct trc_pixel DefaultFontColor = {.Red = 0xFF,
                                                   .Green = 0xFF,
-                                                  .Blue = 0xFF};
+                                                  .Blue = 0xFF,
+                                                  .Alpha = 0xFF};
 const static struct trc_pixel HighlightColor = {.Red = (23 / 36) * 51,
                                                 .Green = ((23 / 6) % 6) * 51,
-                                                .Blue = (23 % 6) * 51};
+                                                .Blue = (23 % 6) * 51,
+                                                .Alpha = 0xFF};
 
 static void textrenderer_MeasureLineWidth(const struct trc_font *font,
                                           uint16_t lineLength,

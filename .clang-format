@@ -1,0 +1,23 @@
+---
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AlignOperands:   true
+IndentWidth:     4
+ColumnLimit:     80
+BinPackArguments: false
+BinPackParameters: false
+IndentPPDirectives: AfterHash
+MaxEmptyLinesToKeep: 1
+ContinuationIndentWidth: 8
+SortIncludes:    false
+ReflowComments:  true
+PenaltyReturnTypeOnItsOwnLine: 1000000
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+
+...
+

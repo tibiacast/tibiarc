@@ -1,6 +1,5 @@
 .vscode/
 items/
-.clang-format
 *.bmp
 perf.data
 perf.data.old
