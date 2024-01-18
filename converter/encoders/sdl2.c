@@ -92,7 +92,6 @@ static bool sdl2_Open(struct trc_encoder_sdl2 *encoder,
 
 static bool sdl2_WriteFrame(struct trc_encoder_sdl2 *encoder,
                             struct trc_canvas *frame) {
-    Uint64 currentTime, timeDelta;
     SDL_Event event;
     void *data;
     int pitch;
@@ -129,17 +128,15 @@ static bool sdl2_WriteFrame(struct trc_encoder_sdl2 *encoder,
 
     SDL_RenderPresent(encoder->Renderer);
 
-    currentTime = SDL_GetPerformanceCounter();
-    timeDelta = currentTime - encoder->LastPTS;
-    encoder->LastPTS = currentTime;
+    Uint64 timeDelta = SDL_GetPerformanceCounter() - encoder->LastPTS;
+    encoder->LastPTS += encoder->TargetDiff;
 
     if (timeDelta < encoder->TargetDiff) {
-        Uint64 delay = (encoder->TargetDiff - timeDelta);
+        Uint64 delayMs =
+                ((encoder->TargetDiff - timeDelta) * 1000) / encoder->Frequency;
 
-        delay = (delay * 1000) / encoder->Frequency;
-
-        if (delay > 0) {
-            SDL_Delay(delay);
+        if (delayMs > 0) {
+            SDL_Delay(delayMs);
         }
     }
 
