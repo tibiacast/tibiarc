@@ -98,6 +98,8 @@ SCREENSHOT_CHECKSUMS := $(addsuffix .sha256sum, $(SCREENSHOT_FILES))
 .PHONY: test_screenshot
 test_screenshot: $(SCREENSHOT_FILES)
 	sha256sum -c $(SCREENSHOT_CHECKSUMS)
+	rm $(SCREENSHOT_FILES)
+
 update_screenshot: $(SCREENSHOT_CHECKSUMS)
 
 # Screenshot as it would be rendered in a normal video.
@@ -116,6 +118,7 @@ render/screenshot_0.bmp:
 
 test_screenshot_0: render/screenshot_0.bmp
 	sha256sum -c render/screenshot_0.bmp.sha256sum
+	rm render/screenshot_0.bmp
 
 render/screenshot_%.bmp.sha256sum: render/screenshot_%.bmp
 	sha256sum $< > $@
@@ -127,6 +130,7 @@ render/screenshot_1.bmp:
               --output-encoding bmp \
               --output-format image2 \
               --output-flags "update=1" \
+              --resolution 480x352 \
               --start-time 3000 \
               --end-time 3000 \
               --frame-rate 1 \
@@ -144,6 +148,7 @@ render/screenshot_1.bmp:
 
 test_screenshot_1: render/screenshot_1.bmp
 	sha256sum -c render/screenshot_1.bmp.sha256sum
+	rm render/screenshot_1.bmp
 
 update_test_screenshot_1: render/screenshot_1.bmp
 	sha256sum render/screenshot_1.bmp > render/screenshot_1.bmp.sha256sum
