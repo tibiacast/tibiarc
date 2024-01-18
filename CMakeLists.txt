@@ -21,10 +21,7 @@ if(RET AND NOT RET EQUAL 0)
   set(LEVEL1_DCACHE_LINESIZE "64")
 endif()
 
-# FIXME: -flto and -march=native should probably only be enabled during Release build
-add_compile_options("-flto" "-march=native")
 add_compile_definitions("-D_REENTRANT" "-D_GNU_SOURCE")
-add_link_options("-flto")
 
 # tibiarc
 add_library(tibiarc
@@ -137,4 +134,10 @@ else()
   target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
 endif()
 
+# Enable IPO if supported
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported)
+if(ipo_supported)
+  set_target_properties(tibiarc converter PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
