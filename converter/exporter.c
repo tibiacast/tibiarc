@@ -27,7 +27,7 @@
 #include "renderer.h"
 #include "versions.h"
 
-#include <errno.h>
+#include <math.h>
 
 #include "utils.h"
 
@@ -37,9 +37,76 @@
 #    define DIR_SEP "/"
 #endif
 
+#define SIDEBAR_WIDTH 160
+
 static uint32_t exporter_FrameTimestamp(uint32_t frameNumber,
                                         uint32_t frameRate) {
     return (frameNumber * 1000) / frameRate;
+}
+
+static bool exporter_DrawInterface(const struct trc_render_options *options,
+                                   struct trc_game_state *gamestate,
+                                   struct trc_canvas *canvas) {
+    int offsetX, offsetY;
+
+    if (!options->SkipRenderingInventory) {
+        offsetX = (canvas->Width - SIDEBAR_WIDTH) + 12;
+        offsetY = 4;
+    } else {
+        offsetX = 4;
+        offsetY = 4;
+    }
+
+    if (!options->SkipRenderingStatusBars) {
+        renderer_DrawStatusBars(options, gamestate, canvas, &offsetX, &offsetY);
+    }
+
+    if (!options->SkipRenderingInventory) {
+        renderer_DrawInventoryArea(options,
+                                   gamestate,
+                                   canvas,
+                                   &offsetX,
+                                   &offsetY);
+    }
+
+    if (!options->SkipRenderingIconBar &&
+        (gamestate->Version)->Features.IconBar) {
+        if (!renderer_DrawIconBar(options,
+                                  gamestate,
+                                  canvas,
+                                  &offsetX,
+                                  &offsetY)) {
+            return trc_ReportError("Failed to render the icon bar");
+        }
+    }
+
+    if (!options->SkipRenderingInventory) {
+        struct trc_container *containerIterator;
+        int maxContainerY;
+
+        maxContainerY = (canvas->Height - 4) - 32;
+
+        for (containerIterator = gamestate->ContainerList;
+             containerIterator != NULL;
+             containerIterator =
+                     (struct trc_container *)(containerIterator->hh.next)) {
+            renderer_DrawContainer(options,
+                                   gamestate,
+                                   canvas,
+                                   containerIterator,
+                                   false,
+                                   canvas->Width,
+                                   maxContainerY,
+                                   &offsetX,
+                                   &offsetY);
+            if (offsetY >= maxContainerY) {
+                break;
+            }
+        }
+    }
+
+    /* TODO: Render battle list? */
+    return true;
 }
 
 static bool exporter_ConvertVideo(const struct export_settings *settings,
@@ -52,15 +119,44 @@ static bool exporter_ConvertVideo(const struct export_settings *settings,
                                   uint32_t startTime,
                                   uint32_t endTime) {
     const struct trc_render_options *renderOptions = &settings->RenderOptions;
+    int viewLeftX, viewTopY, viewRightX, viewBottomY;
     uint32_t frameNumber = 0, frameTimestamp;
-    struct trc_pixel backgroundPixel;
+    struct trc_canvas overlaySlice;
+
+    {
+        /* Determine the bounds of the viewport, maintaning the aspect ratio
+         * similar to how Tibia does it. */
+        float maxX = outputCanvas->Width;
+        float maxY = outputCanvas->Height;
+
+        if (!renderOptions->SkipRenderingInventory) {
+            maxX -= SIDEBAR_WIDTH;
+        }
+
+        if (maxX <= 0 || maxY <= 0) {
+            return trc_ReportError("Resolution too small to fit inventory");
+        }
+
+        float minScale =
+                MIN(maxX / NATIVE_RESOLUTION_X, maxY / NATIVE_RESOLUTION_Y);
+
+        viewLeftX = (maxX - (NATIVE_RESOLUTION_X * minScale)) / 2;
+        viewTopY = (maxY - (NATIVE_RESOLUTION_Y * minScale)) / 2;
+        viewRightX = viewLeftX + (NATIVE_RESOLUTION_X * minScale),
+        viewBottomY = viewTopY + (NATIVE_RESOLUTION_Y * minScale);
+    }
+
+    canvas_Slice(outputCanvas,
+                 viewLeftX,
+                 viewTopY,
+                 viewRightX,
+                 viewBottomY,
+                 &overlaySlice);
 
     /* Clip start/end to recording bounds, allowing another second in case of
      * an abrupt end to the recording. */
     startTime = MIN(startTime, recording->Runtime);
     endTime = MIN(endTime, recording->Runtime + 1000);
-
-    pixel_SetRGB(&backgroundPixel, 0, 0, 0);
 
     do {
         if (!recording_ProcessNextPacket(recording, gamestate)) {
@@ -78,33 +174,38 @@ static bool exporter_ConvertVideo(const struct export_settings *settings,
                 continue;
             }
 
-            /* Wipe the background in the same manner Tibia does it. */
+            /* Wipe the background in the same manner Tibia does it, leaving
+             * empty spots on the map black. */
             canvas_DrawRectangle(mapCanvas,
-                                 &backgroundPixel,
+                                 &(struct trc_pixel){},
                                  0,
                                  0,
-                                 mapCanvas->Width,
-                                 mapCanvas->Height);
+                                 NATIVE_RESOLUTION_X,
+                                 NATIVE_RESOLUTION_Y);
+
+            renderer_RenderClientBackground(gamestate,
+                                            outputCanvas,
+                                            0,
+                                            0,
+                                            outputCanvas->Width,
+                                            outputCanvas->Height);
 
             if (!renderer_DrawGamestate(renderOptions, gamestate, mapCanvas)) {
                 return trc_ReportError("Could not draw gamestate");
             }
 
-            if (mapCanvas != outputCanvas) {
-                /* TODO: Ask the encoder backend to do this for us. The
-                 * excessively clever SSE routines have been yanked for
-                 * simplicity. */
-                canvas_RescaleClone(outputCanvas,
-                                    0,
-                                    0,
-                                    settings->RenderOptions.Width,
-                                    settings->RenderOptions.Height,
-                                    mapCanvas);
-            }
+            canvas_RescaleClone(outputCanvas,
+                                viewLeftX,
+                                viewTopY,
+                                viewRightX,
+                                viewBottomY,
+                                mapCanvas);
 
-            if (!renderer_DrawOverlay(renderOptions, gamestate, outputCanvas)) {
+            if (!renderer_DrawOverlay(renderOptions,
+                                      gamestate,
+                                      &overlaySlice)) {
                 return trc_ReportError("Could not draw game overlay");
-            } else if (!renderer_DrawInterface(renderOptions,
+            } else if (!exporter_DrawInterface(renderOptions,
                                                gamestate,
                                                outputCanvas)) {
                 return trc_ReportError("Could not draw interface area");
@@ -261,35 +362,6 @@ static bool exporter_OpenRecording(const struct export_settings *settings,
     return false;
 }
 
-static void exporter_CreateCanvases(const struct export_settings *settings,
-                                    struct trc_canvas **map,
-                                    struct trc_canvas **output) {
-    int outputXResolution = settings->RenderOptions.Width;
-    int outputYResolution = settings->RenderOptions.Height;
-
-    if (!settings->RenderOptions.SkipRenderingInventory) {
-        outputXResolution += 160;
-    }
-
-    *map = canvas_Create(NATIVE_RESOLUTION_X, NATIVE_RESOLUTION_Y);
-
-    if (outputXResolution != NATIVE_RESOLUTION_X ||
-        outputYResolution != NATIVE_RESOLUTION_Y) {
-        *output = canvas_Create(outputXResolution, outputYResolution);
-    } else {
-        *output = *map;
-    }
-}
-
-static void exporter_FreeCanvases(struct trc_canvas *map,
-                                  struct trc_canvas *output) {
-    if (output != map) {
-        canvas_Free(output);
-    }
-
-    canvas_Free(map);
-}
-
 bool exporter_Export(const struct export_settings *settings,
                      const char *dataFolder,
                      const char *inputPath,
@@ -303,7 +375,9 @@ bool exporter_Export(const struct export_settings *settings,
         return trc_ReportError("Failed to open input recording");
     }
 
-    exporter_CreateCanvases(settings, &mapCanvas, &outputCanvas);
+    mapCanvas = canvas_Create(NATIVE_RESOLUTION_X, NATIVE_RESOLUTION_Y);
+    outputCanvas = canvas_Create(settings->RenderOptions.Width,
+                                 settings->RenderOptions.Height);
 
     struct trc_data_reader reader = {.Length = file.Size, .Data = file.View};
     if (exporter_OpenRecording(settings,
@@ -342,7 +416,8 @@ bool exporter_Export(const struct export_settings *settings,
         encoder_Free(encoder);
     }
 
-    exporter_FreeCanvases(mapCanvas, outputCanvas);
+    canvas_Free(mapCanvas);
+    canvas_Free(outputCanvas);
     memoryfile_Close(&file);
 
     return result;

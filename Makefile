@@ -146,11 +146,17 @@ $(OBJDIR)/%.o: lib/%.c
 analyze:
 	scan-build make
 
-.PHONY: format
+FORMAT_FILES := $(LIB_SRC_FILES) \
+                $(LIB_HDR_FILES) \
+                $(CONVERTER_HDR_FILES) \
+                $(CONVERTER_SRC_FILES)
+
+.PHONY: format format-check
 format:
-	clang-format -i \
-            $(LIB_SRC_FILES) $(LIB_HDR_FILES) \
-            $(CONVERTER_HDR_FILES) $(CONVERTER_SRC_FILES)
+	clang-format -i $(FORMAT_FILES)
+
+format-check:
+	clang-format --dry-run $(FORMAT_FILES)
 
 clean:
 	(cd $(OBJDIR) && rm -rf *.o *.d)

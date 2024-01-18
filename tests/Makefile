@@ -36,8 +36,8 @@ TRC_TEST := $(TEST_PREFIX) ../tibiarc
 
 # ########################################################################### #
 
-ENCODE_TESTS := render/encode_0.mkv render/encode_1.mkv render/encode_2.mkv
-test_encode: $(ENCODE_TESTS)
+ENCODE_FILES := render/encode_0.mkv render/encode_1.mkv render/encode_2.mkv
+test_encode: $(ENCODE_FILES)
 
 # Basic, with format guessing
 render/encode_0.mkv:
@@ -50,7 +50,7 @@ render/encode_0.mkv:
 # High-res high-framerate
 render/encode_1.mkv:
 	$(TRC_TEST) --input-format tmv2 \
-              --resolution 1440x1056 \
+              --resolution 1600x1056 \
               --frame-rate 50 \
               --output-format matroska \
               --output-encoding libx265 \
@@ -74,7 +74,6 @@ SDL2_TESTS := test_sdl2_0 test_sdl2_1
 .PHONY: $(SDL2_TESTS)
 test_sdl2: $(SDL2_TESTS)
 
-# Basic, standard frame rate
 test_sdl2_0:
 	$(TRC_TEST) --input-format tmv2 \
               --output-backend sdl2 \
@@ -83,24 +82,30 @@ test_sdl2_0:
               ./8.40/ \
               ./8.40/sample.tmv2
 
-# Tests the SDL back-end, sped up since it's a fairly long file
 test_sdl2_1:
 	$(TRC_TEST) --input-format yatc \
               --input-version 8.50 \
               --output-backend sdl2 \
-              --resolution 960x704 \
+              --resolution 1120x704 \
               --frame-skip 16 \
               ./8.50/ \
               ./8.50/sample.yatc
 
 # ########################################################################### #
 
-test_screenshot: $(SCREENSHOT_TESTS)
-update_screenshot: $(addprefix update_, $(SCREENSHOT_TESTS))
+SCREENSHOT_FILES := render/screenshot_0.bmp render/screenshot_1.bmp
+SCREENSHOT_CHECKSUMS := $(addsuffix .sha256sum, $(SCREENSHOT_FILES))
+.PHONY: test_screenshot
+test_screenshot: $(SCREENSHOT_FILES)
+	sha256sum -c $(SCREENSHOT_CHECKSUMS)
+	rm $(SCREENSHOT_FILES)
+
+update_screenshot: $(SCREENSHOT_CHECKSUMS)
 
 # Screenshot as it would be rendered in a normal video.
 render/screenshot_0.bmp:
 	$(TRC_TEST) --input-format tmv2 \
+              --resolution 640x352 \
               --output-format image2 \
               --output-encoding bmp \
               --output-flags "update=1" \
@@ -113,9 +118,10 @@ render/screenshot_0.bmp:
 
 test_screenshot_0: render/screenshot_0.bmp
 	sha256sum -c render/screenshot_0.bmp.sha256sum
+	rm render/screenshot_0.bmp
 
-update_test_screenshot_0: render/screenshot_0.bmp
-	sha256sum render/screenshot_0.bmp > render/screenshot_0.bmp.sha256sum
+render/screenshot_%.bmp.sha256sum: render/screenshot_%.bmp
+	sha256sum $< > $@
 
 # Skip rendering cluttery effects that look bad when scaled down, generating an
 # image suitable for use as a thumbnail.
@@ -124,6 +130,7 @@ render/screenshot_1.bmp:
               --output-encoding bmp \
               --output-format image2 \
               --output-flags "update=1" \
+              --resolution 480x352 \
               --start-time 3000 \
               --end-time 3000 \
               --frame-rate 1 \
@@ -141,6 +148,7 @@ render/screenshot_1.bmp:
 
 test_screenshot_1: render/screenshot_1.bmp
 	sha256sum -c render/screenshot_1.bmp.sha256sum
+	rm render/screenshot_1.bmp
 
 update_test_screenshot_1: render/screenshot_1.bmp
 	sha256sum render/screenshot_1.bmp > render/screenshot_1.bmp.sha256sum

@@ -29,33 +29,26 @@
 
 #include "utils.h"
 
-#ifndef LEVEL1_DCACHE_LINESIZE
-#    error "LEVEL1_DCACHE_LINESIZE must be #defined"
-#endif
-
-#ifdef DEBUG
-/* Cache alignment can hide out-of-bounds reads, so we'll turn it off in debug
- * mode. */
-#    undef LEVEL1_DCACHE_LINESIZE
-#    define LEVEL1_DCACHE_LINESIZE 1
-#endif
-
-#ifdef __GNUC__
-#    define TRC_ALIGNED(X) __attribute__((aligned(X)))
-#else
-#    define TRC_ALIGNED(X) __declspec(align(X))
-#endif
-
 struct trc_canvas {
     int Width;
     int Height;
     int Stride;
-
-    TRC_ALIGNED(LEVEL1_DCACHE_LINESIZE) uint8_t Buffer[];
+    uint8_t *Buffer;
 };
 
 struct trc_canvas *canvas_Create(int width, int height);
 void canvas_Free(struct trc_canvas *canvas);
+
+/* Creates a sub-canvas referring to a part of the original canvas, useful for
+ * rendering within certain bounds like the game viewport.
+ *
+ * The sub-canvas does not need to be freed. */
+void canvas_Slice(struct trc_canvas *canvas,
+                  int leftX,
+                  int topY,
+                  int rightX,
+                  int bottomY,
+                  struct trc_canvas *out);
 
 void canvas_Wipe(struct trc_canvas *canvas);
 

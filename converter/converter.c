@@ -562,7 +562,7 @@ static int parse_arguments(int argc,
 int main(int argc, char **argv) {
     /* Set up some sane defaults. */
     struct parsed_arguments parsed = {
-            .Settings = {.RenderOptions = {.Width = 480, .Height = 352},
+            .Settings = {.RenderOptions = {.Width = 640, .Height = 352},
                          .FrameRate = 25,
                          .FrameSkip = 1,
 
@@ -578,10 +578,6 @@ int main(int argc, char **argv) {
     if (parse_arguments(argc, argv, &parsed)) {
         return 1;
     }
-
-    struct trc_render_options *renderOptions = &parsed.Settings.RenderOptions;
-    renderOptions->ScaleX = (renderOptions->Width / NATIVE_RESOLUTION_X);
-    renderOptions->ScaleY = (renderOptions->Height / NATIVE_RESOLUTION_Y);
 
 #ifdef DEBUG
     (void)trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_ABORT);

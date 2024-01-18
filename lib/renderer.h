@@ -35,10 +35,6 @@ struct trc_render_options {
     int Width;
     int Height;
 
-    /* Coordinate scale factors, 1.0 = native resolution. */
-    float ScaleX;
-    float ScaleY;
-
     bool SkipRenderingCreatures : 1;
     bool SkipRenderingItems : 1;
 
@@ -67,15 +63,48 @@ struct trc_render_options {
     bool SkipRenderingIconBar : 1;
 };
 
-bool renderer_DrawInterface(const struct trc_render_options *renderOptions,
+bool renderer_DrawInventoryArea(const struct trc_render_options *options,
+                                struct trc_game_state *gamestate,
+                                struct trc_canvas *canvas,
+                                int *offsetX,
+                                int *offsetY);
+
+bool renderer_DrawIconBar(const struct trc_render_options *options,
+                          struct trc_game_state *gamestate,
+                          struct trc_canvas *canvas,
+                          int *offsetX,
+                          int *offsetY);
+
+bool renderer_DrawStatusBars(const struct trc_render_options *options,
+                             struct trc_game_state *gamestate,
+                             struct trc_canvas *canvas,
+                             int *offsetX,
+                             int *offsetY);
+
+bool renderer_DrawContainer(const struct trc_render_options *options,
+                            struct trc_game_state *gamestate,
+                            struct trc_canvas *canvas,
+                            struct trc_container *container,
+                            bool collapsed,
+                            int maxX,
+                            int maxY,
+                            int *offsetX,
+                            int *offsetY);
+
+void renderer_RenderClientBackground(struct trc_game_state *gamestate,
+                                     struct trc_canvas *canvas,
+                                     int topX,
+                                     int topY,
+                                     int rightX,
+                                     int rightY);
+
+/* ************************************************************************* */
+
+bool renderer_DrawGamestate(const struct trc_render_options *options,
                             struct trc_game_state *gamestate,
                             struct trc_canvas *canvas);
 
-bool renderer_DrawGamestate(const struct trc_render_options *renderOptions,
-                            struct trc_game_state *gamestate,
-                            struct trc_canvas *canvas);
-
-bool renderer_DrawOverlay(const struct trc_render_options *renderOptions,
+bool renderer_DrawOverlay(const struct trc_render_options *options,
                           struct trc_game_state *gamestate,
                           struct trc_canvas *canvas);
 
