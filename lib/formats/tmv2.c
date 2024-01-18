@@ -26,6 +26,8 @@
 struct trc_recording_tmv2 {
     struct trc_recording Base;
 
+    bool Compressed;
+
     uint32_t FirstPacketTimestamp;
     uint32_t PacketNumber;
     uint32_t PacketCount;
