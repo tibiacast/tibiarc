@@ -10,7 +10,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
 
 # Read L1 cache line size
-# FIXME: Windows alternative?
 execute_process(
   COMMAND getconf LEVEL1_DCACHE_LINESIZE
   OUTPUT_VARIABLE LEVEL1_DCACHE_LINESIZE
@@ -18,7 +17,7 @@ execute_process(
   RESULT_VARIABLE RET
 )
 if(RET AND NOT RET EQUAL 0)
-  set(LEVEL1_DCACHE_LINESIZE "64")
+  set(LEVEL1_DCACHE_LINESIZE "128")
 endif()
 
 add_compile_definitions("-D_REENTRANT" "-D_GNU_SOURCE")
