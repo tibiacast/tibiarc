@@ -1,4 +1,6 @@
-#include <emscripten.h>
+#ifdef EMSCRIPTEN
+#    include <emscripten.h>
+#endif
 #include <SDL2/SDL.h>
 
 #include "lib/canvas.h"
@@ -9,6 +11,7 @@
 #include "lib/versions.h"
 #include "memoryfile.h"
 
+// tibiarc stuff
 static struct memory_file file_trp;
 static struct trc_data_reader reader_trp;
 
@@ -34,43 +37,71 @@ static int viewTopY;
 static int viewRightX;
 static int viewBottomY;
 
+// SDL stuff
 static SDL_Window *sdl_window;
 static SDL_Renderer *sdl_renderer;
 static SDL_Texture *sdl_texture;
 
-static uint32_t playback_start;
+// Playback stuff
+static Uint32 playback_start;
+static bool playback_paused;
+static Uint32 playback_pause_tick;
 
+// Stats (fps) stuff
 static int stats_frames;
 static float stats_frames_avg;
 static uint32_t stats_last_print;
 
-void main_loop() {
-    uint32_t current_tick = SDL_GetTicks();
+const char *get_last_error() {
+    static char buffer[1024];
+    trc_GetLastError(1024, buffer);
+    return buffer;
+}
 
-    /* Read input */
+Uint32 get_playback_tick() {
+    if (playback_paused) {
+        return playback_pause_tick;
+    }
+    return SDL_GetTicks() - playback_start;
+}
+
+void handle_input() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
+        case SDL_MOUSEBUTTONUP:
+            if (!playback_paused) {
+                playback_pause_tick = get_playback_tick();
+                puts("Playback paused");
+            } else {
+                playback_start = (SDL_GetTicks() - playback_pause_tick);
+                puts("Playback resumed");
+            }
+            playback_paused = !playback_paused;
+            break;
         case SDL_QUIT:
             exit(0);
         default:
             break;
         }
     }
+}
 
-    /* Calculate elapsed playback time and process packets until we have caught
-     * up  */
-    uint32_t playback_elapsed = current_tick - playback_start;
-    while (recording->NextPacketTimestamp <= playback_elapsed) {
+void handle_logic() {
+    // Process packets until we have caught up
+    Uint32 playback_tick = get_playback_tick();
+    while (recording->NextPacketTimestamp <= playback_tick) {
         if (!recording_ProcessNextPacket(recording, gamestate)) {
-            fprintf(stderr, "Could not process packet\n");
+            fprintf(stderr, "Could not process packet: %s\n", get_last_error());
             abort();
         }
     }
 
-    /* Render to canvas */
-    gamestate->CurrentTick = playback_elapsed;
+    // Advance the game state
+    gamestate->CurrentTick = playback_tick;
+}
 
+void handle_render() {
     canvas_DrawRectangle(canvas_gamestate,
                          &(struct trc_pixel){},
                          0,
@@ -181,8 +212,10 @@ void main_loop() {
         abort();
     }
     SDL_RenderPresent(sdl_renderer);
+}
 
-    /* Stats */
+void handle_stats() {
+    Uint32 current_tick = SDL_GetTicks();
     stats_frames += 1;
     if (current_tick - stats_last_print >= 5000) {
         float fps = stats_frames / ((current_tick - stats_last_print) / 1000.0);
@@ -193,6 +226,36 @@ void main_loop() {
         stats_frames = 0;
         stats_last_print = current_tick;
     }
+}
+
+#ifndef EMSCRIPTEN
+void emscripten_set_main_loop(void (*main_loop)(),
+                              int fps,
+                              int simulate_infinite_loop) {
+    if (fps == 0) {
+        fps = 60;
+    }
+
+    Uint32 ms_per_iteration = 1000 / fps;
+    while (true) {
+        Uint32 start = SDL_GetTicks();
+        main_loop();
+        if (simulate_infinite_loop == 0) {
+            break;
+        }
+        Uint32 elapsed = SDL_GetTicks() - start;
+        if (elapsed < ms_per_iteration) {
+            SDL_Delay(ms_per_iteration - elapsed);
+        }
+    }
+}
+#endif
+
+void main_loop() {
+    handle_input();
+    handle_logic();
+    handle_render();
+    handle_stats();
 }
 
 bool open_memory_file(const char *filename,
@@ -208,20 +271,22 @@ bool open_memory_file(const char *filename,
 }
 
 int main(int argc, char *argv[]) {
+    trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
+
     /* Load files */
-    if (!open_memory_file("test.trp", &file_trp, &reader_trp)) {
+    if (!open_memory_file("files/test.trp", &file_trp, &reader_trp)) {
         return 1;
     }
 
-    if (!open_memory_file("Tibia.pic", &file_pic, &reader_pic)) {
+    if (!open_memory_file("files/Tibia.pic", &file_pic, &reader_pic)) {
         return 1;
     }
 
-    if (!open_memory_file("Tibia.spr", &file_spr, &reader_spr)) {
+    if (!open_memory_file("files/Tibia.spr", &file_spr, &reader_spr)) {
         return 1;
     }
 
-    if (!open_memory_file("Tibia.dat", &file_dat, &reader_dat)) {
+    if (!open_memory_file("files/Tibia.dat", &file_dat, &reader_dat)) {
         return 1;
     }
 
@@ -266,10 +331,10 @@ int main(int argc, char *argv[]) {
         int max_y = render_options.Height;
         float minScale = MIN(max_x / (float)NATIVE_RESOLUTION_X,
                              max_y / (float)NATIVE_RESOLUTION_Y);
-        viewLeftX = (max_x - (NATIVE_RESOLUTION_X * minScale)) / 2;
-        viewTopY = (max_y - (NATIVE_RESOLUTION_Y * minScale)) / 2;
-        viewRightX = viewLeftX + (NATIVE_RESOLUTION_X * minScale);
-        viewBottomY = viewTopY + (NATIVE_RESOLUTION_Y * minScale);
+        viewLeftX = (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
+        viewTopY = (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
+        viewRightX = viewLeftX + (int)(NATIVE_RESOLUTION_X * minScale);
+        viewBottomY = viewTopY + (int)(NATIVE_RESOLUTION_Y * minScale);
         canvas_Slice(canvas_output,
                      viewLeftX,
                      viewTopY,
@@ -318,6 +383,7 @@ int main(int argc, char *argv[]) {
 
     /* Start playback (assume only first packet has time = 0) */
     playback_start = SDL_GetTicks();
+    gamestate->CurrentTick = get_playback_tick();
     if (!recording_ProcessNextPacket(recording, gamestate)) {
         fprintf(stderr, "Could not process packet\n");
         return 1;
@@ -327,6 +393,8 @@ int main(int argc, char *argv[]) {
     stats_frames = 0;
     stats_frames_avg = 0.0f;
     stats_last_print = playback_start;
+
+    playback_paused = false;
 
     emscripten_set_main_loop(main_loop, 0, 1);
 
