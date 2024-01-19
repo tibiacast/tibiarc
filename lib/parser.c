@@ -627,8 +627,10 @@ static bool parser_ParseFullMapDescription(struct trc_data_reader *reader,
 
 static bool parser_ParseInitialization(struct trc_data_reader *reader,
                                        struct trc_game_state *gamestate) {
-    ParseAssert(datareader_ReadU32(reader, &gamestate->Player.Id));
+    /* Clear out all containers, messages, and so on in case we've relogged. */
+    gamestate_Reset(gamestate);
 
+    ParseAssert(datareader_ReadU32(reader, &gamestate->Player.Id));
     ParseAssert(datareader_ReadU16(reader, &gamestate->Player.BeatDuration));
 
     if ((gamestate->Version)->Protocol.SpeedAdjustment) {

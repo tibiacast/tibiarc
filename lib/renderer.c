@@ -2638,6 +2638,12 @@ bool renderer_DrawInventoryArea(const struct trc_render_options *options,
                                    canvas);
     }
 
+    if (!(gamestate->Version)->Features.IconBar) {
+        if (!renderer_DrawIconArea(options, gamestate, canvas, baseX, baseY)) {
+            return trc_ReportError("Failed to render the icon area");
+        }
+    }
+
     baseY += 124;
 
     pixel_SetRGB(&foregroundColor, 0xAF, 0xAF, 0xAF);
@@ -2698,12 +2704,6 @@ bool renderer_DrawInventoryArea(const struct trc_render_options *options,
                                     textLength,
                                     textBuffer,
                                     canvas);
-
-    if (!(gamestate->Version)->Features.IconBar) {
-        if (!renderer_DrawIconArea(options, gamestate, canvas, baseX, baseY)) {
-            return trc_ReportError("Failed to render the icon area");
-        }
-    }
 
     /* Update the render position */
     *offsetY = baseY + icons->SecondaryStatBackground.Height + 3;

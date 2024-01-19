@@ -67,6 +67,8 @@ void gamestate_AddTextMessage(struct trc_game_state *gamestate,
                               uint16_t messageLength,
                               const char *message);
 
+void gamestate_Reset(struct trc_game_state *gamestate);
+
 struct trc_game_state *gamestate_Create(const struct trc_version *version);
 void gamestate_Free(struct trc_game_state *gamestate);
 
