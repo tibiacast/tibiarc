@@ -58,7 +58,7 @@ void main_loop() {
         }
     }
 
-    /* Calculate elapsed playback time and process packets until we have catched
+    /* Calculate elapsed playback time and process packets until we have caught
      * up  */
     uint32_t playback_elapsed = current_tick - playback_start;
     while (recording->NextPacketTimestamp <= playback_elapsed) {
@@ -78,7 +78,12 @@ void main_loop() {
                          canvas_gamestate->Width,
                          canvas_gamestate->Height);
 
-    renderer_RenderClientBackground(gamestate, canvas_output, 0, 0, canvas_output->Width, canvas_output->Height);
+    renderer_RenderClientBackground(gamestate,
+                                    canvas_output,
+                                    0,
+                                    0,
+                                    canvas_output->Width,
+                                    canvas_output->Height);
 
     if (!renderer_DrawGamestate(&render_options, gamestate, canvas_gamestate)) {
         fprintf(stderr, "Could not render gamestate\n");
@@ -92,7 +97,9 @@ void main_loop() {
                         viewBottomY,
                         canvas_gamestate);
 
-    if (!renderer_DrawOverlay(&render_options, gamestate, &canvas_overlay_slice)) {
+    if (!renderer_DrawOverlay(&render_options,
+                              gamestate,
+                              &canvas_overlay_slice)) {
         fprintf(stderr, "Could not render overlay\n");
         abort();
     }
@@ -100,18 +107,30 @@ void main_loop() {
     int offsetX = canvas_output->Width - 160 + 12;
     int offsetY = 4;
 
-    if (!renderer_DrawStatusBars(&render_options, gamestate, canvas_output, &offsetX, &offsetY)) {
+    if (!renderer_DrawStatusBars(&render_options,
+                                 gamestate,
+                                 canvas_output,
+                                 &offsetX,
+                                 &offsetY)) {
         fprintf(stderr, "Could not render status bars\n");
         abort();
     }
 
-    if (!renderer_DrawInventoryArea(&render_options, gamestate, canvas_output, &offsetX, &offsetY)) {
+    if (!renderer_DrawInventoryArea(&render_options,
+                                    gamestate,
+                                    canvas_output,
+                                    &offsetX,
+                                    &offsetY)) {
         fprintf(stderr, "Could not render inventory\n");
         abort();
     }
 
     if (gamestate->Version->Features.IconBar) {
-        if (!renderer_DrawIconBar(&render_options, gamestate, canvas_output, &offsetX, &offsetY)) {
+        if (!renderer_DrawIconBar(&render_options,
+                                  gamestate,
+                                  canvas_output,
+                                  &offsetX,
+                                  &offsetY)) {
             fprintf(stderr, "Could not render icon bar\n");
             abort();
         }
@@ -120,8 +139,17 @@ void main_loop() {
     int max_container_y = canvas_output->Height - 4 - 32;
     for (struct trc_container *container_iterator = gamestate->ContainerList;
          container_iterator != NULL && offsetY < max_container_y;
-         container_iterator = (struct trc_container *)container_iterator->hh.next) {
-        if (!renderer_DrawContainer(&render_options, gamestate, canvas_output, container_iterator, false, canvas_output->Width, max_container_y, &offsetX, &offsetY)) {
+         container_iterator =
+                 (struct trc_container *)container_iterator->hh.next) {
+        if (!renderer_DrawContainer(&render_options,
+                                    gamestate,
+                                    canvas_output,
+                                    container_iterator,
+                                    false,
+                                    canvas_output->Width,
+                                    max_container_y,
+                                    &offsetX,
+                                    &offsetY)) {
             fprintf(stderr, "Could not render container\n");
             abort();
         }
@@ -232,8 +260,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     canvas_gamestate = canvas_Create(NATIVE_RESOLUTION_X, NATIVE_RESOLUTION_Y);
-    canvas_output =
-            canvas_Create(render_options.Width, render_options.Height);
+    canvas_output = canvas_Create(render_options.Width, render_options.Height);
     float minScale = MIN(canvas_output->Width / (float)NATIVE_RESOLUTION_X,
                          canvas_output->Height / (float)NATIVE_RESOLUTION_Y);
     viewLeftX = (canvas_output->Width - (NATIVE_RESOLUTION_X * minScale)) / 2;
