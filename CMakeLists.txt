@@ -123,6 +123,17 @@ if(DUMP_ITEMS)
   target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
 endif()
 
+# OpenMP support
+option(NO_OPENMP "Explicitly disable OpenMP support" OFF)
+if(NOT NO_OPENMP)
+  find_package(OpenMP QUIET)
+endif()
+if(OpenMP_C_FOUND)
+  target_include_directories(tibiarc PRIVATE ${OpenMP_C_INCLUDE_DIRS})
+  target_compile_options(tibiarc PRIVATE ${OpenMP_C_FLAGS})
+  target_link_libraries(tibiarc PRIVATE ${OpenMP_C_LIBRARIES})
+endif()
+
 # ########################################################################### #
 ## Recording converter
 # ########################################################################### #

@@ -626,8 +626,6 @@ static void canvas_CopyRect(struct trc_canvas *canvas,
     }
 }
 
-/* Naive bilinear rescaling intended only as a fallback for when the encode
- * backends don't provide anything better. */
 void canvas_RescaleClone(struct trc_canvas *canvas,
                          int leftX,
                          int topY,
@@ -658,6 +656,9 @@ void canvas_RescaleClone(struct trc_canvas *canvas,
         return;
     }
 
+#ifdef _OPENMP
+#    pragma omp parallel for
+#endif
     for (int toY = 0; toY < height; toY++) {
         const int fromY0 = MIN(toY / scaleFactorY, from->Height - 1);
         const int fromY1 = MIN(fromY0 + 1, from->Height - 1);
