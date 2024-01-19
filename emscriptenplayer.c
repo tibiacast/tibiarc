@@ -261,18 +261,22 @@ int main(int argc, char *argv[]) {
 
     canvas_gamestate = canvas_Create(NATIVE_RESOLUTION_X, NATIVE_RESOLUTION_Y);
     canvas_output = canvas_Create(render_options.Width, render_options.Height);
-    float minScale = MIN(canvas_output->Width / (float)NATIVE_RESOLUTION_X,
-                         canvas_output->Height / (float)NATIVE_RESOLUTION_Y);
-    viewLeftX = (canvas_output->Width - (NATIVE_RESOLUTION_X * minScale)) / 2;
-    viewTopY = (canvas_output->Height - (NATIVE_RESOLUTION_Y * minScale)) / 2;
-    viewRightX = viewLeftX + (NATIVE_RESOLUTION_X * minScale);
-    viewBottomY = viewTopY + (NATIVE_RESOLUTION_Y * minScale);
-    canvas_Slice(canvas_output,
-                 viewLeftX,
-                 viewTopY,
-                 viewRightX,
-                 viewBottomY,
-                 &canvas_overlay_slice);
+    {
+        int max_x = render_options.Width - 160;
+        int max_y = render_options.Height;
+        float minScale = MIN(max_x / (float)NATIVE_RESOLUTION_X,
+                             max_y / (float)NATIVE_RESOLUTION_Y);
+        viewLeftX = (max_x - (NATIVE_RESOLUTION_X * minScale)) / 2;
+        viewTopY = (max_y - (NATIVE_RESOLUTION_Y * minScale)) / 2;
+        viewRightX = viewLeftX + (NATIVE_RESOLUTION_X * minScale);
+        viewBottomY = viewTopY + (NATIVE_RESOLUTION_Y * minScale);
+        canvas_Slice(canvas_output,
+                     viewLeftX,
+                     viewTopY,
+                     viewRightX,
+                     viewBottomY,
+                     &canvas_overlay_slice);
+    }
 
     /* Init SDL */
     int ret = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
@@ -292,7 +296,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_SOFTWARE);
+    sdl_renderer = SDL_CreateRenderer(sdl_window,
+                                      -1,
+                                      SDL_RENDERER_ACCELERATED |
+                                              SDL_RENDERER_PRESENTVSYNC |
+                                              SDL_RENDERER_TARGETTEXTURE);
     if (!sdl_renderer) {
         fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
         return 1;
