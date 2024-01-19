@@ -579,10 +579,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-#ifdef DEBUG
-    (void)trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_ABORT);
-#else
+#ifdef NDEBUG
     (void)trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
+#else
+    (void)trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_ABORT);
 #endif
 
     if (!exporter_Export(&parsed.Settings,

@@ -29,7 +29,7 @@
 #    error "LEVEL1_DCACHE_LINESIZE must be #defined"
 #endif
 
-#ifdef DEBUG
+#ifndef NDEBUG
 /* Cache alignment can hide out-of-bounds reads, so we'll turn it off in debug
  * mode. */
 #    undef LEVEL1_DCACHE_LINESIZE

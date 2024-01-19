@@ -45,7 +45,7 @@
 
 #define ABORT_UNLESS(x) (!(x) ? abort() : (void)0)
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #    define ASSERT(x) ABORT_UNLESS(x)
 #else
 #    define ASSERT(x) ((void)0)

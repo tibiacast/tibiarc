@@ -1,5 +1,30 @@
-# note: this is the oldest version tested against, even older versions might work
+#
+# Copyright 2024 "Simon Sandström"
+# Copyright 2024 "John Högberg"
+#
+# This file is part of tibiarc.
+#
+# tibiarc is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option)
+# any later version.
+#
+# tibiarc is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with tibiarc. If not, see <https://www.gnu.org/licenses/>.
+#
+
+## Note that this is the oldest version tested against, even older versions
+## might work.
 cmake_minimum_required(VERSION 3.13)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 project(tibiarc
   VERSION 0.1
@@ -20,9 +45,10 @@ if(RET AND NOT RET EQUAL 0)
   set(LEVEL1_DCACHE_LINESIZE "128")
 endif()
 
-add_compile_definitions("_REENTRANT" "_GNU_SOURCE")
+# ########################################################################### #
+## `tibiarc` library
+# ########################################################################### #
 
-# tibiarc
 add_library(tibiarc
   "lib/canvas.c"
   "lib/canvas.h"
@@ -82,8 +108,25 @@ target_include_directories(tibiarc PUBLIC "lib")
 target_link_libraries(tibiarc PRIVATE m)
 target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACHE_LINESIZE}")
 
+# Options to help debug certain versioning issues, enable them with e.g.
+# `cmake -DDUMP_PIC=ON ...`
+option(DUMP_PIC "Dumps .pic files as bitmaps when loaded" OFF)
+if(DUMP_PIC)
+  target_compile_definitions(tibiarc PRIVATE DUMP_PIC)
+endif()
+option(DUMP_MESSAGE_TYPES "Writes messages and their types to stdout when received" OFF)
+if(DUMP_MESSAGE_TYPES)
+  target_compile_definitions(tibiarc PRIVATE DUMP_MESSAGE_TYPES)
+endif()
+option(DUMP_ITEMS "Dumps item sprites (with properties) as bitmaps when loaded" OFF)
+if(DUMP_ITEMS)
+  target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
+endif()
 
-# converter
+# ########################################################################### #
+## Recording converter
+# ########################################################################### #
+
 add_executable(converter
   "converter/converter.c"
   "converter/encoders/inert.c"
@@ -96,10 +139,12 @@ add_executable(converter
   "converter/memoryfile.c"
   "converter/memoryfile.h"
 )
+
 target_include_directories(converter PRIVATE "converter")
 target_link_libraries(converter PRIVATE tibiarc)
 
 # SDL2
+option(NO_SDL2 "Explicitly disable SDL2" OFF)
 if(NOT NO_SDL2)
   find_package(SDL2 QUIET)
   if (NOT SDL2_FOUND)
@@ -114,6 +159,7 @@ else()
 endif()
 
 # ffmpeg
+option(NO_LIBAV "Explicitly disable ffmpeg" OFF)
 if(NOT NO_LIBAV)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(LIBAV IMPORTED_TARGET
@@ -133,10 +179,16 @@ else()
   target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
 endif()
 
-# Enable IPO if supported
-include(CheckIPOSupported)
-check_ipo_supported(RESULT ipo_supported)
-if(ipo_supported)
-  set_target_properties(tibiarc converter PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
+# ########################################################################### #
+## Misc flags that must be set at the very end
+# ########################################################################### #
 
+# Enable IPO if supported
+option(NO_LTO "Explicitly disable link-time optimization" OFF)
+if(NOT NO_LTO)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT ipo_supported)
+  if(ipo_supported)
+    set_target_properties(tibiarc converter PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
+endif()
