@@ -135,7 +135,8 @@ static size_t canvas_Extract(const struct trc_canvas *canvas,
                 }
 
                 _Static_assert(sizeof(struct trc_pixel) == 4 &&
-                               _Alignof(struct trc_pixel) == 1);
+                                       _Alignof(struct trc_pixel) == 1,
+                               "Pixel struct must be byte-aligned");
                 if (buffer) {
                     *(struct trc_pixel *)&buffer[bufferIdx] = (*currentPixel);
                 }

@@ -64,7 +64,8 @@ static bool sprites_Validate(int width,
         }
 
         _Static_assert(sizeof(struct trc_pixel) == 4 &&
-                       _Alignof(struct trc_pixel) == 1);
+                               _Alignof(struct trc_pixel) == 1,
+                       "Pixel struct must be byte-aligned");
         required += opaque * 4;
         remaining -= opaque;
 
@@ -115,7 +116,8 @@ bool sprites_Read(int width,
             ABORT_UNLESS(datareader_ReadRaw(&reader, 3, colors));
 
             _Static_assert(sizeof(struct trc_pixel) == 4 &&
-                           _Alignof(struct trc_pixel) == 1);
+                                   _Alignof(struct trc_pixel) == 1,
+                           "Pixel struct must be byte-aligned");
             converted[0] = colors[0];
             converted[1] = colors[1];
             converted[2] = colors[2];
