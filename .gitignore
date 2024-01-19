@@ -1,5 +1,6 @@
 .vscode/
 items/
+build/
 *.bmp
 perf.data
 perf.data.old
