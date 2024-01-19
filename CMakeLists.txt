@@ -59,8 +59,6 @@ add_library(tibiarc
   "lib/creature.h"
   "lib/datareader.c"
   "lib/datareader.h"
-  "lib/deps/inflate.c"
-  "lib/deps/inflate.h"
   "lib/deps/uthash.h"
   "lib/effect.h"
   "lib/fonts.c"
@@ -132,6 +130,20 @@ if(OpenMP_C_FOUND)
   target_include_directories(tibiarc PRIVATE ${OpenMP_C_INCLUDE_DIRS})
   target_compile_options(tibiarc PRIVATE ${OpenMP_C_FLAGS})
   target_link_libraries(tibiarc PRIVATE ${OpenMP_C_LIBRARIES})
+endif()
+
+option(NO_ZLIB "Explicitly disable zlib support" OFF)
+if(NOT NO_ZLIB)
+  find_package(ZLIB QUIET)
+  if (NOT ZLIB_FOUND)
+    message(WARNING "zlib was not found, tibiarc will be built without zlib support")
+  endif()
+endif()
+if(ZLIB_FOUND)
+  target_include_directories(tibiarc PRIVATE ${ZLIB_INCLUDE_DIRS})
+  target_link_libraries(tibiarc PRIVATE ${ZLIB_LIBRARIES})
+else()
+  target_compile_definitions(tibiarc PRIVATE DISABLE_ZLIB)
 endif()
 
 # ########################################################################### #
