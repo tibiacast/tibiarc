@@ -40,9 +40,10 @@
 #define MAX_HEIGHT_DISPLACEMENT 24
 
 static void renderer_Convert8BitColor(uint8_t color, struct trc_pixel *result) {
-    result->Red = ((color / 36) * 51);
-    result->Green = (((color / 6) % 6) * 51);
-    result->Blue = ((color % 6) * 51);
+    pixel_SetRGB(result,
+                 ((color / 36) * 51),
+                 (((color / 6) % 6) * 51),
+                 ((color % 6) * 51));
 }
 
 static bool renderer_UpdateWalkOffset(struct trc_game_state *gamestate,
@@ -83,33 +84,19 @@ static bool renderer_GetCreatureInfoColor(int healthPercentage,
                                           int isObscured,
                                           struct trc_pixel *color) {
     if (isObscured) {
-        color->Red = 192;
-        color->Green = 192;
-        color->Blue = 192;
+        pixel_SetRGB(color, 192, 192, 192);
     } else if (healthPercentage < 4) {
-        color->Red = 96;
-        color->Green = 0;
-        color->Blue = 0;
+        pixel_SetRGB(color, 96, 0, 0);
     } else if (healthPercentage < 10) {
-        color->Red = 192;
-        color->Green = 0;
-        color->Blue = 0;
+        pixel_SetRGB(color, 192, 0, 0);
     } else if (healthPercentage < 30) {
-        color->Red = 192;
-        color->Green = 48;
-        color->Blue = 48;
+        pixel_SetRGB(color, 192, 48, 48);
     } else if (healthPercentage < 60) {
-        color->Red = 192;
-        color->Green = 192;
-        color->Blue = 0;
+        pixel_SetRGB(color, 192, 192, 0);
     } else if (healthPercentage < 95) {
-        color->Red = 96;
-        color->Green = 192;
-        color->Blue = 96;
+        pixel_SetRGB(color, 96, 192, 96);
     } else {
-        color->Red = 0;
-        color->Green = 192;
-        color->Blue = 0;
+        pixel_SetRGB(color, 0, 192, 0);
     }
 
     return true;
