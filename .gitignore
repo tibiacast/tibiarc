@@ -1,5 +1,6 @@
 .vscode/
 items/
+_analyze/
 build/
 *.bmp
 perf.data
