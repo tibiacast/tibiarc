@@ -334,6 +334,7 @@ void canvas_DrawCharacter(struct trc_canvas *canvas,
                     targetPixel->Green =
                             (tintKey->Green * fontColor->Green) >> 8;
                     targetPixel->Blue = (tintKey->Blue * fontColor->Blue) >> 8;
+                    targetPixel->Alpha = fontColor->Alpha;
 
                     targetIdx += sizeof(struct trc_pixel);
                     byteIdx += sizeof(struct trc_pixel);
