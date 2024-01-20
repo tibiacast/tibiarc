@@ -51,7 +51,7 @@ static Uint32 playback_pause_tick;
 
 // Stats (fps) stuff
 static int stats_frames;
-static float stats_frames_avg;
+static double stats_frames_avg;
 static uint32_t stats_last_print;
 
 const char *get_last_error() {
@@ -236,7 +236,7 @@ void handle_stats() {
     Uint32 current_tick = SDL_GetTicks();
     stats_frames += 1;
     if (current_tick - stats_last_print >= 5000) {
-        float fps = stats_frames / ((current_tick - stats_last_print) / 1000.0);
+        double fps = stats_frames / ((current_tick - stats_last_print) / 1000.0);
         stats_frames_avg += fps;
         stats_frames_avg /= 2.0;
         printf("FPS: %.2f Average FPS: %.2f\n", fps, stats_frames_avg);
@@ -251,7 +251,7 @@ void emscripten_set_main_loop(void (*main_loop)(),
                               int fps,
                               int simulate_infinite_loop) {
     if (fps == 0) {
-        fps = 60;
+        fps = 120;
     }
 
     Uint32 ms_per_iteration = 1000 / fps;
@@ -303,6 +303,9 @@ SDL_Texture *create_texture(int width, int height) {
 }
 
 int main(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
     trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
 
     // Load files
@@ -377,7 +380,7 @@ int main(int argc, char *argv[]) {
     sdl_renderer = SDL_CreateRenderer(sdl_window,
                                       -1,
                                       SDL_RENDERER_ACCELERATED |
-                                              SDL_RENDERER_PRESENTVSYNC |
+                                              /*SDL_RENDERER_PRESENTVSYNC |*/
                                               SDL_RENDERER_TARGETTEXTURE);
     if (!sdl_renderer) {
         fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
