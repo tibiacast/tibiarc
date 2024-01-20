@@ -3,12 +3,12 @@
 #endif
 #include <SDL2/SDL.h>
 
-#include "lib/canvas.h"
-#include "lib/datareader.h"
-#include "lib/gamestate.h"
-#include "lib/recordings.h"
-#include "lib/renderer.h"
-#include "lib/versions.h"
+#include "canvas.h"
+#include "datareader.h"
+#include "gamestate.h"
+#include "recordings.h"
+#include "renderer.h"
+#include "versions.h"
 #include "memoryfile.h"
 
 // tibiarc stuff

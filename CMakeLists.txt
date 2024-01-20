@@ -136,11 +136,12 @@ endif()
 
 # emscriptenplayer
 add_executable(emscriptenplayer
-  "emscriptenplayer.c"
+  "emscripten-player/emscriptenplayer.c"
   "converter/memoryfile.c"
   "converter/memoryfile.h"
 )
 target_include_directories(emscriptenplayer PRIVATE "converter")
+target_include_directories(emscriptenplayer PRIVATE tibiarc)
 target_link_libraries(emscriptenplayer PRIVATE tibiarc)
 
 if (EMSCRIPTEN)
