@@ -1958,6 +1958,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
     while (messagelist_Sweep(&gamestate->MessageList,
                              gamestate->CurrentTick,
                              &message)) {
+        enum TrcTextTransforms transformations = TEXTTRANSFORM_NONE;
         int lineMaxLength = 39;
 
         switch (message->Type) {
@@ -2026,6 +2027,12 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
             }
 
             drawnStatusMessage = 1;
+            break;
+        case MESSAGEMODE_YELL:
+            transformations |= TEXTTRANSFORM_UPPERCASE;
+            break;
+        case MESSAGEMODE_NPC_START:
+            transformations |= TEXTTRANSFORM_HIGHLIGHT;
             break;
         default:
             break;
@@ -2130,9 +2137,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
 
         textrenderer_Render(&fonts->GameFont,
                             TEXTALIGNMENT_CENTER,
-                            (message->Type == MESSAGEMODE_NPC_START
-                                     ? TEXTTRANSFORM_HIGHLIGHT
-                                     : TEXTTRANSFORM_NONE),
+                            transformations,
                             &foregroundColor,
                             centerX,
                             bottomY,
