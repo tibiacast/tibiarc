@@ -1800,12 +1800,10 @@ static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
     case MESSAGEMODE_CHANNEL_ORANGE:
     case MESSAGEMODE_CHANNEL_RED: {
         uint16_t channelId;
-
         ParseAssert(datareader_ReadU16(reader, &channelId));
-
-        /* FALLTHROUGH */
     }
-    default:
+        /* FALLTHROUGH */
+    case MESSAGEMODE_BROADCAST:
 #ifdef DUMP_MESSAGE_TYPES
     {
         uint16_t messageLength;
@@ -1821,6 +1819,9 @@ static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
 #else
         ParseAssert(datareader_SkipString(reader));
 #endif
+    break;
+    default:
+        ParseAssert(!"Unhandled message mode");
     }
 
     return true;

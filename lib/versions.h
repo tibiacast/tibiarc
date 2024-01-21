@@ -32,6 +32,11 @@
 #include "pictures.h"
 #include "types.h"
 
+struct trc_translation_table {
+    int Max;
+    int8_t Map[64];
+};
+
 struct trc_version {
     int Major;
     int Minor;
@@ -46,6 +51,10 @@ struct trc_version {
     struct trc_type_file Types;
     struct trc_icons Icons;
     struct trc_fonts Fonts;
+
+    struct trc_translation_table SpeakModes;
+    struct trc_translation_table MessageModes;
+    struct trc_translation_table TypeProperties;
 
     struct {
         bool AddObjectStackPosition : 1;

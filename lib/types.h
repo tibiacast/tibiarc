@@ -36,6 +36,7 @@ enum TrcTypeProperty {
     TYPEPROPERTY_BOTTOM,
     TYPEPROPERTY_CLIP,
     TYPEPROPERTY_CONTAINER,
+    TYPEPROPERTY_CORPSE,
     TYPEPROPERTY_DEFAULT_ACTION,
     TYPEPROPERTY_DISPLACEMENT_LEGACY,
     TYPEPROPERTY_DISPLACEMENT,
@@ -62,6 +63,7 @@ enum TrcTypeProperty {
     TYPEPROPERTY_TOP_EFFECT,
     TYPEPROPERTY_TOP,
     TYPEPROPERTY_TRANSLUCENT,
+    TYPEPROPERTY_UNKNOWN_U16,
     TYPEPROPERTY_UNLOOKABLE,
     TYPEPROPERTY_UNMOVABLE,
     TYPEPROPERTY_UNPATHABLE,
@@ -73,7 +75,6 @@ enum TrcTypeProperty {
     TYPEPROPERTY_WRITE_ONCE,
     TYPEPROPERTY_WRITE,
 
-    TYPEPROPERTY_INERT,
     TYPEPROPERTY_ENTRY_END_MARKER
 };
 
@@ -140,18 +141,20 @@ struct trc_entitytype {
         /* To reduce memory usage, we only store these properties when
          * needed. */
 #ifdef DUMP_ITEMS
-        bool LookThrough : 1;
-        bool NoMoveAnimation : 1;
-        bool Translucent : 1;
         bool Blocking : 1;
         bool Container : 1;
+        bool Corpse : 1;
         bool EquipmentSlotRestricted : 1;
         bool ForceUse : 1;
+        bool LookThrough : 1;
         bool MarketItem : 1;
         bool MultiUse : 1;
+        bool NoMoveAnimation : 1;
         bool Rotate : 1;
         bool Takeable : 1;
         bool TopEffect : 1;
+        bool Translucent : 1;
+        bool UnknownU16 : 1;
         bool Unmovable : 1;
         bool Unpathable : 1;
         bool Unwrappable : 1;

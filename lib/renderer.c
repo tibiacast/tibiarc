@@ -1913,6 +1913,7 @@ static int renderer_MessageColor(enum TrcMessageMode mode) {
         return 30;
     case MESSAGEMODE_FAILURE:
     case MESSAGEMODE_STATUS:
+    case MESSAGEMODE_LOGIN:
         /* White, bottom-center screen */
         return 215;
     default:
@@ -2107,6 +2108,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 break;
             case MESSAGEMODE_FAILURE:
             case MESSAGEMODE_STATUS:
+            case MESSAGEMODE_LOGIN:
                 /* Bottom-center screen */
                 centerX = MIN(MAX(2, (scaleX * 32) * 15 / 2),
                               (NATIVE_RESOLUTION_X * scaleX));
