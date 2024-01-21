@@ -23,8 +23,6 @@
 
 #include <stdbool.h>
 
-#include "deps/inflate.h"
-
 #include "datareader.h"
 #include "gamestate.h"
 

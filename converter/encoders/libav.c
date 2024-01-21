@@ -246,7 +246,7 @@ static bool libav_Open(struct trc_encoder_libav *encoder,
         return libav_Error(result);
     }
 
-#    ifdef DEBUG
+#    ifndef NDEBUG
     av_dump_format(encoder->Format, 0, path, 1);
 #    endif
 

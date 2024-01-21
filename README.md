@@ -1,7 +1,7 @@
 # tibiarc
 
-`tibiarc` is a tool that can be used to convert Tibia packet captures to video
-files without requiring a Tibia client, making it suitable for unattended
+`tibiarc` is a library that can be used to convert Tibia packet captures to
+video files without requiring a Tibia client, making it suitable for unattended
 conversions. Its core was once part of Tibiacast but it has been broken out
 and released as open source to aid the preservation of old Tibia recordings.
 
@@ -41,50 +41,37 @@ First, make sure that you have all dependencies:
 
 * `binutils`
 * `clang` or `gcc`
+* `cmake`
 * `libavcodec`
 * `libavformat`
-* `libswscale`
-* `libsdl2`
 * `libavutil`
+* `libsdl2`
+* `libswscale`
 * `make`
 * `pkg-config`
+* `zlib`
 
 The following should install everything on Debian and derived distros like
 Ubuntu:
 
 ```
-$ sudo apt install binutils clang libavcodec-dev libavformat-dev libswscale-dev libavutil-dev make pkg-config
+$ sudo apt install binutils clang cmake libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev libswscale-dev make pkg-config zlib1g-dev
 ```
 
-Then jump into the project folder and run `make`, if all goes well, it'll
-create the `tibiarc` binary in that folder.
-
-### Cross-compilation to Windows
-
-First, build the MXE cross-compilation environment if you haven't already, and
-set up the required packages:
+Then jump into the project folder and run the following commands, if all goes
+well, it'll create the `libtibiarc.a` library and demo `converter` program in
+that folder.
 
 ```
-$ git clone https://github.com/mxe/mxe.git
-$ cd mxe
-$ make -j8 x264 x265 ffmpeg sdl2 MXE_TARGETS='x86_64-w64-mingw32.static'
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
 ```
-
-Then build `tibiarc` with the MXE toolchain:
-
-```
-$ export PATH=$MXE_DIRECTORY/usr/bin:$PATH
-$ make CC=gcc CROSS=x86_64-w64-mingw32.static- # Note dash at the end!
-```
-
-Assuming this worked, you should now have a `tibiarc.exe` in the main folder
-with all dependencies statically linked. The command line interface is a bit
-broken however, due to the `argp` library being missing in `MXE`. I'll fix that
-when I find the time.
 
 ## Usage
 
-    ./tibiarc [options] data_folder input_file output_file
+    ./converter [options] data_folder input_file output_file
 
 Where `data_folder` points at folder with appropriate data files (`Tibia.dat`,
 `Tibia.spr`, `Tibia.pic`) for the recording (`input_file`) and `output_file` is
@@ -105,24 +92,24 @@ mind the `key1=value1:key2=value2` convention), except video filters aren't
 supported yet. This can be used to set up things like the screenshot mode
 detailed below, network streaming, custom encoding profiles, et cetera.
 
-For a full list of options, run `./tibiarc --help`.
+For a full list of options, run `./converter --help`.
 
 ### Screenshots
 
 The converter can also be used to generate screenshots and thumbnails at a
 given point in time by using the `image2` output format in `update` mode:
 
-    ./tibiarc --input-format tmv2 \
-              --output-format image2 \
-              --output-encoding bmp \
-              --output-flags "update=1" \
-              --resolution 1440x1056 \
-              --start-time 1234 \
-              --end-time 1234 \
-              --frame-rate 1 \
-              data/folder \
-              tests/8.40/sample.tmv2 \
-              converted/sample_1234.bmp
+    ./converter --input-format tmv2 \
+                --output-format image2 \
+                --output-encoding bmp \
+                --output-flags "update=1" \
+                --resolution 1440x1056 \
+                --start-time 1234 \
+                --end-time 1234 \
+                --frame-rate 1 \
+                data/folder \
+                tests/8.40/sample.tmv2 \
+                converted/sample_1234.bmp
 
 Combining this with the `--frame-skip N` option which limits encoding to one in
 every `N` frames, we can generate a series of "preview" images for a recording,
@@ -131,38 +118,38 @@ using `image2`s sequence feature.
 For example, the following generates a series of one image every three seconds
 of the given recording:
 
-    ./tibiarc --input-format tmv2 \
-              --output-format image2 \
-              --output-encoding bmp \
-              --resolution 480x352 \
-              --frame-rate 1 \
-              --frame-skip 3 \
-              data/folder \
-              tests/8.40/sample.tmv2 \
-              converted/sample_previews_%03d.bmp
+    ./converter --input-format tmv2 \
+                --output-format image2 \
+                --output-encoding bmp \
+                --resolution 480x352 \
+                --frame-rate 1 \
+                --frame-skip 3 \
+                data/folder \
+                tests/8.40/sample.tmv2 \
+                converted/sample_previews_%03d.bmp
 
 Furthermore, by tweaking the render options we can remove effects (like text)
 that cause clutter and look awful when scaled down to the size of a thumbnail:
 
-    ./tibiarc --input-format tmv2 \
-              --output-format image2 \
-              --output-encoding bmp \
-              --output-flags "update=1" \
-              --resolution 128x96 \
-              --start-time 1234 \
-              --end-time 1234 \
-              --frame-rate 1 \
-              --skip-rendering-inventory \
-              --skip-rendering-icon-bar \
-              --skip-rendering-status-bars \
-              --skip-rendering-messages \
-              --skip-rendering-player-names \
-              --skip-rendering-creature-health-bars \
-              --skip-rendering-creature-names \
-              --skip-rendering-creature-icons \
-              data/folder \
-              tests/8.40/sample.tmv2 \
-              converted/sample_thumbnail.bmp
+    ./converter --input-format tmv2 \
+                --output-format image2 \
+                --output-encoding bmp \
+                --output-flags "update=1" \
+                --resolution 128x96 \
+                --start-time 1234 \
+                --end-time 1234 \
+                --frame-rate 1 \
+                --skip-rendering-inventory \
+                --skip-rendering-icon-bar \
+                --skip-rendering-status-bars \
+                --skip-rendering-messages \
+                --skip-rendering-player-names \
+                --skip-rendering-creature-health-bars \
+                --skip-rendering-creature-names \
+                --skip-rendering-creature-icons \
+                data/folder \
+                tests/8.40/sample.tmv2 \
+                converted/sample_thumbnail.bmp
 
 I've used `bmp` in these examples but largely any format supported by your
 `ffmpeg` install will work (`.jpg` and `.webp` are often included).
@@ -173,10 +160,10 @@ The `sdl2` output can be used to output the video to the screen instead of a
 file. It's not very useful as a video player but it does give quicker
 turnaround time for troubleshooting render bugs.
 
-    ./tibiarc --output-backend sdl2 \
-              --resolution 1440x1056 \
-              data/folder \
-              tests/8.40/sample.tmv2
+    ./converter --output-backend sdl2 \
+                --resolution 1440x1056 \
+                data/folder \
+                tests/8.40/sample.tmv2
 
 ### Unsupported formats
 

@@ -145,7 +145,7 @@ void textrenderer_Render(const struct trc_font *font,
         fontColor = &DefaultFontColor;
     }
 
-#ifdef DEBUG
+#ifndef NDEBUG
     switch (transform & ~TEXTTRANSFORM_HIGHLIGHT) {
     case TEXTTRANSFORM_PROPERCASE:
     case TEXTTRANSFORM_LOWERCASE:

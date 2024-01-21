@@ -21,6 +21,10 @@
 #include "recordings.h"
 #include "versions.h"
 
+#ifndef DISABLE_ZLIB
+#    include <zlib.h>
+#endif
+
 #include "utils.h"
 
 struct trc_recording_tmv2 {
@@ -190,23 +194,32 @@ static bool tmv2_Open(struct trc_recording_tmv2 *recording,
     }
 
     if (recording->Compressed) {
+#ifdef DISABLE_ZLIB
+        return trc_ReportError("Failed to decompress, zlib library missing");
+#else
+        uLongf actualSize;
+        int result;
+
         /* Will be deallocated in tmv2_Free when set. */
         recording->Uncompressed = checked_allocate(1, decompressedSize);
 
-        decompressedSize =
-                tinfl_decompress_mem_to_mem(recording->Uncompressed,
-                                            decompressedSize,
-                                            datareader_RawData(&reader),
-                                            datareader_Remaining(&reader),
-                                            0);
+        result = uncompress((Bytef *)recording->Uncompressed,
+                            &actualSize,
+                            datareader_RawData(&reader),
+                            datareader_Remaining(&reader));
 
-        if (decompressedSize == TINFL_DECOMPRESS_MEM_TO_MEM_FAILED) {
+        if (result != Z_OK) {
             return trc_ReportError("Could not decompress recording");
+        }
+
+        if (actualSize != decompressedSize) {
+            return trc_ReportError("Decompressed size was corrupt");
         }
 
         recording->Reader.Data = recording->Uncompressed;
         recording->Reader.Length = decompressedSize;
         recording->Reader.Position = 0;
+#endif
     } else {
         recording->Reader = reader;
     }
