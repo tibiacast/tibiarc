@@ -1485,7 +1485,6 @@ static void renderer_DrawNumericalEffects(
     effectShuntX = 0;
     effectShuntY = 0;
 
-    ASSERT((gamestate->Version)->Protocol.MessageEffects);
     effectIdx = currentTile->NumericalIndex;
     do {
         struct trc_numerical_effect *effect;
@@ -1527,64 +1526,6 @@ static void renderer_DrawNumericalEffects(
                                             canvas);
         }
     } while (effectIdx != currentTile->NumericalIndex);
-}
-
-static void renderer_DrawTextEffects(const struct trc_render_options *options,
-                                     struct trc_game_state *gamestate,
-                                     struct trc_canvas *canvas,
-                                     int viewOffsetX,
-                                     int viewOffsetY,
-                                     float scaleX,
-                                     float scaleY,
-                                     struct trc_position *tilePosition,
-                                     struct trc_tile *currentTile) {
-    const struct trc_fonts *fonts = &(gamestate->Version)->Fonts;
-
-    struct trc_pixel foregroundColor;
-    unsigned effectShuntX, effectShuntY;
-    unsigned effectIdx;
-
-    pixel_SetRGB(&foregroundColor, 0, 0, 0);
-
-    effectShuntX = 0;
-    effectShuntY = 0;
-
-    ASSERT(!(gamestate->Version)->Protocol.MessageEffects);
-    effectIdx = currentTile->TextIndex;
-    do {
-        struct trc_text_effect *effect;
-
-        effectIdx = ((unsigned)(effectIdx)-1) % MAX_EFFECTS_PER_TILE;
-        effect = &currentTile->TextEffects[effectIdx];
-
-        if ((effect->StartTick + 750) < gamestate->CurrentTick) {
-            break;
-        } else if (effect->Length > 0) {
-            int textCenterX, textCenterY;
-
-            renderer_Convert8BitColor(effect->Color, &foregroundColor);
-
-            textCenterX = ((tilePosition->X * 32 + viewOffsetX - 16) * scaleX) +
-                          2 + effectShuntX;
-            textCenterY = ((tilePosition->Y * 32 + viewOffsetY - 32) * scaleY) +
-                          2 - effectShuntY;
-            textCenterY -=
-                    (((gamestate->CurrentTick - effect->StartTick) / 750.0f) *
-                     32.0f);
-
-            /* Yes, they actually do get shunted this far. */
-            effectShuntX += 2 + (int)(scaleX * 9.0f);
-            effectShuntY += 0;
-
-            textrenderer_DrawCenteredString(&fonts->GameFont,
-                                            &foregroundColor,
-                                            textCenterX,
-                                            textCenterY,
-                                            effect->Length,
-                                            effect->Message,
-                                            canvas);
-        }
-    } while (effectIdx != currentTile->TextIndex);
 }
 
 static bool renderer_DrawCreatureOverlay(
@@ -1925,31 +1866,15 @@ static bool renderer_DrawMapOverlay(const struct trc_render_options *options,
             }
 
             if (!options->SkipRenderingNumericalEffects) {
-                if ((gamestate->Version)->Protocol.MessageEffects) {
-                    renderer_DrawNumericalEffects(options,
-                                                  gamestate,
-                                                  canvas,
-                                                  viewOffsetX,
-                                                  viewOffsetY,
-                                                  scaleX,
-                                                  scaleY,
-                                                  &tilePosition,
-                                                  currentTile);
-                } else {
-                    /* Old versions use only text effects for damage
-                     * notifications and similar, so we can file them under
-                     * the numerical effects render flag. Newer versions
-                     * lack text effects altogether. */
-                    renderer_DrawTextEffects(options,
-                                             gamestate,
-                                             canvas,
-                                             viewOffsetX,
-                                             viewOffsetY,
-                                             scaleX,
-                                             scaleY,
-                                             &tilePosition,
-                                             currentTile);
-                }
+                renderer_DrawNumericalEffects(options,
+                                              gamestate,
+                                              canvas,
+                                              viewOffsetX,
+                                              viewOffsetY,
+                                              scaleX,
+                                              scaleY,
+                                              &tilePosition,
+                                              currentTile);
             }
         }
     }

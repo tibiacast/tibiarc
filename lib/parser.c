@@ -24,6 +24,7 @@
 #include "types.h"
 #include "versions.h"
 
+#include <stdio.h>
 #include <math.h>
 
 #include "utils.h"
@@ -1056,6 +1057,7 @@ static bool parser_ParseTextEffect(struct trc_data_reader *reader,
 
     uint16_t messageLength;
     char message[16];
+    uint32_t value;
 
     /* Text effects were replaced by message effects, so we've misparsed a
      * previous packet if we land here on a version that uses the latter. */
@@ -1072,12 +1074,9 @@ static bool parser_ParseTextEffect(struct trc_data_reader *reader,
                                       sizeof(message),
                                       &messageLength,
                                       message));
+    ParseAssert(sscanf(message, "%u", &value) == 1);
 
-    tile_AddTextEffect(tile,
-                       color,
-                       messageLength,
-                       message,
-                       gamestate->CurrentTick);
+    tile_AddNumericalEffect(tile, color, value, gamestate->CurrentTick);
 
     return true;
 }

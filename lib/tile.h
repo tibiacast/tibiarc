@@ -36,18 +36,9 @@ struct trc_tile {
     uint8_t ObjectCount;
     uint8_t GraphicalIndex;
 
-    /* Text and numerical effects are mutually exclusive, the latter replacing
-     * the former. */
-    union {
-        struct {
-            uint8_t TextIndex;
-            struct trc_text_effect TextEffects[MAX_EFFECTS_PER_TILE];
-        };
-
-        struct {
-            uint8_t NumericalIndex;
-            struct trc_numerical_effect NumericalEffects[MAX_EFFECTS_PER_TILE];
-        };
+    struct {
+        uint8_t NumericalIndex;
+        struct trc_numerical_effect NumericalEffects[MAX_EFFECTS_PER_TILE];
     };
 
     struct trc_graphical_effect GraphicalEffects[MAX_EFFECTS_PER_TILE];
@@ -58,20 +49,10 @@ void tile_AddGraphicalEffect(struct trc_tile *tile,
                              uint8_t effectId,
                              uint32_t currentTick);
 
-/* WARNING: Numerical effects replaced text effects, and their use must not be
- * mixed in the same game state. */
 void tile_AddNumericalEffect(struct trc_tile *tile,
                              uint8_t color,
                              uint32_t value,
                              uint32_t currentTick);
-
-/* WARNING: Numerical effects replaced text effects, and their use must not be
- * mixed in the same game state. */
-void tile_AddTextEffect(struct trc_tile *tile,
-                        uint8_t color,
-                        uint16_t length,
-                        const char *message,
-                        uint32_t currentTick);
 
 bool tile_InsertObject(const struct trc_version *version,
                        struct trc_tile *tile,
