@@ -63,7 +63,7 @@ bool containerlist_GetContainer(struct trc_container **containerList,
     HASH_FIND_INT((*containerList), &id, container);
     (*result) = container;
 
-    return container == NULL;
+    return container != NULL;
 }
 
 void containerlist_Free(struct trc_container **containerList) {
