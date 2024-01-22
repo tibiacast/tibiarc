@@ -725,8 +725,6 @@ void canvas_Wipe(struct trc_canvas *canvas) {
 
 void canvas_Dump(const char *path, const struct trc_canvas *canvas) {
     const int FILE_HEADER_SIZE = 10, INFO_HEADER_SIZE = 40;
-
-    struct trc_pixel *pixels = (struct trc_pixel *)canvas->Buffer;
     uint32_t u32;
     uint16_t u16;
 
@@ -768,7 +766,7 @@ void canvas_Dump(const char *path, const struct trc_canvas *canvas) {
 
     for (int y = (canvas->Height - 1); y >= 0; y--) {
         for (int x = 0; x < canvas->Width; x++) {
-            struct trc_pixel *pixel = &pixels[x + y * canvas->Stride];
+            const struct trc_pixel *pixel = canvas_GetPixel(canvas, x, y);
             fwrite(&pixel->Blue, 1, 1, bmp);
             fwrite(&pixel->Green, 1, 1, bmp);
             fwrite(&pixel->Red, 1, 1, bmp);

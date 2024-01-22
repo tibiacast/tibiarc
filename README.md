@@ -69,6 +69,32 @@ $ cmake ..
 $ make
 ```
 
+### Cross-compilation to Windows
+
+First, build the MXE cross-compilation environment if you haven't already, and
+set up the required packages:
+
+```
+$ git clone https://github.com/mxe/mxe.git
+$ cd mxe
+$ make -j8 x264 x265 ffmpeg sdl2 zlib MXE_TARGETS='x86_64-w64-mingw32.static'
+```
+
+Then build `tibiarc` with the MXE toolchain:
+
+```
+$ export PATH=$MXE_DIRECTORY/usr/bin:$PATH
+$ mkdir build
+$ cd build
+$ x86_64-w64-mingw32.static-cmake -DTIBIARC_CROSSCOMPILING=On ..
+$ make
+```
+
+Assuming this worked, you should now have a `tibiarc.exe` in the build folder
+with all dependencies statically linked. The command line interface is a bit
+broken however, due to the `argp` library being missing in `MXE`. I'll fix that
+when I find the time.
+
 ## Usage
 
     ./converter [options] data_folder input_file output_file

@@ -24,6 +24,7 @@
 #include "types.h"
 #include "versions.h"
 
+#include <stdio.h>
 #include <math.h>
 
 #include "utils.h"
@@ -1056,6 +1057,7 @@ static bool parser_ParseTextEffect(struct trc_data_reader *reader,
 
     uint16_t messageLength;
     char message[16];
+    uint32_t value;
 
     /* Text effects were replaced by message effects, so we've misparsed a
      * previous packet if we land here on a version that uses the latter. */
@@ -1072,12 +1074,9 @@ static bool parser_ParseTextEffect(struct trc_data_reader *reader,
                                       sizeof(message),
                                       &messageLength,
                                       message));
+    ParseAssert(sscanf(message, "%u", &value) == 1);
 
-    tile_AddTextEffect(tile,
-                       color,
-                       messageLength,
-                       message,
-                       gamestate->CurrentTick);
+    tile_AddNumericalEffect(tile, color, value, gamestate->CurrentTick);
 
     return true;
 }
@@ -1607,6 +1606,86 @@ static bool parser_ParsePlayerTactics(struct trc_data_reader *reader,
     return true;
 }
 
+#ifndef NDEBUG
+static bool parser_ValidateTextMessage(enum TrcMessageMode messageMode,
+                                       uint16_t authorLength,
+                                       const char *author,
+                                       uint16_t messageLength,
+                                       const char *message) {
+    if (authorLength > 0 && author[0] == 'a') {
+        /* Names that start with a lowercase "a" or "an" are in all likelyhood
+         * a monster, though there are exceptions like the ghostly knight in
+         * PoI levers. */
+        ParseAssert(messageMode == MESSAGEMODE_MONSTER_SAY ||
+                    messageMode == MESSAGEMODE_MONSTER_YELL ||
+                    (messageMode == MESSAGEMODE_SAY &&
+                     (!strcmp(author, "a ghostly knight") ||
+                      !strcmp(message, "Hicks!"))));
+        return true;
+    }
+
+    switch (messageMode) {
+    case MESSAGEMODE_MONSTER_SAY:
+    case MESSAGEMODE_MONSTER_YELL:
+        /* We cannot differentiate between a boss (e.g. "Vashresamun") and
+         * a player based on their name alone, and some quests use this without
+         * an author for effect, e.g. deeper cultist cave on Vandura ("You
+         * already know the second verse of the hymn"), so we can't validate
+         * these further. */
+        break;
+    case MESSAGEMODE_BROADCAST:
+    case MESSAGEMODE_CHANNEL_ORANGE:
+    case MESSAGEMODE_CHANNEL_RED:
+    case MESSAGEMODE_CHANNEL_WHITE:
+    case MESSAGEMODE_CHANNEL_YELLOW:
+    case MESSAGEMODE_GM_TO_PLAYER:
+    case MESSAGEMODE_PLAYER_TO_GM:
+    case MESSAGEMODE_PLAYER_TO_NPC:
+    case MESSAGEMODE_PRIVATE_IN:
+    case MESSAGEMODE_PRIVATE_OUT:
+    case MESSAGEMODE_SAY:
+    case MESSAGEMODE_WHISPER:
+    case MESSAGEMODE_YELL:
+        /* These can contain anything, we don't really have a shot at
+         * validating them other than saying that they should have an author
+         * name. */
+        return authorLength > 0;
+    default:
+        /* Certain texts only happen with certain modes, so we can use them to
+         * check whether our versioned message mode mapping is correct. */
+        static const struct {
+            enum TrcMessageMode Mode;
+            const char *Prefix;
+        } Prefixes[] = {{MESSAGEMODE_FAILURE, "Message sent to"},
+                        {MESSAGEMODE_FAILURE, "Sorry, not possible"},
+                        {MESSAGEMODE_FAILURE, "Target lost"},
+                        {MESSAGEMODE_GAME, "You advanced "},
+                        {MESSAGEMODE_LOGIN, "Your last visit in Tibia:"},
+                        {MESSAGEMODE_LOOK, "You have left the party"},
+                        {MESSAGEMODE_LOOK, "You see a"},
+                        {MESSAGEMODE_LOOK, "Your party has been disbanded"},
+                        {MESSAGEMODE_LOOT, "Loot of "},
+                        {MESSAGEMODE_STATUS, "You are poisoned"},
+                        {MESSAGEMODE_STATUS, "Your depot contains"},
+                        {MESSAGEMODE_WARNING, "Server is saving game in "},
+                        {MESSAGEMODE_WARNING, "Warning! The murder of "},
+                        {0, NULL}},
+          *scanner = Prefixes;
+
+        while (scanner->Prefix != NULL) {
+            if (!strncmp(scanner->Prefix, message, strlen(scanner->Prefix))) {
+                return scanner->Mode == messageMode;
+            }
+
+            scanner++;
+        }
+        break;
+    }
+
+    return true;
+}
+#endif
+
 static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
                                       struct trc_game_state *gamestate) {
     uint16_t authorNameLength;
@@ -1655,6 +1734,14 @@ static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
                                           sizeof(message),
                                           &messageLength,
                                           message));
+
+#ifndef NDEBUG
+        ParseAssert(parser_ValidateTextMessage(messageMode,
+                                               authorNameLength,
+                                               authorName,
+                                               messageLength,
+                                               message));
+#endif
 
 #ifdef DUMP_MESSAGE_TYPES
         fprintf(stdout, "SP %i %s: %s\n", speakType, authorName, message);
@@ -1713,12 +1800,10 @@ static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
     case MESSAGEMODE_CHANNEL_ORANGE:
     case MESSAGEMODE_CHANNEL_RED: {
         uint16_t channelId;
-
         ParseAssert(datareader_ReadU16(reader, &channelId));
-
-        /* FALLTHROUGH */
     }
-    default:
+        /* FALLTHROUGH */
+    case MESSAGEMODE_BROADCAST:
 #ifdef DUMP_MESSAGE_TYPES
     {
         uint16_t messageLength;
@@ -1734,6 +1819,9 @@ static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
 #else
         ParseAssert(datareader_SkipString(reader));
 #endif
+    break;
+    default:
+        ParseAssert(!"Unhandled message mode");
     }
 
     return true;
@@ -1891,7 +1979,7 @@ static bool parser_ParseTextMessage(struct trc_data_reader *reader,
             ParseAssert(datareader_ReadU16(reader, &channelId));
             break;
         }
-
+        /* FALLTHROUGH */
     case MESSAGEMODE_GUILD:
         if ((gamestate->Version)->Protocol.GuildChannelId) {
             uint16_t channelId;
@@ -1914,6 +2002,19 @@ static bool parser_ParseTextMessage(struct trc_data_reader *reader,
                                           sizeof(message),
                                           &messageLength,
                                           message));
+
+#ifndef NDEBUG
+        ParseAssert(parser_ValidateTextMessage(messageMode,
+                                               0,
+                                               NULL,
+                                               messageLength,
+                                               message));
+#endif
+
+#ifdef DUMP_MESSAGE_TYPES
+        fprintf(stdout, "TM %i: %s\n", speakType, message);
+#endif
+
         gamestate_AddTextMessage(gamestate,
                                  NULL,
                                  messageMode,
@@ -1921,10 +2022,6 @@ static bool parser_ParseTextMessage(struct trc_data_reader *reader,
                                  NULL,
                                  messageLength,
                                  message);
-
-#ifdef DUMP_MESSAGE_TYPES
-        fprintf(stdout, "TM %i: %s\n", speakType, message);
-#endif
 
         return true;
     }

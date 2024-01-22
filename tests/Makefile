@@ -32,7 +32,7 @@ clean:
 
 # Simplifies running tests under tools like perf, rr, valgrind, et al.
 # `make TEST_PREFIX=valgrind all`
-TRC_TEST := $(TEST_PREFIX) ../tibiarc
+TRC_TEST := $(TEST_PREFIX) ../converter
 
 # ########################################################################### #
 
