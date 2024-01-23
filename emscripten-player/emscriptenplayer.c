@@ -11,10 +11,14 @@
 #include "versions.h"
 #include "memoryfile.h"
 
-#define WINDOW_STARTUP_WIDTH (NATIVE_RESOLUTION_X + 160)
-#define WINDOW_STARTUP_HEIGHT NATIVE_RESOLUTION_Y
+#if 1
+#    define WINDOW_STARTUP_WIDTH 1280
+#    define WINDOW_STARTUP_HEIGHT 720
+#else
+#    define WINDOW_STARTUP_WIDTH (NATIVE_RESOLUTION_X + 160)
+#    define WINDOW_STARTUP_HEIGHT NATIVE_RESOLUTION_Y
+#endif
 
-// Playback related stuff
 static struct playback {
     struct memory_file file;
     struct trc_data_reader reader;
@@ -27,26 +31,27 @@ static struct playback {
     Uint32 playback_pause_tick;
 } playback;
 
-// Rendering related stuff
 static struct rendering {
     SDL_Window *sdl_window;
     SDL_Renderer *sdl_renderer;
 
     struct trc_render_options render_options;
 
+    // This texture is the same size as the window
+    // It is static, so we render it only once (during startup or window resize)
     SDL_Texture *sdl_texture_background;
 
+    // This canvas and texture are always NATIVE_RESOLUTION
     struct trc_canvas canvas_gamestate;
     SDL_Texture *sdl_texture_gamestate;
 
+    // This canvas and texture are always the same size as the window
     struct trc_canvas canvas_output;
     SDL_Texture *sdl_texture_output;
 
-    struct trc_canvas canvas_overlay_slice;
-    int viewLeftX;
-    int viewTopY;
-    int viewRightX;
-    int viewBottomY;
+    // This rectangle represents where the gamestate texture
+    // should be rendered on the output texture, including scaling
+    SDL_Rect overlay_slice_rect;
 } rendering;
 
 // Stats (fps) stuff
@@ -76,7 +81,8 @@ void handle_input() {
                 playback.playback_pause_tick = get_playback_tick();
                 puts("Playback paused");
             } else {
-                playback.playback_start = (SDL_GetTicks() - playback.playback_pause_tick);
+                playback.playback_start =
+                        (SDL_GetTicks() - playback.playback_pause_tick);
                 puts("Playback resumed");
             }
             playback.playback_paused = !playback.playback_paused;
@@ -93,7 +99,8 @@ void handle_logic() {
     // Process packets until we have caught up
     Uint32 playback_tick = get_playback_tick();
     while (playback.recording->NextPacketTimestamp <= playback_tick) {
-        if (!recording_ProcessNextPacket(playback.recording, playback.gamestate)) {
+        if (!recording_ProcessNextPacket(playback.recording,
+                                         playback.gamestate)) {
             fprintf(stderr, "Could not process packet: %s\n", get_last_error());
             abort();
         }
@@ -131,9 +138,7 @@ void handle_render() {
                         NULL,
                         (void **)&rendering.canvas_output.Buffer,
                         &rendering.canvas_output.Stride);
-        rendering.canvas_overlay_slice.Stride = rendering.canvas_output.Stride;
-        rendering.canvas_overlay_slice.Buffer =
-                (uint8_t *)canvas_GetPixel(&rendering.canvas_output, rendering.viewLeftX, rendering.viewTopY);
+
         canvas_DrawRectangle(&rendering.canvas_output,
                              &(struct trc_pixel){},
                              0,
@@ -141,9 +146,16 @@ void handle_render() {
                              rendering.canvas_output.Width,
                              rendering.canvas_output.Height);
 
+        struct trc_canvas overlay_slice;
+        overlay_slice.Width = rendering.overlay_slice_rect.w;
+        overlay_slice.Height = rendering.overlay_slice_rect.h;
+        overlay_slice.Stride = rendering.canvas_output.Stride;
+        overlay_slice.Buffer = (uint8_t *)canvas_GetPixel(&rendering.canvas_output,
+                                                          rendering.overlay_slice_rect.x,
+                                                          rendering.overlay_slice_rect.y);
         if (!renderer_DrawOverlay(&rendering.render_options,
                                   playback.gamestate,
-                                  &rendering.canvas_overlay_slice)) {
+                                  &overlay_slice)) {
             fprintf(stderr, "Could not render overlay\n");
             abort();
         }
@@ -205,25 +217,28 @@ void handle_render() {
     // Render textures to screen
     SDL_SetRenderDrawColor(rendering.sdl_renderer, 0, 0, 0, 255);
     SDL_RenderClear(rendering.sdl_renderer);
-    if (SDL_RenderCopy(rendering.sdl_renderer, rendering.sdl_texture_background, NULL, NULL) != 0) {
+    if (SDL_RenderCopy(rendering.sdl_renderer,
+                       rendering.sdl_texture_background,
+                       NULL,
+                       NULL) != 0) {
         fprintf(stderr,
                 "Could not render texture to screen: %s\n",
                 SDL_GetError());
         abort();
     }
-    SDL_Rect dest = {
-            .x = rendering.viewLeftX,
-            .y = rendering.viewTopY,
-            .w = (rendering.viewRightX - rendering.viewLeftX),
-            .h = (rendering.viewBottomY - rendering.viewTopY)
-    };
-    if (SDL_RenderCopy(rendering.sdl_renderer, rendering.sdl_texture_gamestate, NULL, &dest) != 0) {
+    if (SDL_RenderCopy(rendering.sdl_renderer,
+                       rendering.sdl_texture_gamestate,
+                       NULL,
+                       &rendering.overlay_slice_rect) != 0) {
         fprintf(stderr,
                 "Could not render texture to screen: %s\n",
                 SDL_GetError());
         abort();
     }
-    if (SDL_RenderCopy(rendering.sdl_renderer, rendering.sdl_texture_output, NULL, NULL) != 0) {
+    if (SDL_RenderCopy(rendering.sdl_renderer,
+                       rendering.sdl_texture_output,
+                       NULL,
+                       NULL) != 0) {
         fprintf(stderr,
                 "Could not render texture to screen: %s\n",
                 SDL_GetError());
@@ -236,7 +251,8 @@ void handle_stats() {
     Uint32 current_tick = SDL_GetTicks();
     stats_frames += 1;
     if (current_tick - stats_last_print >= 5000) {
-        double fps = stats_frames / ((current_tick - stats_last_print) / 1000.0);
+        double fps =
+                stats_frames / ((current_tick - stats_last_print) / 1000.0);
         stats_frames_avg += fps;
         stats_frames_avg /= 2.0;
         printf("FPS: %.2f Average FPS: %.2f\n", fps, stats_frames_avg);
@@ -283,6 +299,7 @@ bool open_memory_file(const char *filename,
         fprintf(stderr, "Could not open file: %s\n", filename);
         return false;
     }
+    reader->Position = 0;
     reader->Data = file->View;
     reader->Length = file->Size;
     return true;
@@ -310,21 +327,22 @@ bool init_sdl() {
     }
 
     rendering.sdl_window = SDL_CreateWindow("emscriptenplayer",
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  WINDOW_STARTUP_WIDTH,
-                                  WINDOW_STARTUP_HEIGHT,
-                                  SDL_WINDOW_SHOWN);
+                                            SDL_WINDOWPOS_UNDEFINED,
+                                            SDL_WINDOWPOS_UNDEFINED,
+                                            WINDOW_STARTUP_WIDTH,
+                                            WINDOW_STARTUP_HEIGHT,
+                                            SDL_WINDOW_SHOWN);
     if (!rendering.sdl_window) {
         fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
         return false;
     }
 
-    rendering.sdl_renderer = SDL_CreateRenderer(rendering.sdl_window,
-                                      -1,
-                                      SDL_RENDERER_ACCELERATED |
-                                      /*SDL_RENDERER_PRESENTVSYNC |*/
-                                      SDL_RENDERER_TARGETTEXTURE);
+    rendering.sdl_renderer =
+            SDL_CreateRenderer(rendering.sdl_window,
+                               -1,
+                               SDL_RENDERER_ACCELERATED |
+                                       /*SDL_RENDERER_PRESENTVSYNC |*/
+                                       SDL_RENDERER_TARGETTEXTURE);
     if (!rendering.sdl_renderer) {
         fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
         return false;
@@ -334,7 +352,10 @@ bool init_sdl() {
     return true;
 }
 
-bool init_playback(const char *recording_filename, const char *pic_filename, const char *spr_filename, const char *dat_filename) {
+bool init_playback(const char *recording_filename,
+                   const char *pic_filename,
+                   const char *spr_filename,
+                   const char *dat_filename) {
     // Load data files
     struct memory_file file_pic;
     struct trc_data_reader reader_pic;
@@ -370,12 +391,16 @@ bool init_playback(const char *recording_filename, const char *pic_filename, con
     memoryfile_Close(&file_dat);
 
     // Load recording
-    if (!open_memory_file(recording_filename, &playback.file, &playback.reader)) {
+    if (!open_memory_file(recording_filename,
+                          &playback.file,
+                          &playback.reader)) {
         return false;
     }
 
     playback.recording = recording_Create(RECORDING_FORMAT_TRP);
-    if (!recording_Open(playback.recording, &playback.reader, playback.version)) {
+    if (!recording_Open(playback.recording,
+                        &playback.reader,
+                        playback.version)) {
         fprintf(stderr, "Could not load recording\n");
         return false;
     }
@@ -402,7 +427,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!init_playback("files/test.trp", "files/Tibia.pic", "files/Tibia.spr", "files/Tibia.dat")) {
+    if (!init_playback("files/test.trp",
+                       "files/Tibia.pic",
+                       "files/Tibia.spr",
+                       "files/Tibia.dat")) {
         return 1;
     }
 
@@ -413,23 +441,27 @@ int main(int argc, char *argv[]) {
     // Create canvases, which are (going to be) backed by SDL_Textures
     rendering.canvas_gamestate.Width = NATIVE_RESOLUTION_X;
     rendering.canvas_gamestate.Height = NATIVE_RESOLUTION_Y;
-    rendering.sdl_texture_gamestate = create_texture(rendering.canvas_gamestate.Width, rendering.canvas_gamestate.Height);
+    rendering.sdl_texture_gamestate =
+            create_texture(rendering.canvas_gamestate.Width,
+                           rendering.canvas_gamestate.Height);
 
     rendering.canvas_output.Width = rendering.render_options.Width;
     rendering.canvas_output.Height = rendering.render_options.Height;
-    rendering.sdl_texture_output = create_texture(rendering.canvas_output.Width, rendering.canvas_output.Height);
+    rendering.sdl_texture_output =
+            create_texture(rendering.canvas_output.Width,
+                           rendering.canvas_output.Height);
 
     {
         int max_x = rendering.render_options.Width - 160;
         int max_y = rendering.render_options.Height;
         float minScale = MIN(max_x / (float)NATIVE_RESOLUTION_X,
                              max_y / (float)NATIVE_RESOLUTION_Y);
-        rendering.viewLeftX = (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
-        rendering.viewTopY = (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
-        rendering.viewRightX = rendering.viewLeftX + (int)(NATIVE_RESOLUTION_X * minScale);
-        rendering.viewBottomY = rendering.viewTopY + (int)(NATIVE_RESOLUTION_Y * minScale);
-        rendering.canvas_overlay_slice.Width = (rendering.viewRightX - rendering.viewLeftX);
-        rendering.canvas_overlay_slice.Height = (rendering.viewBottomY - rendering.viewTopY);
+        rendering.overlay_slice_rect.x =
+                (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
+        rendering.overlay_slice_rect.y =
+                (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
+        rendering.overlay_slice_rect.w = (int)(NATIVE_RESOLUTION_X * minScale);
+        rendering.overlay_slice_rect.h = (int)(NATIVE_RESOLUTION_Y * minScale);
     }
 
     // Start playback (assume only first packet has time = 0)
@@ -440,13 +472,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Render the background texture, as that is static and only needs to be done once
+    // Render the background texture, as that is static and only needs to be
+    // done once
     struct trc_canvas canvas_background = {
             .Width = rendering.render_options.Width,
-            .Height = rendering.render_options.Height
-    };
-    rendering.sdl_texture_background = create_texture(canvas_background.Width, canvas_background.Height);
-    SDL_LockTexture(rendering.sdl_texture_background, NULL, (void **)&canvas_background.Buffer, &canvas_background.Stride);
+            .Height = rendering.render_options.Height};
+    rendering.sdl_texture_background =
+            create_texture(canvas_background.Width, canvas_background.Height);
+    SDL_LockTexture(rendering.sdl_texture_background,
+                    NULL,
+                    (void **)&canvas_background.Buffer,
+                    &canvas_background.Stride);
     renderer_RenderClientBackground(playback.gamestate,
                                     &canvas_background,
                                     0,

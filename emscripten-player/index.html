@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>emscripten player</title>
+</head>
+<body>
+
+<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+<script type='text/javascript'>
+    var Module = {
+        canvas: (function() { return document.getElementById('canvas'); })()
+    };
+</script>
+<script src="emscriptenplayer.js"></script>
+
+<!--
+<form id="form">
+    <label for="file">Select a file:</label>
+    <input type="file" id="file" name="file" />
+    <button type="submit">Upload</button>
+</form>
+<script>
+    function addFileToIDB() {
+        const req = window.indexedDB.open('test', 1);
+        req.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            const objectStore = db.createObjectStore('test', { keyPath: 'key' });
+        };
+        req.onerror = (event) => {
+            console.log(`indexedDB.open error: ${event.target.errorCode}`);
+        };
+    }
+
+    const form = document.getElementById("form");
+    form.addEventListener('submit', (event) => {
+      console.log('test');
+      event.preventDefault();
+    });
+</script>
+-->
+</body>
+</html>
