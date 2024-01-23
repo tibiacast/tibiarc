@@ -40,6 +40,7 @@ static struct rendering {
     // This texture is the same size as the window
     // It is static, so we render it only once (during startup or window resize)
     SDL_Texture *sdl_texture_background;
+    bool background_rendered;
 
     // This canvas and texture are always NATIVE_RESOLUTION
     struct trc_canvas canvas_gamestate;
@@ -72,10 +73,82 @@ Uint32 get_playback_tick() {
     return SDL_GetTicks() - playback.playback_start;
 }
 
+SDL_Texture *create_texture(int width, int height) {
+    SDL_Texture *texture = SDL_CreateTexture(rendering.sdl_renderer,
+                                             SDL_PIXELFORMAT_RGBA32,
+                                             SDL_TEXTUREACCESS_STREAMING,
+                                             width,
+                                             height);
+    if (!texture) {
+        fprintf(stderr, "Could not create texture: %s\n", SDL_GetError());
+        abort();
+    }
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    return texture;
+}
+
+void handle_resize() {
+    int width;
+    int height;
+    SDL_GetRendererOutputSize(rendering.sdl_renderer, &width, &height);
+    printf("handle resize: %dx%d\n", width, height);
+    if (rendering.render_options.Width == width && rendering.render_options.Height == height) {
+        fprintf(stderr, "bogus resize event?\n");
+        return;
+    }
+
+    // Setup rendering
+    rendering.render_options.Width = width;
+    rendering.render_options.Height = height;
+
+    // Create canvases, which are (going to be) backed by SDL_Textures
+
+    if (rendering.sdl_texture_background != NULL) {
+        SDL_DestroyTexture(rendering.sdl_texture_background);
+    }
+    rendering.sdl_texture_background = create_texture(width, height);
+    rendering.background_rendered = false;
+
+    // gamestate canvas and texture is always the same size, so only need
+    // to create them if they aren't already created
+    if (rendering.sdl_texture_gamestate == NULL) {
+        rendering.canvas_gamestate.Width = NATIVE_RESOLUTION_X;
+        rendering.canvas_gamestate.Height = NATIVE_RESOLUTION_Y;
+        rendering.sdl_texture_gamestate = create_texture(NATIVE_RESOLUTION_X, NATIVE_RESOLUTION_Y);
+    }
+
+    if (rendering.sdl_texture_output != NULL) {
+        SDL_DestroyTexture(rendering.sdl_texture_output);
+    }
+    rendering.canvas_output.Width = rendering.render_options.Width;
+    rendering.canvas_output.Height = rendering.render_options.Height;
+    rendering.sdl_texture_output =
+            create_texture(rendering.render_options.Width,
+                           rendering.render_options.Height);
+
+    {
+        int max_x = rendering.render_options.Width - 160;
+        int max_y = rendering.render_options.Height;
+        float minScale = MIN(max_x / (float)NATIVE_RESOLUTION_X,
+                             max_y / (float)NATIVE_RESOLUTION_Y);
+        rendering.overlay_slice_rect.x =
+                (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
+        rendering.overlay_slice_rect.y =
+                (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
+        rendering.overlay_slice_rect.w = (int)(NATIVE_RESOLUTION_X * minScale);
+        rendering.overlay_slice_rect.h = (int)(NATIVE_RESOLUTION_Y * minScale);
+    }
+}
+
 void handle_input() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
+        case SDL_WINDOWEVENT:
+            if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                handle_resize();
+            }
+            break;
         case SDL_MOUSEBUTTONUP:
             if (!playback.playback_paused) {
                 playback.playback_pause_tick = get_playback_tick();
@@ -110,32 +183,13 @@ void handle_logic() {
     playback.gamestate->CurrentTick = playback_tick;
 }
 
-SDL_Texture *create_texture(int width, int height) {
-    SDL_Texture *texture = SDL_CreateTexture(rendering.sdl_renderer,
-                                             SDL_PIXELFORMAT_RGBA32,
-                                             SDL_TEXTUREACCESS_STREAMING,
-                                             width,
-                                             height);
-    if (!texture) {
-        fprintf(stderr, "Could not create texture: %s\n", SDL_GetError());
-        abort();
-    }
-    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-    return texture;
-}
-
 void handle_render() {
     // Render background (if not already done, as this only needs to be done
     // once)
-    if (rendering.sdl_texture_background == NULL) {
-        // Render the background texture, as that is static and only needs to be
-        // done once
+    if (!rendering.background_rendered) {
         struct trc_canvas canvas_background = {
                 .Width = rendering.render_options.Width,
                 .Height = rendering.render_options.Height};
-        rendering.sdl_texture_background =
-                create_texture(canvas_background.Width,
-                               canvas_background.Height);
         SDL_LockTexture(rendering.sdl_texture_background,
                         NULL,
                         (void **)&canvas_background.Buffer,
@@ -147,6 +201,7 @@ void handle_render() {
                                         canvas_background.Width,
                                         canvas_background.Height);
         SDL_UnlockTexture(rendering.sdl_texture_background);
+        rendering.background_rendered = true;
     }
 
     // Render gamestate
@@ -356,7 +411,7 @@ bool init_sdl() {
                                             SDL_WINDOWPOS_UNDEFINED,
                                             WINDOW_STARTUP_WIDTH,
                                             WINDOW_STARTUP_HEIGHT,
-                                            SDL_WINDOW_SHOWN);
+                                            SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!rendering.sdl_window) {
         fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
         return false;
@@ -457,38 +512,6 @@ void free_playback() {
     memoryfile_Close(&playback.file);
 }
 
-void init_rendering() {
-    // Setup rendering
-    rendering.render_options.Width = WINDOW_STARTUP_WIDTH;
-    rendering.render_options.Height = WINDOW_STARTUP_HEIGHT;
-
-    // Create canvases, which are (going to be) backed by SDL_Textures
-    rendering.canvas_gamestate.Width = NATIVE_RESOLUTION_X;
-    rendering.canvas_gamestate.Height = NATIVE_RESOLUTION_Y;
-    rendering.sdl_texture_gamestate =
-            create_texture(rendering.canvas_gamestate.Width,
-                           rendering.canvas_gamestate.Height);
-
-    rendering.canvas_output.Width = rendering.render_options.Width;
-    rendering.canvas_output.Height = rendering.render_options.Height;
-    rendering.sdl_texture_output =
-            create_texture(rendering.canvas_output.Width,
-                           rendering.canvas_output.Height);
-
-    {
-        int max_x = rendering.render_options.Width - 160;
-        int max_y = rendering.render_options.Height;
-        float minScale = MIN(max_x / (float)NATIVE_RESOLUTION_X,
-                             max_y / (float)NATIVE_RESOLUTION_Y);
-        rendering.overlay_slice_rect.x =
-                (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
-        rendering.overlay_slice_rect.y =
-                (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
-        rendering.overlay_slice_rect.w = (int)(NATIVE_RESOLUTION_X * minScale);
-        rendering.overlay_slice_rect.h = (int)(NATIVE_RESOLUTION_Y * minScale);
-    }
-}
-
 void free_rendering() {
     SDL_DestroyTexture(rendering.sdl_texture_background);
     SDL_DestroyTexture(rendering.sdl_texture_output);
@@ -512,7 +535,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    init_rendering();
+    // Init rendering by faking a resize event
+    handle_resize();
 
     // Init stats
     stats_frames = 0;
