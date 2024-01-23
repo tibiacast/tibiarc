@@ -214,6 +214,10 @@ endif()
 
 add_executable(emscriptenplayer
   "emscripten-player/emscriptenplayer.c"
+  "emscripten-player/playback.c"
+  "emscripten-player/playback.h"
+  "emscripten-player/rendering.c"
+  "emscripten-player/rendering.h"
   "converter/memoryfile.c"
   "converter/memoryfile.h"
 )

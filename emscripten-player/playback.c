@@ -77,7 +77,8 @@ bool playback_Init(struct playback *playback,
     playback->PlaybackStart = SDL_GetTicks();
     playback->PlaybackPaused = false;
     playback->Gamestate->CurrentTick = playback_GetPlaybackTick(playback);
-    if (!recording_ProcessNextPacket(playback->Recording, playback->Gamestate)) {
+    if (!recording_ProcessNextPacket(playback->Recording,
+                                     playback->Gamestate)) {
         fprintf(stderr, "Could not process packet\n");
         return false;
     }
