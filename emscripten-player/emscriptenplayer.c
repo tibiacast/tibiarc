@@ -3,13 +3,10 @@
 #endif
 #include <SDL2/SDL.h>
 
+#include "playback.h"
+
 #include "canvas.h"
-#include "datareader.h"
-#include "gamestate.h"
-#include "recordings.h"
 #include "renderer.h"
-#include "versions.h"
-#include "memoryfile.h"
 
 #if 1
 #    define WINDOW_STARTUP_WIDTH 1280
@@ -19,17 +16,7 @@
 #    define WINDOW_STARTUP_HEIGHT NATIVE_RESOLUTION_Y
 #endif
 
-static struct playback {
-    struct memory_file file;
-    struct trc_data_reader reader;
-    struct trc_version *version;
-    struct trc_recording *recording;
-    struct trc_game_state *gamestate;
-
-    Uint32 playback_start;
-    bool playback_paused;
-    Uint32 playback_pause_tick;
-} playback;
+static struct playback playback;
 
 static struct rendering {
     SDL_Window *sdl_window;
@@ -64,13 +51,6 @@ const char *get_last_error() {
     static char buffer[1024];
     trc_GetLastError(1024, buffer);
     return buffer;
-}
-
-Uint32 get_playback_tick() {
-    if (playback.playback_paused) {
-        return playback.playback_pause_tick;
-    }
-    return SDL_GetTicks() - playback.playback_start;
 }
 
 SDL_Texture *create_texture(int width, int height) {
@@ -150,15 +130,7 @@ void handle_input() {
             }
             break;
         case SDL_MOUSEBUTTONUP:
-            if (!playback.playback_paused) {
-                playback.playback_pause_tick = get_playback_tick();
-                puts("Playback paused");
-            } else {
-                playback.playback_start =
-                        (SDL_GetTicks() - playback.playback_pause_tick);
-                puts("Playback resumed");
-            }
-            playback.playback_paused = !playback.playback_paused;
+            playback_TogglePlayback(&playback);
             break;
         case SDL_QUIT:
             exit(0);
@@ -166,21 +138,6 @@ void handle_input() {
             break;
         }
     }
-}
-
-void handle_logic() {
-    // Process packets until we have caught up
-    Uint32 playback_tick = get_playback_tick();
-    while (playback.recording->NextPacketTimestamp <= playback_tick) {
-        if (!recording_ProcessNextPacket(playback.recording,
-                                         playback.gamestate)) {
-            fprintf(stderr, "Could not process packet: %s\n", get_last_error());
-            abort();
-        }
-    }
-
-    // Advance the gamestate
-    playback.gamestate->CurrentTick = playback_tick;
 }
 
 void handle_render() {
@@ -194,7 +151,7 @@ void handle_render() {
                         NULL,
                         (void **)&canvas_background.Buffer,
                         &canvas_background.Stride);
-        renderer_RenderClientBackground(playback.gamestate,
+        renderer_RenderClientBackground(playback.Gamestate,
                                         &canvas_background,
                                         0,
                                         0,
@@ -217,7 +174,7 @@ void handle_render() {
                              rendering.canvas_gamestate.Width,
                              rendering.canvas_gamestate.Height);
         if (!renderer_DrawGamestate(&rendering.render_options,
-                                    playback.gamestate,
+                                    playback.Gamestate,
                                     &rendering.canvas_gamestate)) {
             fprintf(stderr, "Could not render gamestate\n");
             abort();
@@ -248,7 +205,7 @@ void handle_render() {
                                            rendering.overlay_slice_rect.x,
                                            rendering.overlay_slice_rect.y);
         if (!renderer_DrawOverlay(&rendering.render_options,
-                                  playback.gamestate,
+                                  playback.Gamestate,
                                   &overlay_slice)) {
             fprintf(stderr, "Could not render overlay\n");
             abort();
@@ -258,7 +215,7 @@ void handle_render() {
         int offsetY = 4;
 
         if (!renderer_DrawStatusBars(&rendering.render_options,
-                                     playback.gamestate,
+                                     playback.Gamestate,
                                      &rendering.canvas_output,
                                      &offsetX,
                                      &offsetY)) {
@@ -267,7 +224,7 @@ void handle_render() {
         }
 
         if (!renderer_DrawInventoryArea(&rendering.render_options,
-                                        playback.gamestate,
+                                        playback.Gamestate,
                                         &rendering.canvas_output,
                                         &offsetX,
                                         &offsetY)) {
@@ -275,9 +232,9 @@ void handle_render() {
             abort();
         }
 
-        if (playback.gamestate->Version->Features.IconBar) {
+        if (playback.Gamestate->Version->Features.IconBar) {
             if (!renderer_DrawIconBar(&rendering.render_options,
-                                      playback.gamestate,
+                                      playback.Gamestate,
                                       &rendering.canvas_output,
                                       &offsetX,
                                       &offsetY)) {
@@ -288,12 +245,12 @@ void handle_render() {
 
         int max_container_y = rendering.canvas_output.Height - 4 - 32;
         for (struct trc_container *container_iterator =
-                     playback.gamestate->ContainerList;
+                     playback.Gamestate->ContainerList;
              container_iterator != NULL && offsetY < max_container_y;
              container_iterator =
                      (struct trc_container *)container_iterator->hh.next) {
             if (!renderer_DrawContainer(&rendering.render_options,
-                                        playback.gamestate,
+                                        playback.Gamestate,
                                         &rendering.canvas_output,
                                         container_iterator,
                                         false,
@@ -381,23 +338,11 @@ void emscripten_set_main_loop(void (*main_loop)(),
 
 void main_loop() {
     handle_input();
-    handle_logic();
+    playback_ProcessPackets(&playback);
     handle_render();
     handle_stats();
 }
 
-bool open_memory_file(const char *filename,
-                      struct memory_file *file,
-                      struct trc_data_reader *reader) {
-    if (!memoryfile_Open(filename, file)) {
-        fprintf(stderr, "Could not open file: %s\n", filename);
-        return false;
-    }
-    reader->Position = 0;
-    reader->Data = file->View;
-    reader->Length = file->Size;
-    return true;
-}
 
 bool init_sdl() {
     int ret = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
@@ -437,81 +382,6 @@ void free_sdl() {
     SDL_Quit();
 }
 
-bool init_playback(const char *recording_filename,
-                   const char *pic_filename,
-                   const char *spr_filename,
-                   const char *dat_filename) {
-    // Load data files
-    struct memory_file file_pic;
-    struct trc_data_reader reader_pic;
-    if (!open_memory_file(pic_filename, &file_pic, &reader_pic)) {
-        return false;
-    }
-
-    struct memory_file file_spr;
-    struct trc_data_reader reader_spr;
-    if (!open_memory_file(spr_filename, &file_spr, &reader_spr)) {
-        return false;
-    }
-
-    struct memory_file file_dat;
-    struct trc_data_reader reader_dat;
-    if (!open_memory_file(dat_filename, &file_dat, &reader_dat)) {
-        return false;
-    }
-
-    if (!version_Load(7,
-                      41,
-                      0,
-                      &reader_pic,
-                      &reader_spr,
-                      &reader_dat,
-                      &playback.version)) {
-        fprintf(stderr, "Could not load files\n");
-        return false;
-    }
-
-    memoryfile_Close(&file_pic);
-    memoryfile_Close(&file_spr);
-    memoryfile_Close(&file_dat);
-
-    // Load recording
-    if (!open_memory_file(recording_filename,
-                          &playback.file,
-                          &playback.reader)) {
-        return false;
-    }
-
-    playback.recording = recording_Create(RECORDING_FORMAT_TRP);
-    if (!recording_Open(playback.recording,
-                        &playback.reader,
-                        playback.version)) {
-        fprintf(stderr, "Could not load recording\n");
-        return false;
-    }
-
-    // Create gamestate
-    playback.gamestate = gamestate_Create(playback.version);
-
-    // Initialize the playback by processing the first packet (assumes only
-    // first packet has time = 0)
-    playback.playback_start = SDL_GetTicks();
-    playback.playback_paused = false;
-    playback.gamestate->CurrentTick = get_playback_tick();
-    if (!recording_ProcessNextPacket(playback.recording, playback.gamestate)) {
-        fprintf(stderr, "Could not process packet\n");
-        return false;
-    }
-
-    return true;
-}
-
-void free_playback() {
-    recording_Free(playback.recording);
-    version_Free(playback.version);
-    memoryfile_Close(&playback.file);
-}
-
 void free_rendering() {
     SDL_DestroyTexture(rendering.sdl_texture_background);
     SDL_DestroyTexture(rendering.sdl_texture_output);
@@ -528,7 +398,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!init_playback("files/test.trp",
+    if (!playback_Init(&playback,
+                       "files/test.trp",
                        "files/Tibia.pic",
                        "files/Tibia.spr",
                        "files/Tibia.dat")) {
@@ -541,13 +412,13 @@ int main(int argc, char *argv[]) {
     // Init stats
     stats_frames = 0;
     stats_frames_avg = 0.0f;
-    stats_last_print = playback.playback_start;
+    stats_last_print = playback.PlaybackStart;
 
     emscripten_set_main_loop(main_loop, 0, 1);
 
     // Deallocate
     free_rendering();
-    free_playback();
+    playback_Free(&playback);
     free_sdl();
 
     return 0;
