@@ -1,6 +1,7 @@
 #include "rendering.h"
 
 #include "versions.h"
+#include "textrenderer.h"
 
 static bool initSDL(struct rendering *rendering,
                     int windowWidth,
@@ -51,6 +52,17 @@ static SDL_Texture *create_texture(SDL_Renderer *SdlRenderer,
     }
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     return texture;
+}
+
+static int formatTime(char *buffer, size_t bufferSize, uint32_t milliseconds) {
+    // TODO: move to utils.h or similar?
+    uint32_t seconds = milliseconds / 1000;
+    milliseconds %= 1000;
+    uint32_t minutes = seconds / 60;
+    seconds %= 60;
+    uint32_t hours = minutes / 60;
+    minutes %= 60;
+    return snprintf(buffer, bufferSize, "%02u:%02u:%02u.%03u", hours, minutes, seconds, milliseconds);
 }
 
 bool rendering_Init(struct rendering *rendering,
@@ -139,7 +151,7 @@ bool rendering_HandleResize(struct rendering *rendering) {
 }
 
 void rendering_Render(struct rendering *rendering,
-                      struct trc_game_state *gamestate) {
+                      struct playback *playback) {
     // Render background (if not already done, as this only needs to be done
     // once)
     if (!rendering->BackgroundRendered) {
@@ -150,7 +162,7 @@ void rendering_Render(struct rendering *rendering,
                         NULL,
                         (void **)&canvas_background.Buffer,
                         &canvas_background.Stride);
-        renderer_RenderClientBackground(gamestate,
+        renderer_RenderClientBackground(playback->Gamestate,
                                         &canvas_background,
                                         0,
                                         0,
@@ -173,7 +185,7 @@ void rendering_Render(struct rendering *rendering,
                              rendering->CanvasGamestate.Width,
                              rendering->CanvasGamestate.Height);
         if (!renderer_DrawGamestate(&rendering->RenderOptions,
-                                    gamestate,
+                                    playback->Gamestate,
                                     &rendering->CanvasGamestate)) {
             fprintf(stderr, "Could not render gamestate\n");
             abort();
@@ -204,7 +216,7 @@ void rendering_Render(struct rendering *rendering,
                                            rendering->OverlaySliceRect.x,
                                            rendering->OverlaySliceRect.y);
         if (!renderer_DrawOverlay(&rendering->RenderOptions,
-                                  gamestate,
+                                  playback->Gamestate,
                                   &overlay_slice)) {
             fprintf(stderr, "Could not render overlay\n");
             abort();
@@ -214,7 +226,7 @@ void rendering_Render(struct rendering *rendering,
         int offsetY = 4;
 
         if (!renderer_DrawStatusBars(&rendering->RenderOptions,
-                                     gamestate,
+                                     playback->Gamestate,
                                      &rendering->CanvasOutput,
                                      &offsetX,
                                      &offsetY)) {
@@ -223,7 +235,7 @@ void rendering_Render(struct rendering *rendering,
         }
 
         if (!renderer_DrawInventoryArea(&rendering->RenderOptions,
-                                        gamestate,
+                                        playback->Gamestate,
                                         &rendering->CanvasOutput,
                                         &offsetX,
                                         &offsetY)) {
@@ -231,9 +243,9 @@ void rendering_Render(struct rendering *rendering,
             abort();
         }
 
-        if (gamestate->Version->Features.IconBar) {
+        if (playback->Gamestate->Version->Features.IconBar) {
             if (!renderer_DrawIconBar(&rendering->RenderOptions,
-                                      gamestate,
+                                      playback->Gamestate,
                                       &rendering->CanvasOutput,
                                       &offsetX,
                                       &offsetY)) {
@@ -244,12 +256,12 @@ void rendering_Render(struct rendering *rendering,
 
         int max_container_y = rendering->CanvasOutput.Height - 4 - 32;
         for (struct trc_container *container_iterator =
-                     gamestate->ContainerList;
+                     playback->Gamestate->ContainerList;
              container_iterator != NULL && offsetY < max_container_y;
              container_iterator =
                      (struct trc_container *)container_iterator->hh.next) {
             if (!renderer_DrawContainer(&rendering->RenderOptions,
-                                        gamestate,
+                                        playback->Gamestate,
                                         &rendering->CanvasOutput,
                                         container_iterator,
                                         false,
@@ -261,6 +273,36 @@ void rendering_Render(struct rendering *rendering,
                 abort();
             }
         }
+
+        // Render playback info
+        char text[64];
+        int textLength = formatTime(text, sizeof(text) / sizeof(text[0]), playback_GetPlaybackTick(playback));
+        struct trc_pixel fontColor;
+        pixel_SetRGB(&fontColor, 255, 255, 255);
+        textrenderer_Render(&playback->Gamestate->Version->Fonts.GameFont,
+                            TEXTALIGNMENT_LEFT,
+                            TEXTTRANSFORM_NONE,
+                            &fontColor,
+                            12,
+                            12,
+                            64,
+                            textLength,
+                            text,
+                            &rendering->CanvasOutput);
+
+        textLength = formatTime(text, sizeof(text) / sizeof(text[0]), playback->Recording->Runtime);
+        textrenderer_Render(&playback->Gamestate->Version->Fonts.GameFont,
+                            TEXTALIGNMENT_LEFT,
+                            TEXTTRANSFORM_NONE,
+                            &fontColor,
+                            12,
+                            28,
+                            64,
+                            textLength,
+                            text,
+                            &rendering->CanvasOutput);
+
+
         SDL_UnlockTexture(rendering->SdlTextureOutput);
     }
 

@@ -75,7 +75,7 @@ void emscripten_set_main_loop(void (*main_loop)(),
 void main_loop() {
     handle_input();
     playback_ProcessPackets(&playback);
-    rendering_Render(&rendering, playback.Gamestate);
+    rendering_Render(&rendering, &playback);
     handle_stats();
 }
 

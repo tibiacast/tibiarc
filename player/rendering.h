@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 
+#include "playback.h"
 #include "renderer.h"
 #include "canvas.h"
 
@@ -37,6 +38,6 @@ void rendering_Free(struct rendering *rendering);
 
 bool rendering_HandleResize(struct rendering *rendering);
 void rendering_Render(struct rendering *rendering,
-                      struct trc_game_state *gamestate);
+                      struct playback *playback);
 
 #endif // PLAYER_RENDERING_H
