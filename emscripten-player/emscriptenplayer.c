@@ -11,43 +11,43 @@
 #include "versions.h"
 #include "memoryfile.h"
 
-// tibiarc stuff
-static struct memory_file file_trp;
-static struct trc_data_reader reader_trp;
+#define WINDOW_STARTUP_WIDTH (NATIVE_RESOLUTION_X + 160)
+#define WINDOW_STARTUP_HEIGHT NATIVE_RESOLUTION_Y
 
-static struct memory_file file_pic;
-static struct trc_data_reader reader_pic;
+// Playback related stuff
+static struct playback {
+    struct memory_file file;
+    struct trc_data_reader reader;
+    struct trc_version *version;
+    struct trc_recording *recording;
+    struct trc_game_state *gamestate;
 
-static struct memory_file file_spr;
-static struct trc_data_reader reader_spr;
+    Uint32 playback_start;
+    bool playback_paused;
+    Uint32 playback_pause_tick;
+} playback;
 
-static struct memory_file file_dat;
-static struct trc_data_reader reader_dat;
+// Rendering related stuff
+static struct rendering {
+    SDL_Window *sdl_window;
+    SDL_Renderer *sdl_renderer;
 
-static struct trc_version *version;
-static struct trc_recording *recording;
-static struct trc_game_state *gamestate;
-static struct trc_canvas canvas_gamestate;
-static struct trc_canvas canvas_output;
-static struct trc_canvas canvas_overlay_slice;
-static struct trc_render_options render_options;
+    struct trc_render_options render_options;
 
-static int viewLeftX;
-static int viewTopY;
-static int viewRightX;
-static int viewBottomY;
+    SDL_Texture *sdl_texture_background;
 
-// SDL stuff
-static SDL_Window *sdl_window;
-static SDL_Renderer *sdl_renderer;
-static SDL_Texture *sdl_texture_background;
-static SDL_Texture *sdl_texture_gamestate;
-static SDL_Texture *sdl_texture_output;
+    struct trc_canvas canvas_gamestate;
+    SDL_Texture *sdl_texture_gamestate;
 
-// Playback stuff
-static Uint32 playback_start;
-static bool playback_paused;
-static Uint32 playback_pause_tick;
+    struct trc_canvas canvas_output;
+    SDL_Texture *sdl_texture_output;
+
+    struct trc_canvas canvas_overlay_slice;
+    int viewLeftX;
+    int viewTopY;
+    int viewRightX;
+    int viewBottomY;
+} rendering;
 
 // Stats (fps) stuff
 static int stats_frames;
@@ -61,10 +61,10 @@ const char *get_last_error() {
 }
 
 Uint32 get_playback_tick() {
-    if (playback_paused) {
-        return playback_pause_tick;
+    if (playback.playback_paused) {
+        return playback.playback_pause_tick;
     }
-    return SDL_GetTicks() - playback_start;
+    return SDL_GetTicks() - playback.playback_start;
 }
 
 void handle_input() {
@@ -72,14 +72,14 @@ void handle_input() {
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
         case SDL_MOUSEBUTTONUP:
-            if (!playback_paused) {
-                playback_pause_tick = get_playback_tick();
+            if (!playback.playback_paused) {
+                playback.playback_pause_tick = get_playback_tick();
                 puts("Playback paused");
             } else {
-                playback_start = (SDL_GetTicks() - playback_pause_tick);
+                playback.playback_start = (SDL_GetTicks() - playback.playback_pause_tick);
                 puts("Playback resumed");
             }
-            playback_paused = !playback_paused;
+            playback.playback_paused = !playback.playback_paused;
             break;
         case SDL_QUIT:
             exit(0);
@@ -92,87 +92,87 @@ void handle_input() {
 void handle_logic() {
     // Process packets until we have caught up
     Uint32 playback_tick = get_playback_tick();
-    while (recording->NextPacketTimestamp <= playback_tick) {
-        if (!recording_ProcessNextPacket(recording, gamestate)) {
+    while (playback.recording->NextPacketTimestamp <= playback_tick) {
+        if (!recording_ProcessNextPacket(playback.recording, playback.gamestate)) {
             fprintf(stderr, "Could not process packet: %s\n", get_last_error());
             abort();
         }
     }
 
     // Advance the gamestate
-    gamestate->CurrentTick = playback_tick;
+    playback.gamestate->CurrentTick = playback_tick;
 }
 
 void handle_render() {
     // Render gamestate
     {
-        SDL_LockTexture(sdl_texture_gamestate,
+        SDL_LockTexture(rendering.sdl_texture_gamestate,
                         NULL,
-                        (void **)&canvas_gamestate.Buffer,
-                        &canvas_gamestate.Stride);
-        canvas_DrawRectangle(&canvas_gamestate,
+                        (void **)&rendering.canvas_gamestate.Buffer,
+                        &rendering.canvas_gamestate.Stride);
+        canvas_DrawRectangle(&rendering.canvas_gamestate,
                              &(struct trc_pixel){},
                              0,
                              0,
-                             canvas_gamestate.Width,
-                             canvas_gamestate.Height);
-        if (!renderer_DrawGamestate(&render_options,
-                                    gamestate,
-                                    &canvas_gamestate)) {
+                             rendering.canvas_gamestate.Width,
+                             rendering.canvas_gamestate.Height);
+        if (!renderer_DrawGamestate(&rendering.render_options,
+                                    playback.gamestate,
+                                    &rendering.canvas_gamestate)) {
             fprintf(stderr, "Could not render gamestate\n");
             abort();
         }
-        SDL_UnlockTexture(sdl_texture_gamestate);
+        SDL_UnlockTexture(rendering.sdl_texture_gamestate);
     }
 
     // Render the rest
     {
-        SDL_LockTexture(sdl_texture_output,
+        SDL_LockTexture(rendering.sdl_texture_output,
                         NULL,
-                        (void **)&canvas_output.Buffer,
-                        &canvas_output.Stride);
-        canvas_overlay_slice.Stride = canvas_output.Stride;
-        canvas_overlay_slice.Buffer =
-                (uint8_t *)canvas_GetPixel(&canvas_output, viewLeftX, viewTopY);
-        canvas_DrawRectangle(&canvas_output,
+                        (void **)&rendering.canvas_output.Buffer,
+                        &rendering.canvas_output.Stride);
+        rendering.canvas_overlay_slice.Stride = rendering.canvas_output.Stride;
+        rendering.canvas_overlay_slice.Buffer =
+                (uint8_t *)canvas_GetPixel(&rendering.canvas_output, rendering.viewLeftX, rendering.viewTopY);
+        canvas_DrawRectangle(&rendering.canvas_output,
                              &(struct trc_pixel){},
                              0,
                              0,
-                             canvas_output.Width,
-                             canvas_output.Height);
+                             rendering.canvas_output.Width,
+                             rendering.canvas_output.Height);
 
-        if (!renderer_DrawOverlay(&render_options,
-                                  gamestate,
-                                  &canvas_overlay_slice)) {
+        if (!renderer_DrawOverlay(&rendering.render_options,
+                                  playback.gamestate,
+                                  &rendering.canvas_overlay_slice)) {
             fprintf(stderr, "Could not render overlay\n");
             abort();
         }
 
-        int offsetX = canvas_output.Width - 160 + 12;
+        int offsetX = rendering.canvas_output.Width - 160 + 12;
         int offsetY = 4;
 
-        if (!renderer_DrawStatusBars(&render_options,
-                                     gamestate,
-                                     &canvas_output,
+        if (!renderer_DrawStatusBars(&rendering.render_options,
+                                     playback.gamestate,
+                                     &rendering.canvas_output,
                                      &offsetX,
                                      &offsetY)) {
             fprintf(stderr, "Could not render status bars\n");
             abort();
         }
 
-        if (!renderer_DrawInventoryArea(&render_options,
-                                        gamestate,
-                                        &canvas_output,
+        if (!renderer_DrawInventoryArea(&rendering.render_options,
+                                        playback.gamestate,
+                                        &rendering.canvas_output,
                                         &offsetX,
                                         &offsetY)) {
             fprintf(stderr, "Could not render inventory\n");
             abort();
         }
 
-        if (gamestate->Version->Features.IconBar) {
-            if (!renderer_DrawIconBar(&render_options,
-                                      gamestate,
-                                      &canvas_output,
+        if (playback.gamestate->Version->Features.IconBar) {
+            if (!renderer_DrawIconBar(&rendering.render_options,
+                                      playback.gamestate,
+                                      &rendering.canvas_output,
                                       &offsetX,
                                       &offsetY)) {
                 fprintf(stderr, "Could not render icon bar\n");
@@ -180,18 +180,18 @@ void handle_render() {
             }
         }
 
-        int max_container_y = canvas_output.Height - 4 - 32;
+        int max_container_y = rendering.canvas_output.Height - 4 - 32;
         for (struct trc_container *container_iterator =
-                     gamestate->ContainerList;
+                     playback.gamestate->ContainerList;
              container_iterator != NULL && offsetY < max_container_y;
              container_iterator =
                      (struct trc_container *)container_iterator->hh.next) {
-            if (!renderer_DrawContainer(&render_options,
-                                        gamestate,
-                                        &canvas_output,
+            if (!renderer_DrawContainer(&rendering.render_options,
+                                        playback.gamestate,
+                                        &rendering.canvas_output,
                                         container_iterator,
                                         false,
-                                        canvas_output.Width,
+                                        rendering.canvas_output.Width,
                                         max_container_y,
                                         &offsetX,
                                         &offsetY)) {
@@ -199,37 +199,37 @@ void handle_render() {
                 abort();
             }
         }
-        SDL_UnlockTexture(sdl_texture_output);
+        SDL_UnlockTexture(rendering.sdl_texture_output);
     }
 
     // Render textures to screen
-    SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
-    SDL_RenderClear(sdl_renderer);
-    if (SDL_RenderCopy(sdl_renderer, sdl_texture_background, NULL, NULL) != 0) {
+    SDL_SetRenderDrawColor(rendering.sdl_renderer, 0, 0, 0, 255);
+    SDL_RenderClear(rendering.sdl_renderer);
+    if (SDL_RenderCopy(rendering.sdl_renderer, rendering.sdl_texture_background, NULL, NULL) != 0) {
         fprintf(stderr,
                 "Could not render texture to screen: %s\n",
                 SDL_GetError());
         abort();
     }
     SDL_Rect dest = {
-            .x = viewLeftX,
-            .y = viewTopY,
-            .w = (viewRightX - viewLeftX),
-            .h = (viewBottomY - viewTopY)
+            .x = rendering.viewLeftX,
+            .y = rendering.viewTopY,
+            .w = (rendering.viewRightX - rendering.viewLeftX),
+            .h = (rendering.viewBottomY - rendering.viewTopY)
     };
-    if (SDL_RenderCopy(sdl_renderer, sdl_texture_gamestate, NULL, &dest) != 0) {
+    if (SDL_RenderCopy(rendering.sdl_renderer, rendering.sdl_texture_gamestate, NULL, &dest) != 0) {
         fprintf(stderr,
                 "Could not render texture to screen: %s\n",
                 SDL_GetError());
         abort();
     }
-    if (SDL_RenderCopy(sdl_renderer, sdl_texture_output, NULL, NULL) != 0) {
+    if (SDL_RenderCopy(rendering.sdl_renderer, rendering.sdl_texture_output, NULL, NULL) != 0) {
         fprintf(stderr,
                 "Could not render texture to screen: %s\n",
                 SDL_GetError());
         abort();
     }
-    SDL_RenderPresent(sdl_renderer);
+    SDL_RenderPresent(rendering.sdl_renderer);
 }
 
 void handle_stats() {
@@ -289,7 +289,7 @@ bool open_memory_file(const char *filename,
 }
 
 SDL_Texture *create_texture(int width, int height) {
-    SDL_Texture *texture = SDL_CreateTexture(sdl_renderer,
+    SDL_Texture *texture = SDL_CreateTexture(rendering.sdl_renderer,
                                              SDL_PIXELFORMAT_RGBA32,
                                              SDL_TEXTUREACCESS_STREAMING,
                                              width,
@@ -302,27 +302,56 @@ SDL_Texture *create_texture(int width, int height) {
     return texture;
 }
 
-int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
-
-    trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
-
-    // Load files
-    if (!open_memory_file("files/test.trp", &file_trp, &reader_trp)) {
-        return 1;
+bool init_sdl() {
+    int ret = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
+    if (ret != 0) {
+        fprintf(stderr, "Could not initialize SDL: %s\n", SDL_GetError());
+        return false;
     }
 
-    if (!open_memory_file("files/Tibia.pic", &file_pic, &reader_pic)) {
-        return 1;
+    rendering.sdl_window = SDL_CreateWindow("emscriptenplayer",
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  WINDOW_STARTUP_WIDTH,
+                                  WINDOW_STARTUP_HEIGHT,
+                                  SDL_WINDOW_SHOWN);
+    if (!rendering.sdl_window) {
+        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
+        return false;
     }
 
-    if (!open_memory_file("files/Tibia.spr", &file_spr, &reader_spr)) {
-        return 1;
+    rendering.sdl_renderer = SDL_CreateRenderer(rendering.sdl_window,
+                                      -1,
+                                      SDL_RENDERER_ACCELERATED |
+                                      /*SDL_RENDERER_PRESENTVSYNC |*/
+                                      SDL_RENDERER_TARGETTEXTURE);
+    if (!rendering.sdl_renderer) {
+        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
+        return false;
+    }
+    SDL_SetRenderDrawBlendMode(rendering.sdl_renderer, SDL_BLENDMODE_BLEND);
+
+    return true;
+}
+
+bool init_playback(const char *recording_filename, const char *pic_filename, const char *spr_filename, const char *dat_filename) {
+    // Load data files
+    struct memory_file file_pic;
+    struct trc_data_reader reader_pic;
+    if (!open_memory_file(pic_filename, &file_pic, &reader_pic)) {
+        return false;
     }
 
-    if (!open_memory_file("files/Tibia.dat", &file_dat, &reader_dat)) {
-        return 1;
+    struct memory_file file_spr;
+    struct trc_data_reader reader_spr;
+    if (!open_memory_file(spr_filename, &file_spr, &reader_spr)) {
+        return false;
+    }
+
+    struct memory_file file_dat;
+    struct trc_data_reader reader_dat;
+    if (!open_memory_file(dat_filename, &file_dat, &reader_dat)) {
+        return false;
     }
 
     if (!version_Load(7,
@@ -331,9 +360,9 @@ int main(int argc, char *argv[]) {
                       &reader_pic,
                       &reader_spr,
                       &reader_dat,
-                      &version)) {
+                      &playback.version)) {
         fprintf(stderr, "Could not load files\n");
-        return 1;
+        return false;
     }
 
     memoryfile_Close(&file_pic);
@@ -341,118 +370,107 @@ int main(int argc, char *argv[]) {
     memoryfile_Close(&file_dat);
 
     // Load recording
-    recording = recording_Create(RECORDING_FORMAT_TRP);
-    if (!recording_Open(recording, &reader_trp, version)) {
+    if (!open_memory_file(recording_filename, &playback.file, &playback.reader)) {
+        return false;
+    }
+
+    playback.recording = recording_Create(RECORDING_FORMAT_TRP);
+    if (!recording_Open(playback.recording, &playback.reader, playback.version)) {
         fprintf(stderr, "Could not load recording\n");
-        return 1;
+        return false;
     }
 
     // Create gamestate
-    gamestate = gamestate_Create(recording->Version);
+    playback.gamestate = gamestate_Create(playback.version);
+
+    return true;
+}
+
+void free_playback() {
+    recording_Free(playback.recording);
+    version_Free(playback.version);
+    memoryfile_Close(&playback.file);
+}
+
+int main(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
+    trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
+
+    if (!init_sdl()) {
+        return 1;
+    }
+
+    if (!init_playback("files/test.trp", "files/Tibia.pic", "files/Tibia.spr", "files/Tibia.dat")) {
+        return 1;
+    }
 
     // Setup rendering
-#ifdef NDEBUG
-    render_options.Width = 1280;
-    render_options.Height = 720;
-#else
-    render_options.Width = NATIVE_RESOLUTION_X + 160; // sidebar width = 160
-    render_options.Height = NATIVE_RESOLUTION_Y;
-#endif
-
-    // Init SDL
-    int ret = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
-    if (ret != 0) {
-        fprintf(stderr, "Could not initialize SDL: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    sdl_window = SDL_CreateWindow("emscriptenplayer",
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  render_options.Width,
-                                  render_options.Height,
-                                  SDL_WINDOW_SHOWN);
-    if (!sdl_window) {
-        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    sdl_renderer = SDL_CreateRenderer(sdl_window,
-                                      -1,
-                                      SDL_RENDERER_ACCELERATED |
-                                              /*SDL_RENDERER_PRESENTVSYNC |*/
-                                              SDL_RENDERER_TARGETTEXTURE);
-    if (!sdl_renderer) {
-        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    SDL_SetRenderDrawBlendMode(sdl_renderer, SDL_BLENDMODE_BLEND);
+    rendering.render_options.Width = WINDOW_STARTUP_WIDTH;
+    rendering.render_options.Height = WINDOW_STARTUP_HEIGHT;
 
     // Create canvases, which are (going to be) backed by SDL_Textures
-    canvas_gamestate.Width = NATIVE_RESOLUTION_X;
-    canvas_gamestate.Height = NATIVE_RESOLUTION_Y;
-    sdl_texture_gamestate = create_texture(canvas_gamestate.Width, canvas_gamestate.Height);
+    rendering.canvas_gamestate.Width = NATIVE_RESOLUTION_X;
+    rendering.canvas_gamestate.Height = NATIVE_RESOLUTION_Y;
+    rendering.sdl_texture_gamestate = create_texture(rendering.canvas_gamestate.Width, rendering.canvas_gamestate.Height);
 
-    canvas_output.Width = render_options.Width;
-    canvas_output.Height = render_options.Height;
-    sdl_texture_output = create_texture(canvas_output.Width, canvas_output.Height);
+    rendering.canvas_output.Width = rendering.render_options.Width;
+    rendering.canvas_output.Height = rendering.render_options.Height;
+    rendering.sdl_texture_output = create_texture(rendering.canvas_output.Width, rendering.canvas_output.Height);
 
     {
-        int max_x = render_options.Width - 160;
-        int max_y = render_options.Height;
+        int max_x = rendering.render_options.Width - 160;
+        int max_y = rendering.render_options.Height;
         float minScale = MIN(max_x / (float)NATIVE_RESOLUTION_X,
                              max_y / (float)NATIVE_RESOLUTION_Y);
-        viewLeftX = (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
-        viewTopY = (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
-        viewRightX = viewLeftX + (int)(NATIVE_RESOLUTION_X * minScale);
-        viewBottomY = viewTopY + (int)(NATIVE_RESOLUTION_Y * minScale);
-        canvas_overlay_slice.Width = (viewRightX - viewLeftX);
-        canvas_overlay_slice.Height = (viewBottomY - viewTopY);
+        rendering.viewLeftX = (max_x - (int)(NATIVE_RESOLUTION_X * minScale)) / 2;
+        rendering.viewTopY = (max_y - (int)(NATIVE_RESOLUTION_Y * minScale)) / 2;
+        rendering.viewRightX = rendering.viewLeftX + (int)(NATIVE_RESOLUTION_X * minScale);
+        rendering.viewBottomY = rendering.viewTopY + (int)(NATIVE_RESOLUTION_Y * minScale);
+        rendering.canvas_overlay_slice.Width = (rendering.viewRightX - rendering.viewLeftX);
+        rendering.canvas_overlay_slice.Height = (rendering.viewBottomY - rendering.viewTopY);
     }
 
     // Start playback (assume only first packet has time = 0)
-    playback_start = SDL_GetTicks();
-    gamestate->CurrentTick = get_playback_tick();
-    if (!recording_ProcessNextPacket(recording, gamestate)) {
+    playback.playback_start = SDL_GetTicks();
+    playback.gamestate->CurrentTick = get_playback_tick();
+    if (!recording_ProcessNextPacket(playback.recording, playback.gamestate)) {
         fprintf(stderr, "Could not process packet\n");
         return 1;
     }
 
     // Render the background texture, as that is static and only needs to be done once
     struct trc_canvas canvas_background = {
-            .Width = render_options.Width,
-            .Height = render_options.Height
+            .Width = rendering.render_options.Width,
+            .Height = rendering.render_options.Height
     };
-    sdl_texture_background = create_texture(canvas_background.Width, canvas_background.Height);
-    SDL_LockTexture(sdl_texture_background, NULL, (void **)&canvas_background.Buffer, &canvas_background.Stride);
-    renderer_RenderClientBackground(gamestate,
+    rendering.sdl_texture_background = create_texture(canvas_background.Width, canvas_background.Height);
+    SDL_LockTexture(rendering.sdl_texture_background, NULL, (void **)&canvas_background.Buffer, &canvas_background.Stride);
+    renderer_RenderClientBackground(playback.gamestate,
                                     &canvas_background,
                                     0,
                                     0,
                                     canvas_background.Width,
                                     canvas_background.Height);
-    SDL_UnlockTexture(sdl_texture_background);
+    SDL_UnlockTexture(rendering.sdl_texture_background);
 
     // Init stats
     stats_frames = 0;
     stats_frames_avg = 0.0f;
-    stats_last_print = playback_start;
+    stats_last_print = playback.playback_start;
 
-    playback_paused = false;
+    playback.playback_paused = false;
 
     emscripten_set_main_loop(main_loop, 0, 1);
 
     // Deallocate
-    SDL_DestroyTexture(sdl_texture_background);
-    SDL_DestroyTexture(sdl_texture_output);
-    SDL_DestroyTexture(sdl_texture_gamestate);
-    SDL_DestroyRenderer(sdl_renderer);
+    SDL_DestroyTexture(rendering.sdl_texture_background);
+    SDL_DestroyTexture(rendering.sdl_texture_output);
+    SDL_DestroyTexture(rendering.sdl_texture_gamestate);
+    SDL_DestroyRenderer(rendering.sdl_renderer);
     SDL_Quit();
-    gamestate_Free(gamestate);
-    recording_Free(recording);
-    version_Free(version);
-    memoryfile_Close(&file_trp);
+    free_playback();
 
     return 0;
 }
