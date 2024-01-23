@@ -72,7 +72,15 @@ bool rendering_Init(struct rendering *rendering,
         return false;
     }
 
-    return rendering_HandleResize(rendering);
+    if (!rendering_HandleResize(rendering)) {
+        return false;
+    }
+
+    rendering->StatsLastUpdate = SDL_GetTicks();
+    rendering->StatsFramesSinceLastUpdate = 0;
+    rendering->StatsFPS = 0.0f;
+
+    return true;
 }
 
 void rendering_Free(struct rendering *rendering) {
@@ -275,16 +283,28 @@ void rendering_Render(struct rendering *rendering,
         }
 
         // Render playback info
-        char text[64];
-        int textLength = formatTime(text, sizeof(text) / sizeof(text[0]), playback_GetPlaybackTick(playback));
         struct trc_pixel fontColor;
         pixel_SetRGB(&fontColor, 255, 255, 255);
+        char text[64];
+        int textLength = snprintf(text, sizeof(text) / sizeof(text[0]), "FPS: %.2f", rendering->StatsFPS);
         textrenderer_Render(&playback->Gamestate->Version->Fonts.GameFont,
                             TEXTALIGNMENT_LEFT,
                             TEXTTRANSFORM_NONE,
                             &fontColor,
                             12,
+                            14,
+                            64,
+                            textLength,
+                            text,
+                            &rendering->CanvasOutput);
+
+        textLength = formatTime(text, sizeof(text) / sizeof(text[0]), playback_GetPlaybackTick(playback));
+        textrenderer_Render(&playback->Gamestate->Version->Fonts.GameFont,
+                            TEXTALIGNMENT_LEFT,
+                            TEXTTRANSFORM_NONE,
+                            &fontColor,
                             12,
+                            28,
                             64,
                             textLength,
                             text,
@@ -296,7 +316,7 @@ void rendering_Render(struct rendering *rendering,
                             TEXTTRANSFORM_NONE,
                             &fontColor,
                             12,
-                            28,
+                            42,
                             64,
                             textLength,
                             text,
@@ -337,4 +357,14 @@ void rendering_Render(struct rendering *rendering,
         abort();
     }
     SDL_RenderPresent(rendering->SdlRenderer);
+
+    // FPS counter
+    uint32_t currentTick = SDL_GetTicks();
+    rendering->StatsFramesSinceLastUpdate += 1;
+    if (currentTick >= rendering->StatsLastUpdate + 1000) {
+        rendering->StatsFPS += rendering->StatsFramesSinceLastUpdate;
+        rendering->StatsFPS /= 2;
+        rendering->StatsFramesSinceLastUpdate = 0;
+        rendering->StatsLastUpdate = currentTick;
+    }
 }

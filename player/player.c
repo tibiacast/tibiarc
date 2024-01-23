@@ -9,11 +9,6 @@
 static struct playback playback;
 static struct rendering rendering;
 
-// Stats (fps) stuff
-static int stats_frames;
-static double stats_frames_avg;
-static uint32_t stats_last_print;
-
 void handle_input() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -31,21 +26,6 @@ void handle_input() {
         default:
             break;
         }
-    }
-}
-
-void handle_stats() {
-    Uint32 current_tick = SDL_GetTicks();
-    stats_frames += 1;
-    if (current_tick - stats_last_print >= 5000) {
-        double fps =
-                stats_frames / ((current_tick - stats_last_print) / 1000.0);
-        stats_frames_avg += fps;
-        stats_frames_avg /= 2.0;
-        printf("FPS: %.2f Average FPS: %.2f\n", fps, stats_frames_avg);
-
-        stats_frames = 0;
-        stats_last_print = current_tick;
     }
 }
 
@@ -76,12 +56,13 @@ void main_loop() {
     handle_input();
     playback_ProcessPackets(&playback);
     rendering_Render(&rendering, &playback);
-    handle_stats();
 }
 
 int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
+    if (argc != 5) {
+        fprintf(stderr, "usage: %s RECORDING PIC SPR DAT\n", argv[0]);
+        return 1;
+    }
 
     trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
 
@@ -89,18 +70,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!playback_Init(&playback,
-                       "files/test.trp",
-                       "files/Tibia.pic",
-                       "files/Tibia.spr",
-                       "files/Tibia.dat")) {
+    if (!playback_Init(&playback, argv[1], argv[2], argv[3], argv[4])) {
         return 1;
     }
-
-    // Init stats
-    stats_frames = 0;
-    stats_frames_avg = 0.0f;
-    stats_last_print = playback.PlaybackStart;
 
     emscripten_set_main_loop(main_loop, 0, 1);
 

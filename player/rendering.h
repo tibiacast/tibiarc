@@ -29,6 +29,10 @@ struct rendering {
     // This rectangle represents where the gamestate texture
     // should be rendered on the output texture, including scaling
     SDL_Rect OverlaySliceRect;
+
+    uint32_t StatsLastUpdate;
+    uint32_t StatsFramesSinceLastUpdate;
+    double StatsFPS;
 };
 
 bool rendering_Init(struct rendering *rendering,
