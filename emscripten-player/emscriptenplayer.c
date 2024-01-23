@@ -110,7 +110,45 @@ void handle_logic() {
     playback.gamestate->CurrentTick = playback_tick;
 }
 
+SDL_Texture *create_texture(int width, int height) {
+    SDL_Texture *texture = SDL_CreateTexture(rendering.sdl_renderer,
+                                             SDL_PIXELFORMAT_RGBA32,
+                                             SDL_TEXTUREACCESS_STREAMING,
+                                             width,
+                                             height);
+    if (!texture) {
+        fprintf(stderr, "Could not create texture: %s\n", SDL_GetError());
+        abort();
+    }
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    return texture;
+}
+
 void handle_render() {
+    // Render background (if not already done, as this only needs to be done
+    // once)
+    if (rendering.sdl_texture_background == NULL) {
+        // Render the background texture, as that is static and only needs to be
+        // done once
+        struct trc_canvas canvas_background = {
+                .Width = rendering.render_options.Width,
+                .Height = rendering.render_options.Height};
+        rendering.sdl_texture_background =
+                create_texture(canvas_background.Width,
+                               canvas_background.Height);
+        SDL_LockTexture(rendering.sdl_texture_background,
+                        NULL,
+                        (void **)&canvas_background.Buffer,
+                        &canvas_background.Stride);
+        renderer_RenderClientBackground(playback.gamestate,
+                                        &canvas_background,
+                                        0,
+                                        0,
+                                        canvas_background.Width,
+                                        canvas_background.Height);
+        SDL_UnlockTexture(rendering.sdl_texture_background);
+    }
+
     // Render gamestate
     {
         SDL_LockTexture(rendering.sdl_texture_gamestate,
@@ -150,9 +188,10 @@ void handle_render() {
         overlay_slice.Width = rendering.overlay_slice_rect.w;
         overlay_slice.Height = rendering.overlay_slice_rect.h;
         overlay_slice.Stride = rendering.canvas_output.Stride;
-        overlay_slice.Buffer = (uint8_t *)canvas_GetPixel(&rendering.canvas_output,
-                                                          rendering.overlay_slice_rect.x,
-                                                          rendering.overlay_slice_rect.y);
+        overlay_slice.Buffer =
+                (uint8_t *)canvas_GetPixel(&rendering.canvas_output,
+                                           rendering.overlay_slice_rect.x,
+                                           rendering.overlay_slice_rect.y);
         if (!renderer_DrawOverlay(&rendering.render_options,
                                   playback.gamestate,
                                   &overlay_slice)) {
@@ -305,20 +344,6 @@ bool open_memory_file(const char *filename,
     return true;
 }
 
-SDL_Texture *create_texture(int width, int height) {
-    SDL_Texture *texture = SDL_CreateTexture(rendering.sdl_renderer,
-                                             SDL_PIXELFORMAT_RGBA32,
-                                             SDL_TEXTUREACCESS_STREAMING,
-                                             width,
-                                             height);
-    if (!texture) {
-        fprintf(stderr, "Could not create texture: %s\n", SDL_GetError());
-        abort();
-    }
-    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-    return texture;
-}
-
 bool init_sdl() {
     int ret = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
     if (ret != 0) {
@@ -350,6 +375,11 @@ bool init_sdl() {
     SDL_SetRenderDrawBlendMode(rendering.sdl_renderer, SDL_BLENDMODE_BLEND);
 
     return true;
+}
+
+void free_sdl() {
+    SDL_DestroyRenderer(rendering.sdl_renderer);
+    SDL_Quit();
 }
 
 bool init_playback(const char *recording_filename,
@@ -408,6 +438,16 @@ bool init_playback(const char *recording_filename,
     // Create gamestate
     playback.gamestate = gamestate_Create(playback.version);
 
+    // Initialize the playback by processing the first packet (assumes only
+    // first packet has time = 0)
+    playback.playback_start = SDL_GetTicks();
+    playback.playback_paused = false;
+    playback.gamestate->CurrentTick = get_playback_tick();
+    if (!recording_ProcessNextPacket(playback.recording, playback.gamestate)) {
+        fprintf(stderr, "Could not process packet\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -417,23 +457,7 @@ void free_playback() {
     memoryfile_Close(&playback.file);
 }
 
-int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
-
-    trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
-
-    if (!init_sdl()) {
-        return 1;
-    }
-
-    if (!init_playback("files/test.trp",
-                       "files/Tibia.pic",
-                       "files/Tibia.spr",
-                       "files/Tibia.dat")) {
-        return 1;
-    }
-
+void init_rendering() {
     // Setup rendering
     rendering.render_options.Width = WINDOW_STARTUP_WIDTH;
     rendering.render_options.Height = WINDOW_STARTUP_HEIGHT;
@@ -463,50 +487,44 @@ int main(int argc, char *argv[]) {
         rendering.overlay_slice_rect.w = (int)(NATIVE_RESOLUTION_X * minScale);
         rendering.overlay_slice_rect.h = (int)(NATIVE_RESOLUTION_Y * minScale);
     }
+}
 
-    // Start playback (assume only first packet has time = 0)
-    playback.playback_start = SDL_GetTicks();
-    playback.gamestate->CurrentTick = get_playback_tick();
-    if (!recording_ProcessNextPacket(playback.recording, playback.gamestate)) {
-        fprintf(stderr, "Could not process packet\n");
+void free_rendering() {
+    SDL_DestroyTexture(rendering.sdl_texture_background);
+    SDL_DestroyTexture(rendering.sdl_texture_output);
+    SDL_DestroyTexture(rendering.sdl_texture_gamestate);
+}
+
+int main(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
+    trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
+
+    if (!init_sdl()) {
         return 1;
     }
 
-    // Render the background texture, as that is static and only needs to be
-    // done once
-    struct trc_canvas canvas_background = {
-            .Width = rendering.render_options.Width,
-            .Height = rendering.render_options.Height};
-    rendering.sdl_texture_background =
-            create_texture(canvas_background.Width, canvas_background.Height);
-    SDL_LockTexture(rendering.sdl_texture_background,
-                    NULL,
-                    (void **)&canvas_background.Buffer,
-                    &canvas_background.Stride);
-    renderer_RenderClientBackground(playback.gamestate,
-                                    &canvas_background,
-                                    0,
-                                    0,
-                                    canvas_background.Width,
-                                    canvas_background.Height);
-    SDL_UnlockTexture(rendering.sdl_texture_background);
+    if (!init_playback("files/test.trp",
+                       "files/Tibia.pic",
+                       "files/Tibia.spr",
+                       "files/Tibia.dat")) {
+        return 1;
+    }
+
+    init_rendering();
 
     // Init stats
     stats_frames = 0;
     stats_frames_avg = 0.0f;
     stats_last_print = playback.playback_start;
 
-    playback.playback_paused = false;
-
     emscripten_set_main_loop(main_loop, 0, 1);
 
     // Deallocate
-    SDL_DestroyTexture(rendering.sdl_texture_background);
-    SDL_DestroyTexture(rendering.sdl_texture_output);
-    SDL_DestroyTexture(rendering.sdl_texture_gamestate);
-    SDL_DestroyRenderer(rendering.sdl_renderer);
-    SDL_Quit();
+    free_rendering();
     free_playback();
+    free_sdl();
 
     return 0;
 }
