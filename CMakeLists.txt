@@ -209,39 +209,40 @@ else()
 endif()
 
 # ########################################################################### #
-## emscriptenplayer
+## player
 # ########################################################################### #
 
-add_executable(emscriptenplayer
-  "emscripten-player/emscriptenplayer.c"
-  "emscripten-player/playback.c"
-  "emscripten-player/playback.h"
-  "emscripten-player/rendering.c"
-  "emscripten-player/rendering.h"
+add_executable(player
+  "player/player.c"
+  "player/playback.c"
+  "player/playback.h"
+  "player/rendering.c"
+  "player/rendering.h"
   "converter/memoryfile.c"
   "converter/memoryfile.h"
 )
-target_include_directories(emscriptenplayer PRIVATE "converter")
-target_include_directories(emscriptenplayer PRIVATE tibiarc)
-target_link_libraries(emscriptenplayer PRIVATE tibiarc)
+target_include_directories(player PRIVATE "converter")
+target_include_directories(player PRIVATE tibiarc)
+target_link_libraries(player PRIVATE tibiarc)
 
-if (EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
+  if (NOT SDL2_FOUND)
+    message(FATAL_ERROR "player without EMSCRIPTEN requires SDL2")
+  endif()
+  target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
+  target_link_libraries(player PRIVATE ${SDL2_LIBRARIES})
+else()
   set_target_properties(converter PROPERTIES EXCLUDE_FROM_ALL 1)
-  set_target_properties(emscriptenplayer PROPERTIES SUFFIX ".html")
-  target_link_options(emscriptenplayer PRIVATE -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH=1 --preload-file "${CMAKE_BINARY_DIR}/files@/files/")
+  set_target_properties(player PROPERTIES SUFFIX ".html")
+  target_compile_options(player PRIVATE -sUSE_SDL=2)
+  target_link_options(player PRIVATE -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH=1 --preload-file "${CMAKE_BINARY_DIR}/files@/files/")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_options(emscriptenplayer PRIVATE -sEXCEPTION_DEBUG=1 -sASSERTIONS=1 -sSAFE_HEAP=1 -sDEMANGLE_SUPPORT=1)
+    target_link_options(player PRIVATE -sEXCEPTION_DEBUG=1 -sASSERTIONS=1 -sSAFE_HEAP=1 -sDEMANGLE_SUPPORT=1)
   endif()
   add_custom_target(web
     COMMAND sh -c 'docker run --rm -p 80:80 -v "${CMAKE_BINARY_DIR}/:/usr/share/nginx/html/" nginx'
-    DEPENDS emscriptenplayer
+    DEPENDS player
   )
-else()
-  if (NOT SDL2_FOUND)
-    message(FATAL_ERROR "emscriptenplayer without EMSCRIPTEN requires SDL2")
-  endif()
-  target_include_directories(emscriptenplayer PRIVATE ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(emscriptenplayer PRIVATE ${SDL2_LIBRARIES})
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tmp/test.trp"  "${CMAKE_BINARY_DIR}/files/test.trp"  COPYONLY)
@@ -262,7 +263,7 @@ if(NOT TIBIARC_NO_LTO)
   if(ipo_supported)
     set_target_properties(tibiarc converter PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     if (NOT EMSCRIPTEN)
-      set_target_properties(emscriptenplayer PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+      set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
   endif()
 endif()
