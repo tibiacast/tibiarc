@@ -68,35 +68,132 @@ static bool types_ReadTypeProperties(struct trc_version *version,
             break;
         case TYPEPROPERTY_CLIP:
             type->Properties.StackPriority = 1;
-
             break;
         case TYPEPROPERTY_BOTTOM:
             type->Properties.StackPriority = 2;
-
             break;
         case TYPEPROPERTY_TOP:
             type->Properties.StackPriority = 3;
+            break;
+        case TYPEPROPERTY_STACKABLE:
+            type->Properties.Stackable = 1;
+            break;
+        case TYPEPROPERTY_RUNE:
+            type->Properties.Rune = 1;
+            break;
+        case TYPEPROPERTY_LIQUID_CONTAINER:
+            type->Properties.LiquidContainer = 1;
+            break;
+        case TYPEPROPERTY_LIQUID_POOL:
+            type->Properties.LiquidPool = 1;
+            break;
+        case TYPEPROPERTY_UNLOOKABLE:
+            type->Properties.Unlookable = 1;
+            break;
+        case TYPEPROPERTY_HANGABLE:
+            type->Properties.Hangable = 1;
+            break;
+        case TYPEPROPERTY_VERTICAL:
+            type->Properties.Vertical = 1;
+            break;
+        case TYPEPROPERTY_HORIZONTAL:
+            type->Properties.Horizontal = 1;
+            break;
+        case TYPEPROPERTY_DONT_HIDE:
+            type->Properties.DontHide = 1;
+            break;
+        case TYPEPROPERTY_DISPLACEMENT:
+            if (!datareader_ReadU16(reader, &type->Properties.DisplacementX)) {
+                return trc_ReportError("Failed to read DisplacementX");
+            }
+
+            if (!datareader_ReadU16(reader, &type->Properties.DisplacementY)) {
+                return trc_ReportError("Failed to read DisplacementY");
+            }
 
             break;
+        case TYPEPROPERTY_DISPLACEMENT_LEGACY:
+            type->Properties.DisplacementX = 8;
+            type->Properties.DisplacementY = 8;
+            break;
+        case TYPEPROPERTY_HEIGHT:
+            if (!datareader_ReadU16(reader, &type->Properties.Height)) {
+                return trc_ReportError("Failed to read Height");
+            }
+
+            break;
+        case TYPEPROPERTY_REDRAW_NEARBY_TOP:
+            type->Properties.RedrawNearbyTop = 1;
+            break;
+        case TYPEPROPERTY_ANIMATE_IDLE:
+            type->Properties.AnimateIdle = 1;
+            break;
+
+            /* Optional properties follow: these are parsed but not used. */
         case TYPEPROPERTY_CONTAINER:
             types_SetOptionalProperty(type->Properties.Container);
 
             break;
-        case TYPEPROPERTY_STACKABLE:
-            type->Properties.Stackable = 1;
+        case TYPEPROPERTY_AUTOMAP:
+            if (!types_ReadOptionalU16(reader,
+                                       &type->Properties.AutomapColor)) {
+                return trc_ReportError("Failed to read AutomapColor");
+            }
 
             break;
-        case TYPEPROPERTY_RUNE:
-            type->Properties.Rune = 1;
+        case TYPEPROPERTY_LENSHELP:
+            if (!types_ReadOptionalU16(reader, &type->Properties.LensHelp)) {
+                return trc_ReportError("Failed to read LensHelp");
+            }
 
+            break;
+        case TYPEPROPERTY_WRAPPABLE:
+            types_SetOptionalProperty(type->Properties.Wrappable);
+            break;
+        case TYPEPROPERTY_UNWRAPPABLE:
+            types_SetOptionalProperty(type->Properties.Unwrappable);
+            break;
+        case TYPEPROPERTY_TOP_EFFECT:
+            types_SetOptionalProperty(type->Properties.TopEffect);
+            break;
+        case TYPEPROPERTY_NO_MOVE_ANIMATION:
+            types_SetOptionalProperty(type->Properties.NoMoveAnimation);
+            break;
+        case TYPEPROPERTY_USABLE:
+            types_SetOptionalProperty(type->Properties.Usable);
+            break;
+        case TYPEPROPERTY_CORPSE:
+            types_SetOptionalProperty(type->Properties.Corpse);
+            break;
+        case TYPEPROPERTY_BLOCKING:
+            types_SetOptionalProperty(type->Properties.Blocking);
+            break;
+        case TYPEPROPERTY_UNMOVABLE:
+            types_SetOptionalProperty(type->Properties.Unmovable);
+            break;
+        case TYPEPROPERTY_UNPATHABLE:
+            types_SetOptionalProperty(type->Properties.Unpathable);
+            break;
+        case TYPEPROPERTY_TAKEABLE:
+            types_SetOptionalProperty(type->Properties.Takeable);
             break;
         case TYPEPROPERTY_FORCE_USE:
             types_SetOptionalProperty(type->Properties.ForceUse);
-
             break;
         case TYPEPROPERTY_MULTI_USE:
             types_SetOptionalProperty(type->Properties.MultiUse);
-
+            break;
+        case TYPEPROPERTY_TRANSLUCENT:
+            types_SetOptionalProperty(type->Properties.Translucent);
+            break;
+        case TYPEPROPERTY_WALKABLE:
+            types_SetOptionalProperty(type->Properties.Walkable);
+            break;
+        case TYPEPROPERTY_LOOK_THROUGH:
+            types_SetOptionalProperty(type->Properties.LookThrough);
+            break;
+        case TYPEPROPERTY_ROTATE:
+            types_SetOptionalProperty(type->Properties.Rotate);
             break;
         case TYPEPROPERTY_WRITE:
             types_SetOptionalProperty(type->Properties.Write);
@@ -116,50 +213,6 @@ static bool types_ReadTypeProperties(struct trc_version *version,
             }
 
             break;
-        case TYPEPROPERTY_LIQUID_CONTAINER:
-            type->Properties.LiquidContainer = 1;
-
-            break;
-        case TYPEPROPERTY_LIQUID_POOL:
-            type->Properties.LiquidPool = 1;
-
-            break;
-        case TYPEPROPERTY_BLOCKING:
-            types_SetOptionalProperty(type->Properties.Blocking);
-
-            break;
-        case TYPEPROPERTY_UNMOVABLE:
-            types_SetOptionalProperty(type->Properties.Unmovable);
-
-            break;
-        case TYPEPROPERTY_UNLOOKABLE:
-            type->Properties.Unlookable = 1;
-
-            break;
-        case TYPEPROPERTY_UNPATHABLE:
-            types_SetOptionalProperty(type->Properties.Unpathable);
-
-            break;
-        case TYPEPROPERTY_TAKEABLE:
-            types_SetOptionalProperty(type->Properties.Takeable);
-
-            break;
-        case TYPEPROPERTY_HANGABLE:
-            type->Properties.Hangable = 1;
-
-            break;
-        case TYPEPROPERTY_VERTICAL:
-            type->Properties.Vertical = 1;
-
-            break;
-        case TYPEPROPERTY_HORIZONTAL:
-            type->Properties.Horizontal = 1;
-
-            break;
-        case TYPEPROPERTY_ROTATE:
-            types_SetOptionalProperty(type->Properties.Rotate);
-
-            break;
         case TYPEPROPERTY_LIGHT:
             if (!types_ReadOptionalU16(reader,
                                        &type->Properties.LightIntensity)) {
@@ -169,67 +222,6 @@ static bool types_ReadTypeProperties(struct trc_version *version,
             if (!types_ReadOptionalU16(reader, &type->Properties.LightColor)) {
                 return trc_ReportError("Failed to read LightColor");
             }
-
-            break;
-        case TYPEPROPERTY_DONT_HIDE:
-            type->Properties.DontHide = 1;
-
-            break;
-        case TYPEPROPERTY_TRANSLUCENT:
-            types_SetOptionalProperty(type->Properties.Translucent);
-
-            break;
-        case TYPEPROPERTY_DISPLACEMENT:
-            if (!types_ReadOptionalU16(reader,
-                                       &type->Properties.DisplacementX)) {
-                return trc_ReportError("Failed to read DisplacementX");
-            }
-
-            if (!types_ReadOptionalU16(reader,
-                                       &type->Properties.DisplacementY)) {
-                return trc_ReportError("Failed to read DisplacementY");
-            }
-
-            break;
-        case TYPEPROPERTY_DISPLACEMENT_LEGACY:
-            type->Properties.DisplacementX = 8;
-            type->Properties.DisplacementY = 8;
-
-            break;
-        case TYPEPROPERTY_HEIGHT:
-            if (!datareader_ReadU16(reader, &type->Properties.Height)) {
-                return trc_ReportError("Failed to read Height");
-            }
-
-            break;
-        case TYPEPROPERTY_REDRAW_NEARBY_TOP:
-            type->Properties.RedrawNearbyTop = 1;
-
-            break;
-        case TYPEPROPERTY_ANIMATE_IDLE:
-            type->Properties.AnimateIdle = 1;
-
-            break;
-        case TYPEPROPERTY_AUTOMAP:
-            if (!types_ReadOptionalU16(reader,
-                                       &type->Properties.AutomapColor)) {
-                return trc_ReportError("Failed to read AutomapColor");
-            }
-
-            break;
-        case TYPEPROPERTY_LENSHELP:
-            if (!types_ReadOptionalU16(reader, &type->Properties.LensHelp)) {
-                return trc_ReportError("Failed to read LensHelp");
-            }
-
-            break;
-        case TYPEPROPERTY_WALKABLE:
-            types_SetOptionalProperty(type->Properties.Walkable);
-
-            break;
-        case TYPEPROPERTY_LOOK_THROUGH:
-            types_SetOptionalProperty(type->Properties.LookThrough);
-
             break;
         case TYPEPROPERTY_EQUIPMENT_SLOT:
             types_SetOptionalProperty(type->Properties.EquipmentSlotRestricted);
@@ -280,30 +272,13 @@ static bool types_ReadTypeProperties(struct trc_version *version,
                 return trc_ReportError("Failed to read DefaultAction");
             }
             break;
-        case TYPEPROPERTY_WRAPPABLE:
-            types_SetOptionalProperty(type->Properties.Wrappable);
+        case TYPEPROPERTY_UNKNOWN_U16:
+            types_SetOptionalProperty(type->Properties.UnknownU16);
 
-            break;
-        case TYPEPROPERTY_UNWRAPPABLE:
-            types_SetOptionalProperty(type->Properties.Unwrappable);
+            if (!datareader_Skip(reader, 2)) {
+                return trc_ReportError("Failed to skip unknown metadata");
+            }
 
-            break;
-
-        case TYPEPROPERTY_TOP_EFFECT:
-            types_SetOptionalProperty(type->Properties.TopEffect);
-
-            break;
-        case TYPEPROPERTY_NO_MOVE_ANIMATION:
-            types_SetOptionalProperty(type->Properties.NoMoveAnimation);
-
-            break;
-        case TYPEPROPERTY_USABLE:
-            types_SetOptionalProperty(type->Properties.Usable);
-
-            break;
-        case TYPEPROPERTY_INERT:
-            /* Not an actual property, just a marker for ourselvees to note
-             * that it's valid but NOP for our purposes. */
             break;
         case TYPEPROPERTY_ENTRY_END_MARKER:
             return true;

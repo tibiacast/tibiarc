@@ -22,17 +22,27 @@
 ## might work.
 cmake_minimum_required(VERSION 3.13)
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-
 project(tibiarc
   VERSION 0.1
   LANGUAGES C
 )
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+option(TIBIARC_CROSSCOMPILING "Whether this is a cross-compiled build" OFF)
+if(TIBIARC_CROSSCOMPILING)
+  set(CMAKE_CROSSCOMPILING TRUE)
+  set(TIBIARC_NO_LTO TRUE)
+endif()
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
+
+# ########################################################################### #
+## `tibiarc` library
+# ########################################################################### #
 
 # Read L1 cache line size
 execute_process(
@@ -44,10 +54,6 @@ execute_process(
 if(RET AND NOT RET EQUAL 0)
   set(LEVEL1_DCACHE_LINESIZE "128")
 endif()
-
-# ########################################################################### #
-## `tibiarc` library
-# ########################################################################### #
 
 add_library(tibiarc
   "lib/canvas.c"
@@ -107,23 +113,23 @@ target_link_libraries(tibiarc PRIVATE m)
 target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACHE_LINESIZE}")
 
 # Options to help debug certain versioning issues, enable them with e.g.
-# `cmake -DDUMP_PIC=ON ...`
-option(DUMP_PIC "Dumps .pic files as bitmaps when loaded" OFF)
-if(DUMP_PIC)
-  target_compile_definitions(tibiarc PRIVATE DUMP_PIC)
+# `cmake -DTIBIARC_DUMP_PIC=ON ...`
+option(TIBIARC_DUMP_PIC "Dumps .pic files as bitmaps when loaded" OFF)
+if(TIBIARC_DUMP_PIC)
+  target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_PIC)
 endif()
-option(DUMP_MESSAGE_TYPES "Writes messages and their types to stdout when received" OFF)
-if(DUMP_MESSAGE_TYPES)
-  target_compile_definitions(tibiarc PRIVATE DUMP_MESSAGE_TYPES)
+option(TIBIARC_DUMP_MESSAGE_TYPES "Writes messages and their types to stdout when received" OFF)
+if(TIBIARC_DUMP_MESSAGE_TYPES)
+  target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_MESSAGE_TYPES)
 endif()
-option(DUMP_ITEMS "Dumps item sprites (with properties) as bitmaps when loaded" OFF)
-if(DUMP_ITEMS)
-  target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
+option(TIBIARC_DUMP_ITEMS "Dumps item sprites (with properties) as bitmaps when loaded" OFF)
+if(TIBIARC_DUMP_ITEMS)
+  target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_ITEMS)
 endif()
 
 # OpenMP support
-option(NO_OPENMP "Explicitly disable OpenMP support" OFF)
-if(NOT NO_OPENMP)
+option(TIBIARC_NO_OPENMP "Explicitly disable OpenMP support" OFF)
+if(NOT TIBIARC_NO_OPENMP)
   find_package(OpenMP QUIET)
 endif()
 if(OpenMP_C_FOUND)
@@ -132,8 +138,8 @@ if(OpenMP_C_FOUND)
   target_link_libraries(tibiarc PRIVATE ${OpenMP_C_LIBRARIES})
 endif()
 
-option(NO_ZLIB "Explicitly disable zlib support" OFF)
-if(NOT NO_ZLIB)
+option(TIBIARC_NO_ZLIB "Explicitly disable zlib support" OFF)
+if(NOT TIBIARC_NO_ZLIB)
   find_package(ZLIB QUIET)
   if (NOT ZLIB_FOUND)
     message(WARNING "zlib was not found, tibiarc will be built without zlib support")
@@ -167,8 +173,8 @@ target_include_directories(converter PRIVATE "converter")
 target_link_libraries(converter PRIVATE tibiarc)
 
 # SDL2
-option(NO_SDL2 "Explicitly disable SDL2" OFF)
-if(NOT NO_SDL2)
+option(TIBIARC_NO_SDL2 "Explicitly disable SDL2" OFF)
+if(NOT TIBIARC_NO_SDL2)
   find_package(SDL2 QUIET)
   if (NOT SDL2_FOUND)
     message(WARNING "SDL2 was not found, converter will be built without SDL2 encoder")
@@ -176,14 +182,14 @@ if(NOT NO_SDL2)
 endif()
 if(SDL2_FOUND)
   target_include_directories(converter PRIVATE ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(converter PRIVATE ${SDL2_LIBRARIES})
+  target_link_libraries(converter PRIVATE SDL2::SDL2)
 else()
   target_compile_definitions(converter PRIVATE DISABLE_SDL2)
 endif()
 
 # ffmpeg
-option(NO_LIBAV "Explicitly disable ffmpeg" OFF)
-if(NOT NO_LIBAV)
+option(TIBIARC_NO_LIBAV "Explicitly disable ffmpeg" OFF)
+if(NOT TIBIARC_NO_LIBAV)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(LIBAV IMPORTED_TARGET
     libavcodec
@@ -197,7 +203,7 @@ if(NOT NO_LIBAV)
 endif()
 if(LIBAV_FOUND)
   target_include_directories(converter PRIVATE ${LIBAV_INCLUDE_DIRS})
-  target_link_libraries(converter PRIVATE ${LIBAV_LIBRARIES})
+  target_link_libraries(converter PRIVATE PkgConfig::LIBAV)
 else()
   target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
 endif()
@@ -245,8 +251,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tmp/Tibia.dat" "${CMAKE_BINARY_DIR}/
 # ########################################################################### #
 
 # Enable IPO if supported
-option(NO_LTO "Explicitly disable link-time optimization" OFF)
-if(NOT NO_LTO)
+option(TIBIARC_NO_LTO "Explicitly disable link-time optimization" OFF)
+if(NOT TIBIARC_NO_LTO)
   include(CheckIPOSupported)
   check_ipo_supported(RESULT ipo_supported)
   if(ipo_supported)

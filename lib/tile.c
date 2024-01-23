@@ -47,8 +47,6 @@ void tile_Clear(struct trc_tile *tile) {
     tile->GraphicalEffects[0].Id = 0;
     tile->NumericalIndex = 0;
     tile->NumericalEffects[0].Value = 0;
-    tile->TextIndex = 0;
-    tile->TextEffects[0].Length = 0;
 }
 
 void tile_AddGraphicalEffect(struct trc_tile *tile,
@@ -87,22 +85,6 @@ void tile_AddNumericalEffect(struct trc_tile *tile,
     effect->Value = value;
 
     tile->NumericalIndex = (tile->NumericalIndex + 1) % MAX_EFFECTS_PER_TILE;
-}
-
-void tile_AddTextEffect(struct trc_tile *tile,
-                        uint8_t color,
-                        uint16_t length,
-                        const char *message,
-                        uint32_t currentTick) {
-    struct trc_text_effect *effect = &tile->TextEffects[tile->TextIndex];
-
-    effect->StartTick = currentTick;
-    effect->Color = color;
-    effect->Length = MIN(length, sizeof(effect->Message));
-
-    memcpy(effect->Message, message, effect->Length);
-
-    tile->TextIndex = (tile->TextIndex + 1) % MAX_EFFECTS_PER_TILE;
 }
 
 bool tile_RemoveObject(const struct trc_version *version,
