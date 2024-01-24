@@ -222,7 +222,6 @@ add_executable(player
   "converter/memoryfile.h"
 )
 target_include_directories(player PRIVATE "converter")
-target_include_directories(player PRIVATE tibiarc)
 target_link_libraries(player PRIVATE tibiarc)
 
 if (NOT EMSCRIPTEN)
@@ -239,16 +238,7 @@ else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_options(player PRIVATE -sEXCEPTION_DEBUG=1 -sASSERTIONS=1 -sSAFE_HEAP=1 -sDEMANGLE_SUPPORT=1)
   endif()
-  add_custom_target(web
-    COMMAND sh -c 'docker run --rm -p 80:80 -v "${CMAKE_BINARY_DIR}/:/usr/share/nginx/html/" nginx'
-    DEPENDS player
-  )
 endif()
-
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tmp/test.trp"  "${CMAKE_BINARY_DIR}/files/test.trp"  COPYONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tmp/Tibia.pic" "${CMAKE_BINARY_DIR}/files/Tibia.pic" COPYONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tmp/Tibia.spr" "${CMAKE_BINARY_DIR}/files/Tibia.spr" COPYONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tmp/Tibia.dat" "${CMAKE_BINARY_DIR}/files/Tibia.dat" COPYONLY)
 
 
 # ########################################################################### #
