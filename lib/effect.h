@@ -28,14 +28,6 @@ struct trc_graphical_effect {
     uint32_t StartTick;
 };
 
-struct trc_text_effect {
-    uint32_t StartTick;
-    uint8_t Color;
-
-    int Length;
-    char Message[16];
-};
-
 struct trc_numerical_effect {
     uint32_t StartTick;
     uint8_t Color;
