@@ -2484,7 +2484,7 @@ bool renderer_DrawStatusBars(const struct trc_render_options *options,
 
     textLength = (uint16_t)snprintf(textBuffer,
                                     sizeof(textBuffer),
-                                    "%hu / %hu",
+                                    "%hi / %hi",
                                     gamestate->Player.Stats.Health,
                                     gamestate->Player.Stats.MaxHealth);
     textrenderer_DrawCenteredString(&fonts->GameFont,
@@ -2497,7 +2497,7 @@ bool renderer_DrawStatusBars(const struct trc_render_options *options,
 
     textLength = (uint16_t)snprintf(textBuffer,
                                     sizeof(textBuffer),
-                                    "%hu / %hu",
+                                    "%hi / %hi",
                                     gamestate->Player.Stats.Mana,
                                     gamestate->Player.Stats.MaxMana);
     textrenderer_DrawCenteredString(&fonts->GameFont,

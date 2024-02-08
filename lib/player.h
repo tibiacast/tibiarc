@@ -46,8 +46,8 @@ struct trc_player {
     uint32_t HotkeyPreset;
 
     struct {
-        uint16_t Health;
-        uint16_t MaxHealth;
+        int16_t Health;
+        int16_t MaxHealth;
 
         uint32_t Capacity;
         uint32_t MaxCapacity;
@@ -58,8 +58,8 @@ struct trc_player {
         uint16_t Level;
         uint8_t LevelPercent;
 
-        uint16_t Mana;
-        uint16_t MaxMana;
+        int16_t Mana;
+        int16_t MaxMana;
 
         uint8_t MagicLevel;
         uint8_t MagicLevelBase;
