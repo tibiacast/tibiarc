@@ -121,16 +121,4 @@ void canvas_Tint(struct trc_canvas *canvas,
                  int secondary,
                  int detail);
 
-/** @brief Clones `from` onto `canvas` at the given coordinates, using bilinear
- * scaling.
- *
- * This is only intended as a fallback for when we lack anything better, it's
- * not written to be efficient. */
-void canvas_RescaleClone(struct trc_canvas *canvas,
-                         int leftX,
-                         int topY,
-                         int rightX,
-                         int bottomY,
-                         const struct trc_canvas *from);
-
 #endif /* __TRC_CANVAS_H__ */

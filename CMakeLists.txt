@@ -127,17 +127,6 @@ if(TIBIARC_DUMP_ITEMS)
   target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_ITEMS)
 endif()
 
-# OpenMP support
-option(TIBIARC_NO_OPENMP "Explicitly disable OpenMP support" OFF)
-if(NOT TIBIARC_NO_OPENMP)
-  find_package(OpenMP QUIET)
-endif()
-if(OpenMP_C_FOUND)
-  target_include_directories(tibiarc PRIVATE ${OpenMP_C_INCLUDE_DIRS})
-  target_compile_options(tibiarc PRIVATE ${OpenMP_C_FLAGS})
-  target_link_libraries(tibiarc PRIVATE ${OpenMP_C_LIBRARIES})
-endif()
-
 option(TIBIARC_NO_ZLIB "Explicitly disable zlib support" OFF)
 if(NOT TIBIARC_NO_ZLIB)
   find_package(ZLIB QUIET)
@@ -206,6 +195,17 @@ if(LIBAV_FOUND)
   target_link_libraries(converter PRIVATE PkgConfig::LIBAV)
 else()
   target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
+endif()
+
+# OpenMP support
+option(TIBIARC_NO_OPENMP "Explicitly disable OpenMP support" OFF)
+if(NOT TIBIARC_NO_OPENMP)
+  find_package(OpenMP QUIET)
+endif()
+if(OpenMP_C_FOUND)
+  target_include_directories(converter PRIVATE ${OpenMP_C_INCLUDE_DIRS})
+  target_compile_options(converter PRIVATE ${OpenMP_C_FLAGS})
+  target_link_libraries(converter PRIVATE ${OpenMP_C_LIBRARIES})
 endif()
 
 # ########################################################################### #

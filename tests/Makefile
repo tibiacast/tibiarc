@@ -32,7 +32,7 @@ clean:
 
 # Simplifies running tests under tools like perf, rr, valgrind, et al.
 # `make TEST_PREFIX=valgrind all`
-TRC_TEST := $(TEST_PREFIX) ../converter
+TRC_TEST := $(TEST_PREFIX) ../build/converter
 
 # ########################################################################### #
 
@@ -93,12 +93,12 @@ test_sdl2_1:
 
 # ########################################################################### #
 
-SCREENSHOT_FILES := render/screenshot_0.bmp render/screenshot_1.bmp
-SCREENSHOT_CHECKSUMS := $(addsuffix .sha256sum, $(SCREENSHOT_FILES))
+SCREENSHOT_NAMES := screenshot_0 screenshot_1
+SCREENSHOT_TESTS := $(addprefix test_, $(SCREENSHOT_NAMES))
+SCREENSHOT_FILES := $(addprefix render/, $(addsuffix .bmp, $(SCREENSHOT_NAMES)))
+SCREENSHOT_CHECKSUMS := $(addsuffix .checksum, $(SCREENSHOT_FILES))
 .PHONY: test_screenshot
-test_screenshot: $(SCREENSHOT_FILES)
-	sha256sum -c $(SCREENSHOT_CHECKSUMS)
-	rm $(SCREENSHOT_FILES)
+test_screenshot: $(SCREENSHOT_TESTS)
 
 update_screenshot: $(SCREENSHOT_CHECKSUMS)
 
@@ -115,13 +115,6 @@ render/screenshot_0.bmp:
               ./8.40/ \
               ./8.40/sample.tmv2 \
               $@
-
-test_screenshot_0: render/screenshot_0.bmp
-	sha256sum -c render/screenshot_0.bmp.sha256sum
-	rm render/screenshot_0.bmp
-
-render/screenshot_%.bmp.sha256sum: render/screenshot_%.bmp
-	sha256sum $< > $@
 
 # Skip rendering cluttery effects that look bad when scaled down, generating an
 # image suitable for use as a thumbnail.
@@ -146,12 +139,24 @@ render/screenshot_1.bmp:
               ./8.40/sample.tmv2 \
               $@
 
-test_screenshot_1: render/screenshot_1.bmp
-	sha256sum -c render/screenshot_1.bmp.sha256sum
-	rm render/screenshot_1.bmp
+# Generate checksums of the image data with ImageMagick, slightly more reliable
+# than a straight checksum with shasum or similar that includes metadata.
+render/screenshot_%.bmp.checksum: render/screenshot_%.bmp
+	identify -quiet -format "%#" $< > $@
 
-update_test_screenshot_1: render/screenshot_1.bmp
-	sha256sum render/screenshot_1.bmp > render/screenshot_1.bmp.sha256sum
+# $1 = test name, $2 = file base name
+define SCREENSHOT_CHECKSUM_TEST
+$(1): $(2)
+	echo $(1)
+	identify -quiet -format "%#" $(2) > $(2).comparand
+	diff $(2).checksum $(2).comparand
+	rm $(2) $(2).comparand
+endef
+
+$(foreach _screenshot, $(SCREENSHOT_NAMES), \
+  $(eval $(call SCREENSHOT_CHECKSUM_TEST, \
+           $(addprefix test_, $(_screenshot)), \
+           $(addprefix render/, $(addsuffix .bmp, $(_screenshot))))))
 
 # ########################################################################### #
 

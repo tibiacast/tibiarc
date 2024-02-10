@@ -1,11 +1,16 @@
 # tibiarc
 
-`tibiarc` is a library that can be used to convert Tibia packet captures to
-video files without requiring a Tibia client, making it suitable for unattended
-conversions. Its core was once part of Tibiacast but it has been broken out
-and released as open source to aid the preservation of old Tibia recordings.
+`tibiarc` is a library that can render Tibia packet captures independently of a
+Tibia client. Its core was originally a part of Tibiacast, where it was used to
+render "thumbnails" server-side and implement the client's convert-to-video
+feature, but has now been broken out and released as open source to aid the
+preservation of old Tibia recordings.
 
-The state of the code is largely the same as when Tibiacast closed in 2016, but
+As it does not require a Tibia client and renders at its own pace, it's well-
+suited for unattended conversions, and a demo application for that is included
+in this repository.
+
+The state of the code is largely the same as when Tibiacast shuttered, but
 I've tried to clean things up a bit to make it useful as a library. I've also
 added a basic translation layer that lets it support arbitrary Tibia versions
 as long as the appropriate `.dat`/`.spr`/`.pic` files are present. If you
