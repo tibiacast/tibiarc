@@ -95,7 +95,7 @@ $ x86_64-w64-mingw32.static-cmake -DTIBIARC_CROSSCOMPILING=On ..
 $ make
 ```
 
-Assuming this worked, you should now have a `tibiarc.exe` in the build folder
+Assuming this worked, you should now have a `converter.exe` in the build folder
 with all dependencies statically linked. The command line interface is a bit
 broken however, due to the `argp` library being missing in `MXE`. I'll fix that
 when I find the time.
