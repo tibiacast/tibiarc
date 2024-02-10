@@ -2529,7 +2529,9 @@ bool parser_ParsePacket(struct trc_data_reader *reader,
         return parser_ParseInitialization(reader, gamestate);
     case 0x1D:
     case 0x1E:
-        /* Single-byte ping packets. */
+        /* Single-byte ping packets, may overlap with patching in which case
+         * we'll crash. Versioning will probably straighten that out but it's
+         * difficult to map that out. */
         return true;
     case 0x28:
         return parser_ParseDeathDialog(reader, gamestate);

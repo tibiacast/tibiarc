@@ -109,6 +109,120 @@ static bool exporter_DrawInterface(const struct trc_render_options *options,
     return true;
 }
 
+static void exporter_CopyRect(struct trc_canvas *canvas,
+                              int dX,
+                              int dY,
+                              const struct trc_canvas *from,
+                              int sX,
+                              int sY,
+                              int width,
+                              int height) {
+    int lineOffset, lineWidth;
+
+    if (!((dX < canvas->Width) && (dY < canvas->Height) && (dX + width >= 0) &&
+          (dY + height >= 0))) {
+        return;
+    }
+
+    height = MIN(MIN(height, canvas->Height - dY), from->Height - sY);
+
+    lineWidth = MIN(MIN(width, from->Width - sX), canvas->Width - dX);
+    lineOffset = MAX(MAX(-sY, -dY), 0);
+
+    for (; lineOffset < height; lineOffset++) {
+        memcpy(canvas_GetPixel(canvas, dX, dY + lineOffset),
+               canvas_GetPixel(from, sX, sY + lineOffset),
+               lineWidth * sizeof(struct trc_pixel));
+    }
+}
+
+/* FIXME: Naive and hysterically slow bilinear rescaler, we'll move this to
+ * libswscale once the redesigned player has been merged and we can chuck
+ * SDL2, leaving only the libav backend; having to support the two in a common
+ * API is too annoying at the moment. */
+static void exporter_RescaleClone(struct trc_canvas *canvas,
+                                  int leftX,
+                                  int topY,
+                                  int rightX,
+                                  int bottomY,
+                                  const struct trc_canvas *from) {
+    float scaleFactorX, scaleFactorY;
+    int width, height;
+
+    width = rightX - leftX;
+    height = bottomY - topY;
+    ASSERT(width >= 0 && height >= 0);
+
+    scaleFactorX = (float)width / (float)from->Width;
+    scaleFactorY = (float)height / (float)from->Height;
+
+    if (scaleFactorX == 1 && scaleFactorY == 1) {
+        /* Hacky fast path for when we don't need rescaling, speeds up testing
+         * quite a lot. */
+        exporter_CopyRect(canvas,
+                          leftX,
+                          topY,
+                          from,
+                          0,
+                          0,
+                          from->Width,
+                          from->Height);
+        return;
+    }
+
+#ifdef _OPENMP
+#    pragma omp parallel for
+#endif
+    for (int toY = 0; toY < height; toY++) {
+        const int fromY0 = MIN(toY / scaleFactorY, from->Height - 1);
+        const int fromY1 = MIN(fromY0 + 1, from->Height - 1);
+        const float subOffsY = (toY / scaleFactorY) - fromY0;
+
+        for (int toX = 0; toX < width; toX++) {
+            const int fromX0 = MIN(toX / scaleFactorX, from->Width - 1);
+            const int fromX1 = MIN(fromX0 + 1, from->Width - 1);
+            const float subOffsX = (toX / scaleFactorX) - fromX0;
+
+            const struct trc_pixel *srcPixels[4];
+            struct trc_pixel *dstPixel;
+
+            float outRed, outGreen, outBlue, outAlpha;
+
+            srcPixels[0] = canvas_GetPixel(from, fromX0, fromY0);
+            srcPixels[1] = canvas_GetPixel(from, fromX1, fromY0);
+            srcPixels[2] = canvas_GetPixel(from, fromX0, fromY1);
+            srcPixels[3] = canvas_GetPixel(from, fromX1, fromY1);
+
+            outRed = srcPixels[0]->Red * (1 - subOffsX) * (1 - subOffsY);
+            outGreen = srcPixels[0]->Green * (1 - subOffsX) * (1 - subOffsY);
+            outBlue = srcPixels[0]->Blue * (1 - subOffsX) * (1 - subOffsY);
+            outAlpha = srcPixels[0]->Alpha * (1 - subOffsX) * (1 - subOffsY);
+
+            outRed += srcPixels[1]->Red * (subOffsX) * (1 - subOffsY);
+            outGreen += srcPixels[1]->Green * (subOffsX) * (1 - subOffsY);
+            outBlue += srcPixels[1]->Blue * (subOffsX) * (1 - subOffsY);
+            outAlpha += srcPixels[1]->Alpha * (subOffsX) * (1 - subOffsY);
+
+            outRed += srcPixels[2]->Red * (1 - subOffsX) * (subOffsY);
+            outGreen += srcPixels[2]->Green * (1 - subOffsX) * (subOffsY);
+            outBlue += srcPixels[2]->Blue * (1 - subOffsX) * (subOffsY);
+            outAlpha += srcPixels[2]->Alpha * (1 - subOffsX) * (subOffsY);
+
+            outRed += srcPixels[3]->Red * (subOffsX) * (subOffsY);
+            outGreen += srcPixels[3]->Green * (subOffsX) * (subOffsY);
+            outBlue += srcPixels[3]->Blue * (subOffsX) * (subOffsY);
+            outAlpha += srcPixels[3]->Alpha * (subOffsX) * (subOffsY);
+
+            dstPixel = canvas_GetPixel(canvas, toX + leftX, toY + topY);
+
+            dstPixel->Red = (uint8_t)(outRed + 0.5);
+            dstPixel->Green = (uint8_t)(outGreen + 0.5);
+            dstPixel->Blue = (uint8_t)(outBlue + 0.5);
+            dstPixel->Alpha = (uint8_t)(outAlpha + 0.5);
+        }
+    }
+}
+
 static bool exporter_ConvertVideo(const struct export_settings *settings,
                                   struct trc_recording *recording,
                                   struct trc_game_state *gamestate,
@@ -194,12 +308,12 @@ static bool exporter_ConvertVideo(const struct export_settings *settings,
                 return trc_ReportError("Could not draw gamestate");
             }
 
-            canvas_RescaleClone(outputCanvas,
-                                viewLeftX,
-                                viewTopY,
-                                viewRightX,
-                                viewBottomY,
-                                mapCanvas);
+            exporter_RescaleClone(outputCanvas,
+                                  viewLeftX,
+                                  viewTopY,
+                                  viewRightX,
+                                  viewBottomY,
+                                  mapCanvas);
 
             if (!renderer_DrawOverlay(renderOptions,
                                       gamestate,

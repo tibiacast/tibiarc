@@ -549,11 +549,14 @@ static int parse_arguments(int argc,
 static int parse_arguments(int argc,
                            char **argv,
                            struct parsed_arguments *out) {
-    out->Paths[0] = argv[1];
-    out->Paths[1] = argv[2];
-    out->Paths[2] = argv[3];
+    if (argc == 4) {
+        out->Paths[0] = argv[1];
+        out->Paths[1] = argv[2];
+        out->Paths[2] = argv[3];
+        return 0;
+    }
 
-    return 0;
+    return 1;
 }
 #endif
 
