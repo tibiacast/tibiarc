@@ -35,53 +35,85 @@ struct trc_data_reader {
     (ASSERT((Reader)->Length >= (Reader)->Position),                           \
      (Reader)->Length - (Reader)->Position)
 
-#define datareader_PeekU8(Reader, Result)                                      \
+#define datareader_Peek8(Type, Reader, Result)                                 \
     (datareader_Remaining(Reader) < 1                                          \
              ? false                                                           \
-             : (*Result = (Reader)->Data[(Reader)->Position], true))
+             : (*Result = (Type)((Reader)->Data[(Reader)->Position]), true))
 
-#define datareader_PeekU16(Reader, Result)                                     \
+#define datareader_Peek16(Type, Reader, Result)                                \
     ((datareader_Remaining(Reader) < 2 || sizeof(*Result) < 2)                 \
              ? false                                                           \
-             : (*Result = ((uint16_t)(Reader)->Data[(Reader)->Position + 0])   \
-                                  << 0x00 |                                    \
-                          ((uint16_t)(Reader)->Data[(Reader)->Position + 1])   \
-                                  << 0x08,                                     \
+             : (*Result = (Type)(((uint16_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 0])      \
+                                         << 0x00 |                             \
+                                 ((uint16_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 1])      \
+                                         << 0x08),                             \
                 true))
 
-#define datareader_PeekU32(Reader, Result)                                     \
+#define datareader_Peek32(Type, Reader, Result)                                \
     ((datareader_Remaining(Reader) < 4 || sizeof(*Result) < 4)                 \
              ? false                                                           \
-             : (*Result = ((uint32_t)(Reader)->Data[(Reader)->Position + 0])   \
-                                  << 0x00 |                                    \
-                          ((uint32_t)(Reader)->Data[(Reader)->Position + 1])   \
-                                  << 0x08 |                                    \
-                          ((uint32_t)(Reader)->Data[(Reader)->Position + 2])   \
-                                  << 0x10 |                                    \
-                          ((uint32_t)(Reader)->Data[(Reader)->Position + 3])   \
-                                  << 0x18,                                     \
+             : (*Result = (Type)(((uint32_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 0])      \
+                                         << 0x00 |                             \
+                                 ((uint32_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 1])      \
+                                         << 0x08 |                             \
+                                 ((uint32_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 2])      \
+                                         << 0x10 |                             \
+                                 ((uint32_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 3])      \
+                                         << 0x18),                             \
                 true))
 
-#define datareader_PeekU64(Reader, Result)                                     \
+#define datareader_Peek64(Type, Reader, Result)                                \
     ((datareader_Remaining(Reader) < 8 || sizeof(*Result) < 8)                 \
              ? false                                                           \
-             : (*Result = ((uint64_t)(Reader)->Data[(Reader)->Position + 0])   \
-                                  << 0x00 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 1])   \
-                                  << 0x08 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 2])   \
-                                  << 0x10 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 3])   \
-                                  << 0x18 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 4])   \
-                                  << 0x20 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 5])   \
-                                  << 0x28 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 6])   \
-                                  << 0x30 |                                    \
-                          ((uint64_t)(Reader)->Data[(Reader)->Position + 7])   \
-                                  << 0x38,                                     \
+             : (*Result = (Type)(((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 0])      \
+                                         << 0x00 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 1])      \
+                                         << 0x08 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 2])      \
+                                         << 0x10 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 3])      \
+                                         << 0x18 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 4])      \
+                                         << 0x20 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 5])      \
+                                         << 0x28 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 6])      \
+                                         << 0x30 |                             \
+                                 ((uint64_t)(Reader)                           \
+                                          ->Data[(Reader)->Position + 7])      \
+                                         << 0x38),                             \
                 true))
+
+#define datareader_PeekU8(Reader, Result)                                      \
+    datareader_Peek8(uint8_t, Reader, Result)
+#define datareader_PeekU16(Reader, Result)                                     \
+    datareader_Peek16(uint16_t, Reader, Result)
+#define datareader_PeekU32(Reader, Result)                                     \
+    datareader_Peek32(uint32_t, Reader, Result)
+#define datareader_PeekU64(Reader, Result)                                     \
+    datareader_Peek64(uint64_t, Reader, Result)
+
+#define datareader_PeekI8(Reader, Result)                                      \
+    datareader_Peek8(int8_t, Reader, Result)
+#define datareader_PeekI16(Reader, Result)                                     \
+    datareader_Peek16(int16_t, Reader, Result)
+#define datareader_PeekI32(Reader, Result)                                     \
+    datareader_Peek32(int32_t, Reader, Result)
+#define datareader_PeekI64(Reader, Result)                                     \
+    datareader_Peek64(int64_t, Reader, Result)
 
 #define datareader_ReadU8(Reader, Result)                                      \
     (!datareader_PeekU8(Reader, Result) ? false                                \
@@ -95,6 +127,20 @@ struct trc_data_reader {
 #define datareader_ReadU64(Reader, Result)                                     \
     (!datareader_PeekU64(Reader, Result) ? false                               \
                                          : ((Reader)->Position += 8, true))
+
+#define datareader_ReadI8(Reader, Result)                                      \
+    (!datareader_PeekI8(Reader, Result) ? false                                \
+                                        : ((Reader)->Position += 1, true))
+#define datareader_ReadI16(Reader, Result)                                     \
+    (!datareader_PeekI16(Reader, Result) ? false                               \
+                                         : ((Reader)->Position += 2, true))
+#define datareader_ReadI32(Reader, Result)                                     \
+    (!datareader_PeekI32(Reader, Result) ? false                               \
+                                         : ((Reader)->Position += 4, true))
+#define datareader_ReadI64(Reader, Result)                                     \
+    (!datareader_PeekI64(Reader, Result) ? false                               \
+                                         : ((Reader)->Position += 8, true))
+
 #define datareader_ReadRaw(Reader, Count, Buffer)                              \
     (datareader_Remaining(Reader) < (Count)                                    \
              ? false                                                           \

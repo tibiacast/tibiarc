@@ -1421,8 +1421,11 @@ static bool parser_ParsePlayerDataBasic(struct trc_data_reader *reader,
 
 static bool parser_ParsePlayerDataCurrent(struct trc_data_reader *reader,
                                           struct trc_game_state *gamestate) {
-    ParseAssert(datareader_ReadU16(reader, &gamestate->Player.Stats.Health));
-    ParseAssert(datareader_ReadU16(reader, &gamestate->Player.Stats.MaxHealth));
+    ParseAssert(datareader_ReadI16(reader, &gamestate->Player.Stats.Health));
+    ParseAssert(datareader_ReadI16(reader, &gamestate->Player.Stats.MaxHealth));
+    ParseAssert(CHECK_RANGE(gamestate->Player.Stats.Health,
+                            0,
+                            gamestate->Player.Stats.MaxHealth));
 
     if ((gamestate->Version)->Protocol.CapacityU32) {
         ParseAssert(
@@ -1464,11 +1467,15 @@ static bool parser_ParsePlayerDataCurrent(struct trc_data_reader *reader,
                                      &gamestate->Player.Stats.ExperienceBonus));
     }
 
-    ParseAssert(datareader_ReadU16(reader, &gamestate->Player.Stats.Mana));
-    ParseAssert(datareader_ReadU16(reader, &gamestate->Player.Stats.MaxMana));
+    ParseAssert(datareader_ReadI16(reader, &gamestate->Player.Stats.Mana));
+    ParseAssert(datareader_ReadI16(reader, &gamestate->Player.Stats.MaxMana));
+
+    /* Mana can be negative for de-leveled mages. */
     ParseAssert(CHECK_RANGE(gamestate->Player.Stats.Mana,
                             0,
-                            gamestate->Player.Stats.MaxMana));
+                            gamestate->Player.Stats.MaxMana) ||
+                (gamestate->Player.Stats.MaxMana < 0 &&
+                 gamestate->Player.Stats.Mana == 0));
 
     ParseAssert(datareader_ReadU8(reader, &gamestate->Player.Stats.MagicLevel));
 

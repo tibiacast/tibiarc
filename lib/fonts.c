@@ -49,12 +49,6 @@ static bool fonts_LoadFont(const struct trc_version *version,
 
         characterSprite = &font->Characters[character].Sprite;
 
-        if (character == ' ') {
-            font->Characters[character].Width = 2;
-        } else {
-            font->Characters[character].Width = 0;
-        }
-
         renderWidth = 0;
 
         canvas_ExtractSprite(fontCanvas,
@@ -66,10 +60,11 @@ static bool fonts_LoadFont(const struct trc_version *version,
                              &renderHeight,
                              characterSprite);
 
-        /* Make sure spaces look ok. */
         if (character != ' ') {
             font->Characters[character].Width = renderWidth + widthAdjust;
         } else {
+            /* Spaces lack render width/height, make sure they still look
+             * okay. */
             font->Characters[character].Width = 2;
         }
     }
