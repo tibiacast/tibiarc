@@ -2129,6 +2129,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
         unsigned textWidth, textHeight;
 
         textrenderer_MeasureBounds(&fonts->GameFont,
+                                   transformations,
                                    lineMaxLength,
                                    message->TextLength,
                                    message->Text,

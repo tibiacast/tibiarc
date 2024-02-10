@@ -40,6 +40,7 @@ enum TrcTextTransforms {
 };
 
 void textrenderer_MeasureBounds(const struct trc_font *font,
+                                const enum TrcTextTransforms transform,
                                 const uint16_t lineMaxLength,
                                 uint16_t stringLength,
                                 const char *string,

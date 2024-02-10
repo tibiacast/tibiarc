@@ -32,28 +32,160 @@ const static struct trc_pixel HighlightColor = {.Red = (23 / 36) * 51,
                                                 .Blue = (23 % 6) * 51,
                                                 .Alpha = 0xFF};
 
-static void textrenderer_MeasureLineWidth(const struct trc_font *font,
-                                          uint16_t lineLength,
-                                          const char *line,
-                                          uint32_t *result) {
+struct trc_textrenderer_state {
+    const enum TrcTextTransforms Transform;
+    const struct trc_font *Font;
+    int DrawRaw;
+    int Uppercase;
+    int Highlight;
+};
+
+static bool textrenderer_Transform(struct trc_textrenderer_state *state,
+                                   uint8_t in,
+                                   uint8_t *out) {
+    switch (in) {
+    case '{':
+        if (state->Transform & TEXTTRANSFORM_HIGHLIGHT) {
+            ASSERT(state->Highlight == 0);
+            state->Highlight = 1;
+            return false;
+        }
+        break;
+    case '}':
+        if (state->Transform & TEXTTRANSFORM_HIGHLIGHT) {
+            ASSERT(state->Highlight == 1);
+            state->Highlight = 0;
+            return false;
+        }
+        break;
+    case '\n':
+        return false;
+    default:
+        break;
+    }
+
+    uint8_t character = characterset_ConvertPrintable(in);
+
+    switch (state->Transform) {
+    case TEXTTRANSFORM_PROPERCASE:
+        if (!state->DrawRaw) {
+            if (state->Uppercase) {
+                character = characterset_ToUpper(character);
+            }
+
+            state->Uppercase = (character == ' ');
+        }
+        break;
+    case TEXTTRANSFORM_LOWERCASE:
+        character = characterset_ToLower(character);
+        break;
+    case TEXTTRANSFORM_UPPERCASE:
+        character = characterset_ToUpper(character);
+        break;
+    default:
+        break;
+    }
+
+    *out = character;
+    return true;
+}
+
+static void textrenderer_MeasureLineWidth(
+        const struct trc_textrenderer_state *state,
+        uint16_t lineLength,
+        const char *line,
+        uint32_t *result) {
+    struct trc_textrenderer_state lineState = *state;
     int stringWidth = 0;
 
     for (int characterIdx = 0; characterIdx < lineLength; characterIdx++) {
-        uint8_t currentCharacter = line[characterIdx];
+        uint8_t character = line[characterIdx];
 
-        switch (currentCharacter) {
-        case '\n':
+        if (character == '\n') {
             break;
-        default:
-            currentCharacter = characterset_ConvertPrintable(currentCharacter);
-            stringWidth += font->Characters[currentCharacter].Width;
+        }
+
+        if (textrenderer_Transform(&lineState, character, &character)) {
+            stringWidth += (state->Font)->Characters[character].Width;
         }
     }
 
     (*result) = stringWidth;
 }
 
+static bool textrenderer_DetermineLine(struct trc_textrenderer_state *state,
+                                       uint32_t maxLength,
+                                       uint32_t stringLength,
+                                       const char *string,
+                                       uint32_t start,
+                                       uint32_t *length,
+                                       uint32_t *width) {
+    uint32_t idx, lastWordIdx, lineLength;
+    bool hyphenate;
+    uint8_t *line;
+
+    lineLength = MIN(maxLength, stringLength - start);
+    line = (uint8_t *)&string[start];
+    hyphenate = false;
+
+    /* Clip line length to nearest word to avoid excessive hyphenation. */
+    for (idx = 0, lastWordIdx = 0; idx < (stringLength - start); idx++) {
+        uint8_t character = line[idx];
+
+        if (character == '\n') {
+            lineLength = idx + 1;
+            break;
+        } else {
+            switch (character) {
+            case '\0':
+            case ' ':
+                if (lastWordIdx && idx > lineLength) {
+                    lineLength = MIN(lineLength, lastWordIdx);
+                    break;
+                }
+
+                lastWordIdx = idx;
+                break;
+            case '{':
+            case '}':
+                if (state->Transform & TEXTTRANSFORM_HIGHLIGHT) {
+                    /* These aren't displayed and shouldn't count towards the
+                     * maximum length. */
+                    maxLength += 1;
+                }
+                break;
+            }
+        }
+    }
+
+    if (idx == (stringLength - start) && idx >= maxLength) {
+        if (!lastWordIdx) {
+            lineLength = lineLength - 1;
+            *length = lineLength;
+            hyphenate = true;
+        } else {
+            lineLength = lastWordIdx;
+        }
+    }
+
+    lineLength = MIN(lineLength, stringLength - start);
+    *length = lineLength;
+
+    textrenderer_MeasureLineWidth(state,
+                                  (uint16_t)lineLength,
+                                  &string[start],
+                                  width);
+
+    /* Add in the length of the hyphen, if necessary. */
+    if (hyphenate) {
+        *width += 8;
+    }
+
+    return hyphenate;
+}
+
 void textrenderer_MeasureBounds(const struct trc_font *font,
+                                const enum TrcTextTransforms transform,
                                 const uint16_t lineMaxLength,
                                 uint16_t stringLength,
                                 const char *string,
@@ -61,63 +193,39 @@ void textrenderer_MeasureBounds(const struct trc_font *font,
                                 uint32_t *textHeight) {
     uint32_t lineLength, lineStart;
 
+    struct trc_textrenderer_state state = {
+            .Font = font,
+            .Transform = transform,
+            .DrawRaw = characterset_IsUpper(string[0]),
+            .Uppercase = !characterset_IsUpper(string[0]),
+            .Highlight = 0};
+
+#ifndef NDEBUG
+    switch (state.Transform & ~TEXTTRANSFORM_HIGHLIGHT) {
+    case TEXTTRANSFORM_PROPERCASE:
+    case TEXTTRANSFORM_LOWERCASE:
+    case TEXTTRANSFORM_UPPERCASE:
+    case TEXTTRANSFORM_NONE:
+        break;
+    default:
+        ASSERT(0);
+    }
+#endif
+
     (*textHeight) = 0;
     (*textWidth) = 0;
     lineStart = 0;
 
     do {
-        uint32_t characterIdx, lastWordIdx;
-        uint32_t hyphenateLine, lineWidth;
-        const char *currentLine;
+        uint32_t lineWidth;
 
-        lineLength = MIN(lineMaxLength, stringLength - lineStart);
-        currentLine = &string[lineStart];
-        hyphenateLine = 0;
-
-        /* Clip line length to nearest word to avoid excessive hyphenation. */
-        for (characterIdx = 0, lastWordIdx = 0;
-             characterIdx < (stringLength - lineStart);
-             characterIdx++) {
-            uint8_t currentCharacter = currentLine[characterIdx];
-
-            if (currentCharacter == '\n') {
-                lineLength = characterIdx + 1;
-                break;
-            } else {
-                switch (currentCharacter) {
-                case '\0':
-                case ' ':
-                    if (lastWordIdx && characterIdx > lineMaxLength) {
-                        lineLength = MIN(lineLength, lastWordIdx);
-
-                        break;
-                    }
-
-                    lastWordIdx = characterIdx;
-                    break;
-                }
-            }
-        }
-
-        if (characterIdx == (stringLength - lineStart) &&
-            characterIdx >= lineMaxLength) {
-            if (!lastWordIdx) {
-                lineLength = lineMaxLength - 1;
-                hyphenateLine = 1;
-            } else {
-                lineLength = lastWordIdx;
-            }
-        }
-
-        textrenderer_MeasureLineWidth(font,
-                                      (uint16_t)lineLength,
-                                      currentLine,
-                                      &lineWidth);
-
-        /* Add in the length of the hyphen, if necessary. */
-        if (hyphenateLine) {
-            lineWidth += 8;
-        }
+        (void)textrenderer_DetermineLine(&state,
+                                         lineMaxLength,
+                                         stringLength,
+                                         string,
+                                         lineStart,
+                                         &lineLength,
+                                         &lineWidth);
 
         lineStart += lineLength;
 
@@ -137,16 +245,17 @@ void textrenderer_Render(const struct trc_font *font,
                          const char *string,
                          struct trc_canvas *canvas) {
     uint32_t lineLength, lineStart;
-    const struct trc_pixel *drawColor;
-    int upperCase, drawRaw;
     int lineX, lineY;
 
-    if (fontColor == NULL) {
-        fontColor = &DefaultFontColor;
-    }
+    struct trc_textrenderer_state state = {
+            .Font = font,
+            .Transform = transform,
+            .DrawRaw = characterset_IsUpper(string[0]),
+            .Uppercase = !characterset_IsUpper(string[0]),
+            .Highlight = 0};
 
 #ifndef NDEBUG
-    switch (transform & ~TEXTTRANSFORM_HIGHLIGHT) {
+    switch (state.Transform & ~TEXTTRANSFORM_HIGHLIGHT) {
     case TEXTTRANSFORM_PROPERCASE:
     case TEXTTRANSFORM_LOWERCASE:
     case TEXTTRANSFORM_UPPERCASE:
@@ -157,77 +266,24 @@ void textrenderer_Render(const struct trc_font *font,
     }
 #endif
 
-    drawRaw = characterset_IsUpper(string[0]);
-    drawColor = fontColor;
-    upperCase = !drawRaw;
+    if (fontColor == NULL) {
+        fontColor = &DefaultFontColor;
+    }
 
     lineStart = 0;
     lineY = Y;
 
     do {
-        uint32_t characterIdx, hyphenateLine, lineWidth;
-        const char *currentLine;
+        bool hyphenateLine;
+        uint32_t lineWidth;
 
-        lineLength = MIN(lineMaxLength, stringLength - lineStart);
-        currentLine = &string[lineStart];
-        hyphenateLine = 0;
-
-        /* Don't bother calculating this if it'll be a single line anyhow. */
-        if (lineMaxLength <= stringLength) {
-            uint32_t lastWordIdx;
-
-            /* Clip line length to the nearest word to avoid excessive
-             * hyphenation. */
-            for (characterIdx = 0, lastWordIdx = 0;
-                 characterIdx < (stringLength - lineStart);
-                 characterIdx++) {
-                uint8_t currentCharacter = currentLine[characterIdx];
-
-                if (currentCharacter == '\n') {
-                    lineLength = characterIdx + 1;
-                    break;
-                } else {
-                    switch (currentLine[characterIdx]) {
-                    case '\0':
-                    case ' ':
-                        if (lastWordIdx && characterIdx > lineMaxLength) {
-                            lineLength = MIN(lineLength - 1, lastWordIdx);
-
-                            break;
-                        }
-
-                        lastWordIdx = characterIdx;
-                        break;
-                    case '{':
-                    case '}':
-                        if (transform & TEXTTRANSFORM_HIGHLIGHT) {
-                            lineLength -= 1;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            if (characterIdx == (stringLength - lineStart) &&
-                characterIdx >= lineMaxLength) {
-                if (!lastWordIdx) {
-                    lineLength = lineMaxLength - 1;
-                    hyphenateLine = 1;
-                } else {
-                    lineLength = lastWordIdx;
-                }
-            }
-        }
-
-        textrenderer_MeasureLineWidth(font,
-                                      (uint16_t)lineLength,
-                                      currentLine,
-                                      &lineWidth);
-
-        /* Add in the length of the hyphen, if necessary. */
-        if (hyphenateLine) {
-            lineWidth += 8;
-        }
+        hyphenateLine = textrenderer_DetermineLine(&state,
+                                                   lineMaxLength,
+                                                   stringLength,
+                                                   string,
+                                                   lineStart,
+                                                   &lineLength,
+                                                   &lineWidth);
 
         switch (alignment) {
         case TEXTALIGNMENT_LEFT:
@@ -243,59 +299,20 @@ void textrenderer_Render(const struct trc_font *font,
 
         lineWidth = 0;
 
-        for (characterIdx = 0; characterIdx < lineLength; characterIdx++) {
-            uint8_t currentCharacter = currentLine[characterIdx];
+        for (uint32_t idx = 0; idx < lineLength; idx++) {
+            uint8_t character;
 
-            switch (currentCharacter) {
-            case '\n':
-                /* Just skip it. */
-                break;
-            default:
-                currentCharacter =
-                        characterset_ConvertPrintable(currentCharacter);
-
-                switch (transform) {
-                case TEXTTRANSFORM_PROPERCASE:
-                    if (!drawRaw) {
-                        if (upperCase) {
-                            currentCharacter =
-                                    characterset_ToUpper(currentCharacter);
-                        }
-
-                        upperCase = (currentCharacter == ' ');
-                    }
-                    break;
-                case TEXTTRANSFORM_LOWERCASE:
-                    currentCharacter = characterset_ToLower(currentCharacter);
-                    break;
-                case TEXTTRANSFORM_UPPERCASE:
-                    currentCharacter = characterset_ToUpper(currentCharacter);
-                    break;
-                default:
-                    break;
-                }
-
-                if (transform & TEXTTRANSFORM_HIGHLIGHT) {
-                    switch (currentCharacter) {
-                    case '{':
-                        drawColor = &HighlightColor;
-                        continue;
-                    case '}':
-                        ASSERT(drawColor == &HighlightColor);
-                        drawColor = fontColor;
-                        continue;
-                    default:
-                        break;
-                    }
-                }
-
+            if (textrenderer_Transform(&state,
+                                       string[lineStart + idx],
+                                       &character)) {
                 canvas_DrawCharacter(canvas,
-                                     &font->Characters[currentCharacter].Sprite,
-                                     drawColor,
+                                     &font->Characters[character].Sprite,
+                                     state.Highlight ? &HighlightColor
+                                                     : fontColor,
                                      lineX + lineWidth,
                                      lineY);
 
-                lineWidth += font->Characters[currentCharacter].Width;
+                lineWidth += font->Characters[character].Width;
             }
         }
 

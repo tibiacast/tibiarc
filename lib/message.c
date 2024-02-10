@@ -230,7 +230,9 @@ void messagelist_Free(struct trc_message_list *sentinel) {
 
     while (iterator != sentinel) {
         struct trc_message_list *message = iterator;
+
         iterator = iterator->Next;
+        ASSERT(iterator->Previous == message);
 
         checked_deallocate(message);
     }
