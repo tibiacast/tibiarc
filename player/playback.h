@@ -10,8 +10,6 @@
 #include "gamestate.h"
 
 struct playback {
-    struct memory_file File;
-    struct trc_data_reader Reader;
     struct trc_version *Version;
     struct trc_recording *Recording;
     struct trc_game_state *Gamestate;
@@ -21,11 +19,14 @@ struct playback {
     uint32_t PlaybackPauseTick;
 };
 
+// Note: Data in the pic, spr and dat data_readers are consumed
+//       in this call, but Data in the recording must still be
+//       available until after playback_Free has been called
 bool playback_Init(struct playback *playback,
-                   const char *recordingFilename,
-                   const char *picFilename,
-                   const char *sprFilename,
-                   const char *datFilename);
+                   struct trc_data_reader *recording,
+                   struct trc_data_reader *pic,
+                   struct trc_data_reader *spr,
+                   struct trc_data_reader *dat);
 void playback_Free(struct playback *playback);
 
 uint32_t playback_GetPlaybackTick(const struct playback *playback);

@@ -16,54 +16,20 @@ static bool openMemoryFile(const char *filename,
 }
 
 bool playback_Init(struct playback *playback,
-                   const char *recordingFilename,
-                   const char *picFilename,
-                   const char *sprFilename,
-                   const char *datFilename) {
-    // Load data files
-    struct memory_file file_pic;
-    struct trc_data_reader reader_pic;
-    if (!openMemoryFile(picFilename, &file_pic, &reader_pic)) {
-        return false;
-    }
+                   struct trc_data_reader *recording,
+                   struct trc_data_reader *pic,
+                   struct trc_data_reader *spr,
+                   struct trc_data_reader *dat) {
 
-    struct memory_file file_spr;
-    struct trc_data_reader reader_spr;
-    if (!openMemoryFile(sprFilename, &file_spr, &reader_spr)) {
-        return false;
-    }
-
-    struct memory_file file_dat;
-    struct trc_data_reader reader_dat;
-    if (!openMemoryFile(datFilename, &file_dat, &reader_dat)) {
-        return false;
-    }
-
-    if (!version_Load(7,
-                      41,
-                      0,
-                      &reader_pic,
-                      &reader_spr,
-                      &reader_dat,
-                      &playback->Version)) {
+    if (!version_Load(7, 41, 0, pic, spr, dat, &playback->Version)) {
         fprintf(stderr, "Could not load files\n");
         return false;
     }
 
-    memoryfile_Close(&file_pic);
-    memoryfile_Close(&file_spr);
-    memoryfile_Close(&file_dat);
-
-    // Load recording
-    if (!openMemoryFile(recordingFilename,
-                        &playback->File,
-                        &playback->Reader)) {
-        return false;
-    }
-
     playback->Recording = recording_Create(RECORDING_FORMAT_TRP);
+
     if (!recording_Open(playback->Recording,
-                        &playback->Reader,
+                        recording,
                         playback->Version)) {
         fprintf(stderr, "Could not load recording\n");
         return false;
@@ -92,8 +58,6 @@ void playback_Free(struct playback *playback) {
 
     version_Free(playback->Version);
     playback->Version = NULL;
-
-    memoryfile_Close(&playback->File);
 
     gamestate_Free(playback->Gamestate);
     playback->Gamestate = NULL;
