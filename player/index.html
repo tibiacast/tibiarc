@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>emscripten player</title>
+</head>
+<body>
+
+<div id="dropzone" ondrop="dropHandler(event);" ondragover="event.preventDefault();" style="border: 5px solid blue; width: 400px; height: 200px;">
+    <p>Drag a recording and appropriate .pic, .spr and .dat files to this drop zone to start playback</p>
+    <p id="files-loaded"></p>
+</div>
+<canvas id="canvas" oncontextmenu="event.preventDefault()" style="margin: auto;"></canvas>
+
+<script>
+    var Module = {
+        canvas: (function() { return document.getElementById('canvas'); })()
+    };
+    let fileRecording = null;
+    let filePic = null;
+    let fileSpr = null;
+    let fileDat = null;
+
+    function updateFilesLoaded() {
+        const element = document.getElementById("files-loaded");
+        element.innerHTML = `Recording: ${fileRecording === null ? 'not loaded' : fileRecording.name}<br>`;
+        element.innerHTML += `.pic: ${filePic === null ? 'not loaded' : filePic.name}<br>`;
+        element.innerHTML += `.spr: ${fileSpr === null ? 'not loaded' : fileSpr.name}<br>`;
+        element.innerHTML += `.dat: ${fileDat === null ? 'not loaded' : fileDat.name}<br>`;
+    }
+
+    function allFilesLoaded() {
+        return fileRecording !== null && filePic !== null && fileSpr !== null && fileDat !== null;
+    }
+
+    function loadFile(file) {
+        let reader = new FileReader();
+        reader.onload = () => {
+            const fileData = reader.result;
+
+            if (file.name.endsWith('.pic')) {
+                filePic = { name: file.name, data: fileData };
+            } else if (file.name.endsWith('.spr')) {
+                fileSpr = { name: file.name, data: fileData };
+            } else if (file.name.endsWith('.dat')) {
+                fileDat = { name: file.name, data: fileData };
+            } else {
+                // Assume that this is the recording...
+                fileRecording = { name: file.name, data: fileData };
+            }
+
+            if (allFilesLoaded()) {
+                // Copy file data to where the player can read it
+                const bufferRecording = new Uint8Array(fileRecording.data);
+                const heapBufferRecording = Module._malloc(bufferRecording.length);
+                Module.HEAPU8.set(bufferRecording, heapBufferRecording);
+
+                const bufferPic = new Uint8Array(filePic.data);
+                const heapBufferPic = Module._malloc(bufferPic.length);
+                Module.HEAPU8.set(bufferPic, heapBufferPic);
+
+                const bufferSpr = new Uint8Array(fileSpr.data);
+                const heapBufferSpr = Module._malloc(bufferSpr.length);
+                Module.HEAPU8.set(bufferSpr, heapBufferSpr);
+
+                const bufferDat = new Uint8Array(fileDat.data);
+                const heapBufferDat = Module._malloc(bufferDat.length);
+                Module.HEAPU8.set(bufferDat, heapBufferDat);
+
+                // Start playback
+                Module.ccall('load_files',
+                    null,
+                    ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
+                    [heapBufferRecording, bufferRecording.length, heapBufferPic, bufferPic.length, heapBufferSpr, bufferSpr.length, heapBufferDat, bufferDat.length]
+                );
+            }
+
+            updateFilesLoaded();
+        }
+        reader.onerror = () => {
+            console.log(`Could not load file ${file.name}: ${reader.error}`);
+        }
+        reader.readAsArrayBuffer(file);
+    }
+
+    function dropHandler(ev) {
+        ev.preventDefault();
+
+        if (ev.dataTransfer.items) {
+            [...ev.dataTransfer.items].forEach((item) => {
+                if (item.kind === "file") {
+                    loadFile(item.getAsFile());
+                }
+            });
+        } else {
+            [...ev.dataTransfer.files].forEach((file) => {
+                loadFile(file);
+            });
+        }
+    }
+
+    updateFilesLoaded();
+</script>
+<script src="player.js"></script>
+
+</body>
+</html>

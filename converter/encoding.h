@@ -25,11 +25,7 @@
 
 #include "canvas.h"
 
-enum TrcEncodeLibrary {
-    ENCODE_LIBRARY_LIBAV,
-    ENCODE_LIBRARY_SDL2,
-    ENCODE_LIBRARY_INERT
-};
+enum TrcEncodeLibrary { ENCODE_LIBRARY_LIBAV, ENCODE_LIBRARY_INERT };
 
 struct trc_encoder {
     bool (*Open)(struct trc_encoder *handle,

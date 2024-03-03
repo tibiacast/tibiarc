@@ -149,16 +149,15 @@ add_executable(converter
   "converter/converter.c"
   "converter/encoders/inert.c"
   "converter/encoders/libav.c"
-  "converter/encoders/sdl2.c"
   "converter/encoding.c"
   "converter/encoding.h"
   "converter/exporter.c"
   "converter/exporter.h"
-  "converter/memoryfile.c"
-  "converter/memoryfile.h"
+  "utils/memoryfile.c"
+  "utils/memoryfile.h"
 )
 
-target_include_directories(converter PRIVATE "converter")
+target_include_directories(converter PRIVATE "converter" "utils")
 target_link_libraries(converter PRIVATE tibiarc)
 
 # SDL2
@@ -209,6 +208,48 @@ if(OpenMP_C_FOUND)
 endif()
 
 # ########################################################################### #
+## player
+# ########################################################################### #
+
+add_executable(player
+  "player/player.c"
+  "player/playback.c"
+  "player/playback.h"
+  "player/rendering.c"
+  "player/rendering.h"
+  "utils/memoryfile.c"
+  "utils/memoryfile.h"
+)
+target_include_directories(player PRIVATE "converter" "utils")
+target_link_libraries(player PRIVATE tibiarc)
+
+if (NOT EMSCRIPTEN)
+  if (NOT SDL2_FOUND)
+    message(FATAL_ERROR "player without EMSCRIPTEN requires SDL2")
+  endif()
+  target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
+  target_link_libraries(player PRIVATE ${SDL2_LIBRARIES})
+else()
+  set_target_properties(converter PROPERTIES EXCLUDE_FROM_ALL 1)
+  set_target_properties(player PROPERTIES SUFFIX ".html")
+  target_compile_options(player PRIVATE -sUSE_SDL=2)
+  target_link_options(player PRIVATE
+                        -sUSE_SDL=2
+                        -sALLOW_MEMORY_GROWTH=1
+                        -sEXPORTED_FUNCTIONS=_main,_load_files,_malloc
+                        -sEXPORTED_RUNTIME_METHODS=ccall)
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_link_options(player PRIVATE
+                          -sEXCEPTION_DEBUG=1
+                          -sASSERTIONS=1
+                          -sSAFE_HEAP=1
+                          -sDEMANGLE_SUPPORT=1)
+  endif()
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/player/index.html"
+                   "${CMAKE_BINARY_DIR}/index.html" COPYONLY)
+endif()
+
+# ########################################################################### #
 ## Misc flags that must be set at the very end
 # ########################################################################### #
 
@@ -218,6 +259,13 @@ if(NOT TIBIARC_NO_LTO)
   include(CheckIPOSupported)
   check_ipo_supported(RESULT ipo_supported)
   if(ipo_supported)
-    set_target_properties(tibiarc converter PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set_target_properties(tibiarc converter
+                            PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    if (NOT EMSCRIPTEN)
+      set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
   endif()
 endif()
+
+# Include extra CMakeLists.txt if available
+include(CMakeLists.user.txt OPTIONAL)

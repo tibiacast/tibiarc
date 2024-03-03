@@ -55,14 +55,20 @@ void gamestate_AddTextMessage(struct trc_game_state *gamestate,
 }
 
 void gamestate_Reset(struct trc_game_state *gamestate) {
+    const struct trc_version *version = gamestate->Version;
+    uint32_t tick = gamestate->CurrentTick;
+
     containerlist_Free(&gamestate->ContainerList);
-    gamestate->ContainerList = NULL;
-
     creaturelist_Free(&gamestate->CreatureList);
-    gamestate->CreatureList = NULL;
-
     messagelist_Free(&gamestate->MessageList);
+
+    /* Ensure we're in _exactly_ the same state as we were after
+     * gamestate_Create, modulo current tick. */
+    memset(gamestate, 0, sizeof(*gamestate));
     messagelist_Initialize(&gamestate->MessageList);
+
+    gamestate->CurrentTick = tick;
+    gamestate->Version = version;
 }
 
 struct trc_game_state *gamestate_Create(const struct trc_version *version) {

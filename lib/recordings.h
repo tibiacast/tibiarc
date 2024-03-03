@@ -52,6 +52,7 @@ struct trc_recording {
     bool (*Open)(struct trc_recording *recording,
                  const struct trc_data_reader *file,
                  struct trc_version *version);
+    void (*Rewind)(struct trc_recording *recording);
     bool (*ProcessNextPacket)(struct trc_recording *recording,
                               struct trc_game_state *gamestate);
     void (*Free)(struct trc_recording *recording);
@@ -74,6 +75,7 @@ bool recording_QueryTibiaVersion(struct trc_recording *recording,
 bool recording_Open(struct trc_recording *recording,
                     const struct trc_data_reader *file,
                     struct trc_version *version);
+void recording_Rewind(struct trc_recording *recording);
 void recording_Free(struct trc_recording *recording);
 
 bool recording_ProcessNextPacket(struct trc_recording *recording,

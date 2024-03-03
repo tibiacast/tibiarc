@@ -1657,7 +1657,7 @@ static bool parser_ValidateTextMessage(enum TrcMessageMode messageMode,
          * validating them other than saying that they should have an author
          * name. */
         return authorLength > 0;
-    default:
+    default: {
         /* Certain texts only happen with certain modes, so we can use them to
          * check whether our versioned message mode mapping is correct. */
         static const struct {
@@ -1687,6 +1687,7 @@ static bool parser_ValidateTextMessage(enum TrcMessageMode messageMode,
             scanner++;
         }
         break;
+    }
     }
 
     return true;

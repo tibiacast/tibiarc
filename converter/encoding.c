@@ -30,12 +30,6 @@ struct trc_encoder *encoder_Create(enum TrcEncodeLibrary library) {
         return libav_Create();
     }
 #endif
-#ifndef DISABLE_SDL2
-    case ENCODE_LIBRARY_SDL2: {
-        extern struct trc_encoder *sdl2_Create(void);
-        return sdl2_Create();
-    }
-#endif
     case ENCODE_LIBRARY_INERT: {
         extern struct trc_encoder *inert_Create(void);
         return inert_Create();

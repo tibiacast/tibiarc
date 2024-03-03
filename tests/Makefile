@@ -23,7 +23,7 @@
 ## to fetch data files, a larger amount of recordings, and so on.
 ##
 
-test: test_encode test_sdl2 test_screenshot test_versions
+test: test_encode test_screenshot test_versions
 update: update_screenshot
 
 .PHONY: clean
@@ -67,29 +67,6 @@ render/encode_2.mkv:
               ./8.40/ \
               ./8.40/sample.tmv2 \
               $@
-
-# ########################################################################### #
-
-SDL2_TESTS := test_sdl2_0 test_sdl2_1
-.PHONY: $(SDL2_TESTS)
-test_sdl2: $(SDL2_TESTS)
-
-test_sdl2_0:
-	$(TRC_TEST) --input-format tmv2 \
-              --output-backend sdl2 \
-              --resolution 960x704 \
-              --frame-rate 25 \
-              ./8.40/ \
-              ./8.40/sample.tmv2
-
-test_sdl2_1:
-	$(TRC_TEST) --input-format yatc \
-              --input-version 8.50 \
-              --output-backend sdl2 \
-              --resolution 1120x704 \
-              --frame-skip 16 \
-              ./8.50/ \
-              ./8.50/sample.yatc
 
 # ########################################################################### #
 
