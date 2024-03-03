@@ -116,15 +116,15 @@ target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACH
 # `cmake -DTIBIARC_DUMP_PIC=ON ...`
 option(TIBIARC_DUMP_PIC "Dumps .pic files as bitmaps when loaded" OFF)
 if(TIBIARC_DUMP_PIC)
-  target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_PIC)
+  target_compile_definitions(tibiarc PRIVATE DUMP_PIC)
 endif()
 option(TIBIARC_DUMP_MESSAGE_TYPES "Writes messages and their types to stdout when received" OFF)
 if(TIBIARC_DUMP_MESSAGE_TYPES)
-  target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_MESSAGE_TYPES)
+  target_compile_definitions(tibiarc PRIVATE DUMP_MESSAGE_TYPES)
 endif()
 option(TIBIARC_DUMP_ITEMS "Dumps item sprites (with properties) as bitmaps when loaded" OFF)
 if(TIBIARC_DUMP_ITEMS)
-  target_compile_definitions(tibiarc PRIVATE TIBIARC_DUMP_ITEMS)
+  target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
 endif()
 
 option(TIBIARC_NO_ZLIB "Explicitly disable zlib support" OFF)

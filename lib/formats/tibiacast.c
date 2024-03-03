@@ -33,6 +33,9 @@ struct trc_recording_tibiacast {
     char VersionMajor;
     char VersionMinor;
 
+    struct trc_data_reader InitialReader;
+    uint32_t InitialTimestamp;
+
     struct trc_data_reader Reader;
     uint8_t *Uncompressed;
 };
@@ -697,8 +700,7 @@ static bool tibiacast_Open(struct trc_recording_tibiacast *recording,
         return trc_ReportError("Could not determine decompressed size");
     }
 
-    uint32_t initial_timestamp;
-    if (!datareader_ReadU32(&recording->Reader, &initial_timestamp)) {
+    if (!datareader_ReadU32(&recording->Reader, &recording->InitialTimestamp)) {
         return trc_ReportError("Could not read initial timestamp");
     }
 
@@ -708,10 +710,17 @@ static bool tibiacast_Open(struct trc_recording_tibiacast *recording,
         }
     }
 
-    recording->Base.NextPacketTimestamp = initial_timestamp;
+    recording->Base.NextPacketTimestamp = recording->InitialTimestamp;
     recording->Base.Version = version;
 
+    recording->InitialReader = recording->Reader;
+
     return true;
+}
+
+static void tibiacast_Rewind(struct trc_recording_tibiacast *recording) {
+    recording->Base.NextPacketTimestamp = recording->InitialTimestamp;
+    recording->Reader = recording->InitialReader;
 }
 
 static void tibiacast_Free(struct trc_recording_tibiacast *recording) {
@@ -730,6 +739,7 @@ struct trc_recording *tibiacast_Create() {
     recording->Base.Open = (bool (*)(struct trc_recording *,
                                      const struct trc_data_reader *,
                                      struct trc_version *))tibiacast_Open;
+    recording->Base.Rewind = (void (*)(struct trc_recording *))tibiacast_Rewind;
     recording->Base.ProcessNextPacket =
             (bool (*)(struct trc_recording *,
                       struct trc_game_state *))tibiacast_ProcessNextPacket;

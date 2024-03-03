@@ -29,8 +29,8 @@ struct trc_recording_trp {
     uint32_t PacketNumber;
     uint32_t PacketCount;
 
-    struct trc_data_reader Reader;
     struct trc_data_reader InitialReader;
+    struct trc_data_reader Reader;
 };
 
 static bool trp_ProcessNextPacket(struct trc_recording_trp *recording,
@@ -150,11 +150,10 @@ static bool trp_Open(struct trc_recording_trp *recording,
 }
 
 static void trp_Rewind(struct trc_recording_trp *recording) {
-    recording->Base.NextPacketTimestamp = 0;
-    recording->Base.HasReachedEnd = 0;
-
     recording->Reader = recording->InitialReader;
     recording->PacketNumber = 0;
+
+    recording->Base.NextPacketTimestamp = 0;
 }
 
 static void trp_Free(struct trc_recording_trp *recording) {

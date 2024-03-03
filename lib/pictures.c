@@ -114,8 +114,7 @@ bool pictures_Load(struct trc_version *version, struct trc_data_reader *data) {
     }
 
     if (count > PICTURE_MAX_COUNT) {
-        return trc_ReportError("Picture count is out of range (%u).",
-                               count);
+        return trc_ReportError("Picture count is out of range (%u).", count);
     }
 
     pictures->Count = count;

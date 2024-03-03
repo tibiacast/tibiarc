@@ -36,6 +36,7 @@ struct trc_recording_tmv2 {
     uint32_t PacketNumber;
     uint32_t PacketCount;
 
+    struct trc_data_reader InitialReader;
     struct trc_data_reader Reader;
     uint8_t *Uncompressed;
 };
@@ -224,6 +225,7 @@ static bool tmv2_Open(struct trc_recording_tmv2 *recording,
         recording->Reader = reader;
     }
 
+    recording->InitialReader = recording->Reader;
     recording->PacketCount = packetCount;
 
     if (!tmv2_DetermineLength(recording, packetCount)) {
@@ -233,6 +235,13 @@ static bool tmv2_Open(struct trc_recording_tmv2 *recording,
     recording->Base.Version = version;
 
     return true;
+}
+
+static void tmv2_Rewind(struct trc_recording_tmv2 *recording) {
+    recording->Reader = recording->InitialReader;
+    recording->PacketNumber = 0;
+
+    recording->Base.NextPacketTimestamp = 0;
 }
 
 static void tmv2_Free(struct trc_recording_tmv2 *recording) {
@@ -250,6 +259,7 @@ struct trc_recording *tmv2_Create() {
     recording->Base.Open = (bool (*)(struct trc_recording *,
                                      const struct trc_data_reader *,
                                      struct trc_version *))tmv2_Open;
+    recording->Base.Rewind = (void (*)(struct trc_recording *))tmv2_Rewind;
     recording->Base.ProcessNextPacket =
             (bool (*)(struct trc_recording *,
                       struct trc_game_state *))tmv2_ProcessNextPacket;

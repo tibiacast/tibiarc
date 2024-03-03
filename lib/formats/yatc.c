@@ -25,27 +25,29 @@
 
 struct trc_recording_yatc {
     struct trc_recording Base;
-    struct trc_data_reader RawReader;
+
+    struct trc_data_reader InitialReader;
+    uint32_t InitialTimestamp;
+
+    struct trc_data_reader Reader;
 };
 
 static bool yatc_HandleTibiaData(struct trc_recording_yatc *recording,
                                  struct trc_game_state *gamestate) {
     uint16_t subpacketLength;
 
-    if (!datareader_ReadU16(&recording->RawReader, &subpacketLength)) {
+    if (!datareader_ReadU16(&recording->Reader, &subpacketLength)) {
         return trc_ReportError("Read failed on subpacketLength");
     }
 
     struct trc_data_reader packetReader;
-    if (!datareader_Slice(&recording->RawReader,
-                          subpacketLength,
-                          &packetReader)) {
+    if (!datareader_Slice(&recording->Reader, subpacketLength, &packetReader)) {
         return trc_ReportError("Bad sub-packet length");
     }
 
-    if (datareader_Remaining(&recording->RawReader) == 0) {
+    if (datareader_Remaining(&recording->Reader) == 0) {
         recording->Base.HasReachedEnd = true;
-    } else if (!datareader_ReadU32(&recording->RawReader,
+    } else if (!datareader_ReadU32(&recording->Reader,
                                    &recording->Base.NextPacketTimestamp)) {
         return trc_ReportError("Failed to read next timestamp");
     }
@@ -83,34 +85,40 @@ static bool yatc_QueryTibiaVersion(const struct trc_data_reader *file,
 static int yatc_Open(struct trc_recording_yatc *recording,
                      const struct trc_data_reader *file,
                      struct trc_version *version) {
-    recording->RawReader = *file;
+    recording->Reader = *file;
 
-    while (datareader_Remaining(&recording->RawReader) > 0) {
+    while (datareader_Remaining(&recording->Reader) > 0) {
         uint16_t subpacketLength;
 
-        if (!datareader_ReadU32(&recording->RawReader,
-                                &recording->Base.Runtime)) {
+        if (!datareader_ReadU32(&recording->Reader, &recording->Base.Runtime)) {
             return trc_ReportError("Failed to read next timestamp");
         }
 
-        if (!datareader_ReadU16(&recording->RawReader, &subpacketLength)) {
+        if (!datareader_ReadU16(&recording->Reader, &subpacketLength)) {
             return trc_ReportError("Read failed on subpacketLength");
         }
 
-        if (!datareader_Skip(&recording->RawReader, subpacketLength)) {
+        if (!datareader_Skip(&recording->Reader, subpacketLength)) {
             return trc_ReportError("Failed to skip data");
         }
     }
 
-    recording->Base.HasReachedEnd = false;
-    recording->Base.Version = version;
-    recording->RawReader = *file;
+    recording->Reader = *file;
 
-    if (!datareader_Skip(&recording->RawReader, 4)) {
-        return trc_ReportError("Failed to skip first timestamp");
+    if (!datareader_ReadU32(&recording->Reader, &recording->InitialTimestamp)) {
+        return trc_ReportError("Could not read initial timestamp");
     }
 
+    recording->InitialReader = recording->Reader;
+    recording->Base.HasReachedEnd = false;
+    recording->Base.Version = version;
+
     return true;
+}
+
+static void yatc_Rewind(struct trc_recording_yatc *recording) {
+    recording->Base.NextPacketTimestamp = recording->InitialTimestamp;
+    recording->Reader = recording->InitialReader;
 }
 
 static void yatc_Free(struct trc_recording_yatc *recording) {
@@ -127,6 +135,7 @@ struct trc_recording *yatc_Create() {
     recording->Base.Open = (bool (*)(struct trc_recording *,
                                      const struct trc_data_reader *,
                                      struct trc_version *))yatc_Open;
+    recording->Base.Rewind = (void (*)(struct trc_recording *))yatc_Rewind;
     recording->Base.ProcessNextPacket =
             (bool (*)(struct trc_recording *,
                       struct trc_game_state *))yatc_ProcessNextPacket;

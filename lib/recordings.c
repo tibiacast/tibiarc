@@ -110,6 +110,7 @@ bool recording_Open(struct trc_recording *recording,
 }
 
 void recording_Rewind(struct trc_recording *recording) {
+    recording->HasReachedEnd = false;
     recording->Rewind(recording);
 }
 

@@ -30,7 +30,8 @@ bool playback_Init(struct playback *playback,
                    struct trc_data_reader *dat) {
     int major, minor, preview;
 
-    enum TrcRecordingFormat format = recording_GuessFormat(recording_name, recording);
+    enum TrcRecordingFormat format =
+            recording_GuessFormat(recording_name, recording);
     playback->Recording = recording_Create(format);
 
     if (recording_QueryTibiaVersion(playback->Recording,
@@ -38,6 +39,10 @@ bool playback_Init(struct playback *playback,
                                     &major,
                                     &minor,
                                     &preview)) {
+        printf("Guessing version %i, %i (preview? %i)\n",
+               major,
+               minor,
+               preview);
         if (version_Load(major,
                          minor,
                          preview,

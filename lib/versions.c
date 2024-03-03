@@ -821,12 +821,9 @@ bool version_TranslatePictureIndex(const struct trc_version *version,
     ABORT_UNLESS(CHECK_RANGE((int)index,
                              (int)PICTURE_INDEX_TUTORIAL,
                              (int)PICTURE_INDEX_LAST));
-    if (VERSION_AT_LEAST(version, 8, 55)) {
-        translated = (int)index;
-    } else {
-        /* As the enum, but PICTURE_INDEX_SPLASH_LOGO is missing. */
-        translated = (int)index - 1;
-    }
+    /* As the enum, but PICTURE_INDEX_SPLASH_LOGO is missing. We need to figure
+     * out when that was added. */
+    translated = (int)index - 1;
 
     *out = translated;
     return true;
