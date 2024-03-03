@@ -223,8 +223,8 @@ add_executable(player
 target_include_directories(player PRIVATE "converter" "utils")
 target_link_libraries(player PRIVATE tibiarc)
 
-if (NOT EMSCRIPTEN)
-  if (NOT SDL2_FOUND)
+if(NOT EMSCRIPTEN)
+  if(NOT SDL2_FOUND)
     message(FATAL_ERROR "player without EMSCRIPTEN requires SDL2")
   endif()
   target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
@@ -238,7 +238,7 @@ else()
                         -sALLOW_MEMORY_GROWTH=1
                         -sEXPORTED_FUNCTIONS=_main,_load_files,_malloc
                         -sEXPORTED_RUNTIME_METHODS=ccall)
-  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_options(player PRIVATE
                           -sEXCEPTION_DEBUG=1
                           -sASSERTIONS=1
@@ -256,12 +256,12 @@ endif()
 # Enable IPO if supported
 option(TIBIARC_NO_LTO "Explicitly disable link-time optimization" OFF)
 if(NOT TIBIARC_NO_LTO)
-  include(CheckIPOSupported)
-  check_ipo_supported(RESULT ipo_supported)
-  if(ipo_supported)
-    set_target_properties(tibiarc converter
-                            PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    if (NOT EMSCRIPTEN)
+  if(NOT EMSCRIPTEN)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported)
+    if(ipo_supported)
+      set_target_properties(tibiarc converter
+                              PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
       set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
   endif()
