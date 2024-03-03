@@ -391,12 +391,15 @@ static bool exporter_OpenData(const char *dataFolder,
             } else {
                 data->Pictures.Data = data->PictureFile.View;
                 data->Pictures.Length = data->PictureFile.Size;
+                data->Pictures.Position = 0;
 
                 data->Sprites.Data = data->SpriteFile.View;
                 data->Sprites.Length = data->SpriteFile.Size;
+                data->Sprites.Position = 0;
 
                 data->Types.Data = data->TypeFile.View;
                 data->Types.Length = data->TypeFile.Size;
+                data->Types.Position = 0;
 
                 return true;
             }

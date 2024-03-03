@@ -103,19 +103,22 @@ static bool pictures_ReadPicture(struct trc_data_reader *reader,
 
 bool pictures_Load(struct trc_version *version, struct trc_data_reader *data) {
     struct trc_picture_file *pictures = &version->Pictures;
+    uint16_t count;
 
     if (!datareader_ReadU32(data, &pictures->Signature)) {
         return trc_ReportError("Could not read picture signature");
     }
 
-    if (!datareader_ReadU16(data, &pictures->Count)) {
+    if (!datareader_ReadU16(data, &count)) {
         return trc_ReportError("Could not read picture count");
     }
 
-    if (pictures->Count > PICTURE_MAX_COUNT) {
+    if (count > PICTURE_MAX_COUNT) {
         return trc_ReportError("Picture count is out of range (%u).",
-                               pictures->Count);
+                               count);
     }
+
+    pictures->Count = count;
 
     for (int i = 0; i < pictures->Count; i++) {
         struct trc_canvas **canvases = pictures->Array;
@@ -139,6 +142,8 @@ void pictures_Free(struct trc_version *version) {
     struct trc_picture_file *pictures = &version->Pictures;
 
     for (int i = 0; i < pictures->Count; i++) {
-        canvas_Free(pictures->Array[i]);
+        if (pictures->Array[i] != NULL) {
+            canvas_Free(pictures->Array[i]);
+        }
     }
 }

@@ -23,13 +23,14 @@
 #include <SDL.h>
 
 bool playback_Init(struct playback *playback,
+                   const char *recording_name,
                    struct trc_data_reader *recording,
                    struct trc_data_reader *pic,
                    struct trc_data_reader *spr,
                    struct trc_data_reader *dat) {
     int major, minor, preview;
 
-    enum TrcRecordingFormat format = recording_GuessFormat("", recording);
+    enum TrcRecordingFormat format = recording_GuessFormat(recording_name, recording);
     playback->Recording = recording_Create(format);
 
     if (recording_QueryTibiaVersion(playback->Recording,

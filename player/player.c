@@ -26,6 +26,12 @@
 #include "playback.h"
 #include "rendering.h"
 
+#ifdef _WIN32
+#    define DIR_SEP "\\"
+#else
+#    define DIR_SEP "/"
+#endif
+
 static struct playback playback;
 static bool playback_loaded = false;
 static struct rendering rendering;
@@ -143,7 +149,7 @@ void load_files(uintptr_t recording_data,
     dat.Data = (const uint8_t *)dat_data;
     dat.Length = dat_length;
 
-    playback_Init(&playback, &recording, &pic, &spr, &dat);
+    playback_Init(&playback, "", &recording, &pic, &spr, &dat);
 
     free((void *)pic_data);
     free((void *)spr_data);
@@ -152,10 +158,94 @@ void load_files(uintptr_t recording_data,
     playback_loaded = true;
 }
 
+struct player_data {
+    struct memory_file PictureFile;
+    struct memory_file SpriteFile;
+    struct memory_file TypeFile;
+
+    struct trc_data_reader Pictures;
+    struct trc_data_reader Sprites;
+    struct trc_data_reader Types;
+};
+
+static bool player_OpenData(const char *dataFolder, struct player_data *data) {
+    char picturePath[FILENAME_MAX];
+    char spritePath[FILENAME_MAX];
+    char typePath[FILENAME_MAX];
+
+    if (snprintf(picturePath,
+                 FILENAME_MAX,
+                 "%s%s",
+                 dataFolder,
+                 DIR_SEP "Tibia.pic") < 0) {
+        (void)fprintf(stderr, "Could not merge data path with Tibia.pic");
+        return false;
+    }
+
+    if (snprintf(spritePath,
+                 FILENAME_MAX,
+                 "%s%s",
+                 dataFolder,
+                 DIR_SEP "Tibia.spr") < 0) {
+        (void)fprintf(stderr, "Could not merge data path with Tibia.spr");
+        return false;
+    }
+
+    if (snprintf(typePath,
+                 FILENAME_MAX,
+                 "%s%s",
+                 dataFolder,
+                 DIR_SEP "Tibia.dat") < 0) {
+        (void)fprintf(stderr, "Could not merge data path with Tibia.dat");
+        return false;
+    }
+
+    if (!memoryfile_Open(picturePath, &data->PictureFile)) {
+        (void)fprintf(stderr, "Failed to open Tibia.pic");
+        return false;
+    } else {
+        if (!memoryfile_Open(spritePath, &data->SpriteFile)) {
+            (void)fprintf(stderr, "Failed to open Tibia.spr");
+            return false;
+        } else {
+            if (!memoryfile_Open(typePath, &data->TypeFile)) {
+                (void)fprintf(stderr, "Failed to open Tibia.dat");
+                return false;
+            } else {
+                data->Pictures.Data = data->PictureFile.View;
+                data->Pictures.Length = data->PictureFile.Size;
+                data->Pictures.Position = 0;
+
+                data->Sprites.Data = data->SpriteFile.View;
+                data->Sprites.Length = data->SpriteFile.Size;
+                data->Sprites.Position = 0;
+
+                data->Types.Data = data->TypeFile.View;
+                data->Types.Length = data->TypeFile.Size;
+                data->Types.Position = 0;
+
+                return true;
+            }
+
+            memoryfile_Close(&data->SpriteFile);
+        }
+
+        memoryfile_Close(&data->PictureFile);
+    }
+
+    return false;
+}
+
+static void player_CloseData(struct player_data *data) {
+    memoryfile_Close(&data->PictureFile);
+    memoryfile_Close(&data->SpriteFile);
+    memoryfile_Close(&data->TypeFile);
+}
+
 int main(int argc, char *argv[]) {
 #ifndef EMSCRIPTEN
-    if (argc != 5) {
-        fprintf(stderr, "usage: %s RECORDING PIC SPR DAT\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "usage: %s DATA_FOLDER RECORDING \n", argv[0]);
         return 1;
     }
 
@@ -165,34 +255,26 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    struct memory_file file_recording, file_pic, file_spr, file_dat;
+    struct memory_file file_recording;
+    struct player_data data;
 
-    if (!memoryfile_Open(argv[1], &file_recording) ||
-        !memoryfile_Open(argv[2], &file_pic) ||
-        !memoryfile_Open(argv[3], &file_spr) ||
-        !memoryfile_Open(argv[4], &file_dat)) {
+    if (!player_OpenData(argv[1], &data) ||
+        !memoryfile_Open(argv[2], &file_recording)) {
         return 1;
     }
 
     if (!playback_Init(&playback,
+                       argv[2],
                        &(struct trc_data_reader){.Data = file_recording.View,
                                                  .Length = file_recording.Size,
                                                  .Position = 0},
-                       &(struct trc_data_reader){.Data = file_pic.View,
-                                                 .Length = file_pic.Size,
-                                                 .Position = 0},
-                       &(struct trc_data_reader){.Data = file_spr.View,
-                                                 .Length = file_spr.Size,
-                                                 .Position = 0},
-                       &(struct trc_data_reader){.Data = file_dat.View,
-                                                 .Length = file_dat.Size,
-                                                 .Position = 0})) {
+                       &data.Pictures,
+                       &data.Sprites,
+                       &data.Types)) {
         return 1;
     }
 
-    memoryfile_Close(&file_pic);
-    memoryfile_Close(&file_spr);
-    memoryfile_Close(&file_dat);
+    player_CloseData(&data);
 
     playback_loaded = true;
     emscripten_set_main_loop(main_loop, 0, 1);

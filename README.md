@@ -187,14 +187,12 @@ I've used `bmp` in these examples but largely any format supported by your
 
 ### Player mode
 
-The `sdl2` output can be used to output the video to the screen instead of a
-file. It's not very useful as a video player but it does give quicker
-turnaround time for troubleshooting render bugs.
+A rudimentary player is included, supporting basic features like control over
+playback speed, skipping ahead, and rewinding. It can either be used as a
+basic desktop application, or if the project is built under `emscripten`, from
+a web browser.
 
-    ./converter --output-backend sdl2 \
-                --resolution 1440x1056 \
-                data/folder \
-                tests/8.40/sample.tmv2
+    ./player data/folder tests/8.40/sample.tmv2
 
 ### Unsupported formats
 

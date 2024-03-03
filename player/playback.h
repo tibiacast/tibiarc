@@ -45,6 +45,7 @@ struct playback {
  * The data files can be freed after this call, but the recording must stay
  * alive until \c playback_Free */
 bool playback_Init(struct playback *playback,
+                   const char *recording_name,
                    struct trc_data_reader *recording,
                    struct trc_data_reader *pic,
                    struct trc_data_reader *spr,
