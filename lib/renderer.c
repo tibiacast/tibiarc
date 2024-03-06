@@ -441,8 +441,7 @@ static bool renderer_DrawMissile(const struct trc_version *version,
         direction = (deltaX > 0) ? 3 : 5; /* West or east */
     } else if (fabs(directionalRatio) < 2.4242F) {
         if (directionalRatio <= 0) {
-            direction =
-                    (directionalRatio > 0) ? 6 : 2; /* Southwest or northeast */
+            direction = (deltaY > 0) ? 2 : 6; /* Southwest or northeast */
         } else {
             direction = (deltaY > 0) ? 0 : 8; /* Northwest or southeast */
         }
