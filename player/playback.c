@@ -134,7 +134,6 @@ void playback_TogglePlayback(struct playback *playback) {
 
 void playback_SetSpeed(struct playback *playback, float speed) {
     playback->BaseTick = playback_GetPlaybackTick(playback);
-
     playback->ScaleTick = SDL_GetTicks();
     playback->Scale = speed;
 
@@ -142,6 +141,7 @@ void playback_SetSpeed(struct playback *playback, float speed) {
 }
 
 void playback_Skip(struct playback *playback, int32_t by) {
+    playback->BaseTick = playback_GetPlaybackTick(playback);
     playback->ScaleTick = SDL_GetTicks();
 
     if (by < 0) {
