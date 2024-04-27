@@ -1954,7 +1954,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
     centerX = 0;
     bottomY = 0;
 
-    message = NULL;
+    message = (struct trc_message *)&gamestate->MessageList;
     while (messagelist_Sweep(&gamestate->MessageList,
                              gamestate->CurrentTick,
                              &message)) {

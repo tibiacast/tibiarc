@@ -118,7 +118,8 @@ struct trc_message {
     char Text[MESSAGE_MAX_TEXT_LENGTH];
 };
 
-/* Iterates and prunes the message list of expired messages. */
+/** @brief Iterates and prunes the message list of expired messages. The
+ * iterator must be initialized to \c sentinel to start the sweep. */
 bool messagelist_Sweep(struct trc_message_list *sentinel,
                        uint32_t tick,
                        struct trc_message **iterator);

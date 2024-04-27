@@ -37,6 +37,8 @@ static bool playback_loaded = false;
 static struct rendering rendering;
 
 void handle_input() {
+    /* Coalesce skips for better rewind performance on long recordings. */
+    int32_t skip_by = 0;
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
@@ -66,11 +68,14 @@ void handle_input() {
                 playback_SetSpeed(&playback, 1.0f);
                 break;
             case SDLK_LEFT:
-                playback_Skip(&playback, -30000);
-                break;
-            case SDLK_RIGHT:
-                playback_Skip(&playback, 30000);
-                break;
+            case SDLK_RIGHT: {
+                int32_t direction, magnitude;
+
+                direction = (event.key.keysym.sym == SDLK_LEFT) ? -1 : 1;
+                magnitude = (1 + !!(event.key.keysym.mod & KMOD_SHIFT) * 9);
+
+                skip_by += direction * magnitude * 30000;
+            }
             }
             break;
         case SDL_MOUSEBUTTONUP:
@@ -81,6 +86,10 @@ void handle_input() {
         default:
             break;
         }
+    }
+
+    if (skip_by != 0) {
+        playback_Skip(&playback, skip_by);
     }
 }
 
