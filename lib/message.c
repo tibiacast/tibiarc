@@ -177,39 +177,24 @@ void messagelist_AddMessage(struct trc_message_list *sentinel,
     message->StartTick = tick;
     message->Type = type;
 
-    if (message->Type != MESSAGEMODE_PRIVATE_IN) {
-        /* Ordinary messages are added front to back, simplifying the
-         * renderer's message merge logic. */
-        while (*next_p != sentinel) {
-            if (messagelist_SortFunction(message,
-                                         (struct trc_message *)*next_p) < 0) {
-                prev_p = &(*next_p)->Previous;
-                break;
-            }
-
-            ASSERT((*next_p)->Previous != (*next_p));
-            next_p = &(*next_p)->Next;
-        }
-    } else {
-        /* Private messages are added back to front, with their display time
-         * bumped longer than the ordinary client so that messages sent in
-         * quick succession can be seen in full. */
-        while (*prev_p != sentinel) {
-            if (messagelist_SortFunction(message,
-                                         (struct trc_message *)*prev_p) < 0) {
-                next_p = &(*prev_p)->Next;
-                break;
-            }
-
-            ASSERT((*prev_p)->Previous != (*prev_p));
-            prev_p = &(*prev_p)->Previous;
+    while (*prev_p != sentinel) {
+        if (messagelist_SortFunction(message, (struct trc_message *)*prev_p) <
+            0) {
+            next_p = &(*prev_p)->Next;
+            break;
         }
 
-        if (*prev_p != sentinel) {
-            message->StartTick =
-                    MAX(tick, ((struct trc_message *)*prev_p)->EndTick);
-            message->EndTick = message->StartTick + MESSAGE_DISPLAY_TIME;
-        }
+        ASSERT((*prev_p)->Previous != (*prev_p));
+        prev_p = &(*prev_p)->Previous;
+    }
+
+    if (message->Type == MESSAGEMODE_PRIVATE_IN && *prev_p != sentinel) {
+        /* Private messages have their display time bumped longer than the
+         * ordinary client so that messages sent in quick succession can be
+         * seen in full despite lacking a browsable chat channel. */
+        message->StartTick =
+                MAX(tick, ((struct trc_message *)*prev_p)->EndTick);
+        message->EndTick = message->StartTick + MESSAGE_DISPLAY_TIME;
     }
 
     ASSERT((*prev_p == sentinel && *next_p == sentinel) ^ (*prev_p != *next_p));
