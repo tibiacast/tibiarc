@@ -120,8 +120,8 @@ bool messagelist_Sweep(struct trc_message_list *sentinel,
                        struct trc_message **iterator) {
     struct trc_message_list **next_p, *prev;
 
-    next_p = *iterator ? &(*iterator)->Chain.Next : &sentinel->Next;
-    prev = *iterator ? (*iterator)->Chain.Previous : sentinel;
+    next_p = &(*iterator)->Chain.Next;
+    prev = &(*iterator)->Chain;
 
     while (*next_p != sentinel &&
            tick > ((struct trc_message *)*next_p)->EndTick) {
