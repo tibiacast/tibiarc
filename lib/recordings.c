@@ -28,6 +28,7 @@ static const struct {
     const char *ShortName;
     const char *Extension;
 } FormatDescriptions[] = {
+        {"rec", ".rec"},
         {"tibiacast", ".recording"},
         {"tmv2", ".tmv2"},
         {"trp", ".trp"},
@@ -76,12 +77,15 @@ enum TrcRecordingFormat recording_GuessFormat(
 }
 
 struct trc_recording *recording_Create(enum TrcRecordingFormat format) {
+    extern struct trc_recording *rec_Create(void);
     extern struct trc_recording *tibiacast_Create(void);
     extern struct trc_recording *tmv2_Create(void);
     extern struct trc_recording *trp_Create(void);
     extern struct trc_recording *yatc_Create(void);
 
     switch (format) {
+    case RECORDING_FORMAT_REC:
+        return rec_Create();
     case RECORDING_FORMAT_TIBIACAST:
         return tibiacast_Create();
     case RECORDING_FORMAT_TMV2:

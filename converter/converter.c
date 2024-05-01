@@ -116,7 +116,8 @@ static struct argp_option options[] = {
          ARGUMENT_INPUT_FORMAT,
          "format",
          0,
-         "the format of the recording, 'tibiacast', 'tmv2', or 'trp'",
+         "the format of the recording, 'rec', 'tibiacast', 'tmv2', 'trp', "
+         "or 'yatc'.",
          3},
         {"input-version",
          ARGUMENT_INPUT_VERSION,
@@ -376,7 +377,9 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
         break;
     case ARGUMENT_INPUT_FORMAT:
         /* input-format */
-        if (!strcmp(arg, "tibiacast")) {
+        if (!strcmp(arg, "rec")) {
+            settings->InputFormat = RECORDING_FORMAT_REC;
+        } else if (!strcmp(arg, "tibiacast")) {
             settings->InputFormat = RECORDING_FORMAT_TIBIACAST;
         } else if (!strcmp(arg, "tmv2")) {
             settings->InputFormat = RECORDING_FORMAT_TMV2;
@@ -386,8 +389,8 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
             settings->InputFormat = RECORDING_FORMAT_YATC;
         } else {
             argp_error(state,
-                       "input-format must be 'tibiacast', 'tmv2', 'trp', "
-                       "or 'yatc'");
+                       "input-format must be 'rec', 'tibiacast', 'tmv2', "
+                       "'trp', or 'yatc'");
         }
 
         break;

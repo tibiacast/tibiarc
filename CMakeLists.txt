@@ -69,6 +69,7 @@ add_library(tibiarc
   "lib/effect.h"
   "lib/fonts.c"
   "lib/fonts.h"
+  "lib/formats/rec.c"
   "lib/formats/tibiacast.c"
   "lib/formats/tibiareplay.c"
   "lib/formats/tmv2.c"
@@ -139,6 +140,21 @@ if(ZLIB_FOUND)
   target_link_libraries(tibiarc PRIVATE ${ZLIB_LIBRARIES})
 else()
   target_compile_definitions(tibiarc PRIVATE DISABLE_ZLIB)
+endif()
+
+
+option(TIBIARC_NO_OPENSSL "Explicitly disable zlib support" OFF)
+if(NOT TIBIARC_NO_OPENSSL)
+  find_package(OpenSSL QUIET)
+  if (NOT OPENSSL_FOUND)
+    message(WARNING "libcrypto was not found, tibiarc will be built without crypto support")
+  endif()
+endif()
+if(OPENSSL_FOUND)
+  target_include_directories(tibiarc PRIVATE ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(tibiarc PRIVATE OpenSSL::Crypto)
+else()
+  target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
 endif()
 
 # ########################################################################### #
