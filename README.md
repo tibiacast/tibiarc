@@ -196,17 +196,15 @@ a web browser.
 
 ### Unsupported formats
 
-Classic TibiCAM `.rec` files are not yet supported due to the format being
-designed to be annoying on purpose. I haven't had the time to implement it,
-but they can still be viewed by converting them to a more convenient format.
-
-[TibiaReplay] can be used to convert recordings up until Tibia version 7.92.
+Classic TibiCAM `.rec` files are supported up until version 7.92. Later
+versions have not yet been reverse-engineered, and contributions to help with
+that are highly welcome.
 
 [TibiaTimeMachine] seems capable of converting files of any version, and also
-supports other formats like `.cam` and `.byn`, but there's one small problem:
-we don't yet support the `.ttm` files it produces. Adding support for that
-would be trivial as it's open source, but I don't have any files to test with,
-feel free to send me some. :)
+supports formats like `.cam` and `.byn`, but there's one small problem: we
+don't yet support the `.ttm` files it produces. Adding support for that would
+be trivial as it's open source, but I don't have any files to test with, feel
+free to send me some. :)
 
 [TibiaReplay]: https://github.com/gurka/OldSchoolTibia/
 [TibiaTimeMachine]: https://github.com/tulio150/tibia-ttm/
