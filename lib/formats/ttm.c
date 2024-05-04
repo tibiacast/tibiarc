@@ -58,8 +58,7 @@ static bool ttm_ProcessNextPacket(struct trc_recording_ttm *recording,
             return trc_ReportError("Could not read packet type");
         }
 
-        switch (packetType)
-        {
+        switch (packetType) {
         case 0:
             if (!datareader_ReadU16(&recording->Reader, &packetDelay)) {
                 return trc_ReportError("Could not read packet delay");

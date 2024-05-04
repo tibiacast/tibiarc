@@ -65,6 +65,7 @@ add_library(tibiarc
   "lib/creature.h"
   "lib/datareader.c"
   "lib/datareader.h"
+  "lib/demuxer.c"
   "lib/deps/uthash.h"
   "lib/effect.h"
   "lib/fonts.c"
@@ -84,6 +85,7 @@ add_library(tibiarc
   "lib/message.h"
   "lib/missile.h"
   "lib/object.h"
+  "lib/packet.c"
   "lib/parser.c"
   "lib/parser.h"
   "lib/pictures.c"
@@ -106,8 +108,8 @@ add_library(tibiarc
   "lib/types.c"
   "lib/types.h"
   "lib/utils.h"
-  "lib/versions.c"
   "lib/versions_decl.h"
+  "lib/versions.c"
   "lib/versions.h"
 )
 target_include_directories(tibiarc PUBLIC "lib")
