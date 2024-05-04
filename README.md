@@ -37,6 +37,7 @@ not have happened without you.
 
 ## Supported recording formats
 
+* TibiaCAM `.cam`
 * Tibiacast `.recording`
 * TibiaMovie `.tmv2`
 * TibiaReplay `.trp`
@@ -47,8 +48,8 @@ not have happened without you.
 `.rec` files from Tibia version 8.0 and onwards have not yet been
 reverse-engineered, and contributions to help with that are highly welcome.
 
-`.cam`, `.byn`, and perhaps also `.rec` files for version 8.0 and onwards can
-be converted to the supported `.ttm` format by using  [TibiaTimeMachine].
+`.byn` files, and perhaps also `.rec` files for version 8.0 onwards can be
+converted to the supported `.ttm` format by using  [TibiaTimeMachine].
 
 [TibiaTimeMachine]: https://github.com/tulio150/tibia-ttm/
 

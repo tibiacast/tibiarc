@@ -636,18 +636,15 @@ static bool tibiacast_GuessRuntime(struct trc_recording_tibiacast *recording) {
         uint32_t packetLength;
         uint32_t timestamp;
 
-        if (recording->VersionMajor >= 4) {
-            if (!datareader_ReadU32(&scanner, &packetLength)) {
-                return trc_ReportError("Could not read packet length");
-            }
-        } else {
-            if (!datareader_ReadU16(&scanner, &packetLength)) {
-                return trc_ReportError("Could not read packet length");
-            }
+        if (!(recording->VersionMajor >= 4
+                      ? datareader_ReadU32(&scanner, &packetLength)
+                      : datareader_ReadU16(&scanner, &packetLength))) {
+            return trc_ReportError("Could not read packet length");
         }
 
         if (packetLength > 0) {
             if (!datareader_Skip(&scanner, packetLength)) {
+                return trc_ReportError("Could not skip packet contents");
             }
 
             if (!datareader_ReadU32(&scanner, &timestamp)) {
