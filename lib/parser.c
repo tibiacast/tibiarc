@@ -1804,9 +1804,10 @@ static bool parser_ParseCreatureSpeak(struct trc_data_reader *reader,
 
         break;
     }
-    case MESSAGEMODE_CHANNEL_YELLOW:
     case MESSAGEMODE_CHANNEL_ORANGE:
-    case MESSAGEMODE_CHANNEL_RED: {
+    case MESSAGEMODE_CHANNEL_RED:
+    case MESSAGEMODE_CHANNEL_WHITE:
+    case MESSAGEMODE_CHANNEL_YELLOW: {
         uint16_t channelId;
         ParseAssert(datareader_ReadU16(reader, &channelId));
     }

@@ -420,6 +420,11 @@ static void version_InitProtocol(struct trc_version *version) {
         version->Protocol.WarIcon = 1;
     }
 
+    if (VERSION_AT_LEAST(version, 8, 62)) {
+        /* HAZY: May belong to an earlier version. */
+        version->Protocol.CancelAttackId = 1;
+    }
+
     if (VERSION_AT_LEAST(version, 8, 70)) {
         version->Protocol.Mounts = 1;
     }

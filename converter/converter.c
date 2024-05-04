@@ -385,12 +385,14 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
             settings->InputFormat = RECORDING_FORMAT_TMV2;
         } else if (!strcmp(arg, "trp")) {
             settings->InputFormat = RECORDING_FORMAT_TRP;
+        } else if (!strcmp(arg, "ttm")) {
+            settings->InputFormat = RECORDING_FORMAT_TTM;
         } else if (!strcmp(arg, "yatc")) {
             settings->InputFormat = RECORDING_FORMAT_YATC;
         } else {
             argp_error(state,
                        "input-format must be 'rec', 'tibiacast', 'tmv2', "
-                       "'trp', or 'yatc'");
+                       "'trp', 'ttm', or 'yatc'");
         }
 
         break;

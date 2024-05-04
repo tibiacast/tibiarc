@@ -16,8 +16,8 @@ added a basic translation layer that lets it support arbitrary Tibia versions
 as long as the appropriate `.dat`/`.spr`/`.pic` files are present. If you
 cannot find a `.pic` file, you can safely use one from a later Tibia version.
 
-There's currently support for all versions between 7.11 and 7.92, but others
-may be hit or miss as I haven't had enough files to test with.
+There's currently support for all Tibia versions between 7.11 and 7.92, but
+others may be hit or miss as I haven't had enough files to test with.
 
 I hope someone finds this useful. :-)
 
@@ -34,6 +34,23 @@ not have happened without you.
 
 [tool for converting]: https://github.com/gurka/OldSchoolTibia
 [repository of `.dat` and `.spr` files]: https://downloads.ots.me/?dir=data/tibia-clients/dat_and_spr_collections
+
+## Supported recording formats
+
+* Tibiacast `.recording`
+* TibiaMovie `.tmv2`
+* TibiaReplay `.trp`
+* TibiaTimeMachine `.ttm`
+* TibiCAM `.rec` (only for Tibia versions 7.11 - 7.92)
+* YATC `.yatc`
+
+`.rec` files from Tibia version 8.0 and onwards have not yet been
+reverse-engineered, and contributions to help with that are highly welcome.
+
+`.cam`, `.byn`, and perhaps also `.rec` files for version 8.0 and onwards can
+be converted to the supported `.ttm` format by using  [TibiaTimeMachine].
+
+[TibiaTimeMachine]: https://github.com/tulio150/tibia-ttm/
 
 ## Building
 
@@ -193,21 +210,6 @@ basic desktop application, or if the project is built under `emscripten`, from
 a web browser.
 
     ./player data/folder tests/8.40/sample.tmv2
-
-### Unsupported formats
-
-Classic TibiCAM `.rec` files are supported up until version 7.92. Later
-versions have not yet been reverse-engineered, and contributions to help with
-that are highly welcome.
-
-[TibiaTimeMachine] seems capable of converting files of any version, and also
-supports formats like `.cam` and `.byn`, but there's one small problem: we
-don't yet support the `.ttm` files it produces. Adding support for that would
-be trivial as it's open source, but I don't have any files to test with, feel
-free to send me some. :)
-
-[TibiaReplay]: https://github.com/gurka/OldSchoolTibia/
-[TibiaTimeMachine]: https://github.com/tulio150/tibia-ttm/
 
 ## Testing
 
