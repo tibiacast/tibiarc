@@ -27,7 +27,7 @@ bool demuxer_Submit(struct trc_demuxer *demuxer,
     while (datareader_Remaining(reader) > 0) {
         if (demuxer->Remaining == 0) {
             switch (demuxer->State) {
-            case TRC_DEMUXER_STATE_PAYLOAD:
+            case TRC_DEMUXER_STATE_PAYLOAD: {
                 struct trc_packet *packet = packet_Create(demuxer->Timestamp,
                                                           demuxer->Used,
                                                           demuxer->Buffer);
@@ -39,7 +39,8 @@ bool demuxer_Submit(struct trc_demuxer *demuxer,
                 demuxer->Remaining = demuxer->HeaderSize;
                 demuxer->Used = 0;
                 break;
-            case TRC_DEMUXER_STATE_HEADER:
+            }
+            case TRC_DEMUXER_STATE_HEADER: {
                 const uint8_t *header;
 
                 ABORT_UNLESS(demuxer->Used == demuxer->HeaderSize);
@@ -60,6 +61,7 @@ bool demuxer_Submit(struct trc_demuxer *demuxer,
                 demuxer->State = TRC_DEMUXER_STATE_PAYLOAD;
                 demuxer->Timestamp = timestamp;
                 break;
+            }
             }
         }
 

@@ -305,8 +305,6 @@ static bool rec_Open(struct trc_recording_rec *recording,
         state.Frame.CipherData = state.Frame.PlainData;
     }
 
-    /* Allocate a buffer the size of the incoming recording, the demuxer will
-     * grow it if needed. */
     demuxer_Initialize(&state.Demuxer, 2);
     success = rec_Consolidate(recording, &reader, &state, frameCount);
     demuxer_Free(&state.Demuxer);
