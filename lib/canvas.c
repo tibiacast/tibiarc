@@ -94,6 +94,10 @@ static size_t canvas_Extract(const struct trc_canvas *canvas,
     (*renderWidth) = 0;
     (*renderHeight) = 0;
 
+    if ((x + width) >= canvas->Width || (y + height) >= canvas->Height) {
+        return 0;
+    }
+
     bufferIdx = 2;
     lengthIdx = 0;
     runLength = 0;
