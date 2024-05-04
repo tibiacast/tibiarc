@@ -20,11 +20,17 @@
 
 #include "recordings.h"
 #include "versions.h"
+#include "demuxer.h"
 
 #include "utils.h"
 
 #ifndef DISABLE_OPENSSL_CRYPTO
 #    include <openssl/evp.h>
+
+static uint8_t aes_key[32] = {0x54, 0x68, 0x79, 0x20, 0x6B, 0x65, 0x79, 0x20,
+                              0x69, 0x73, 0x20, 0x6D, 0x69, 0x6E, 0x65, 0x20,
+                              0xA9, 0x20, 0x32, 0x30, 0x30, 0x36, 0x20, 0x47,
+                              0x42, 0x20, 0x4D, 0x6F, 0x6E, 0x61, 0x63, 0x6F};
 #endif
 
 /* Early .REC versions have 32-bit frame lengths, but I haven't observed any
@@ -41,53 +47,31 @@
 struct trc_recording_rec {
     struct trc_recording Base;
 
-    uint32_t PacketNumber;
-    uint32_t PacketCount;
-
-    size_t Size;
-    uint8_t *Data;
-
-    struct trc_data_reader Reader;
+    struct trc_packet *Packets, *Next;
 };
 
 static bool rec_ProcessNextPacket(struct trc_recording_rec *recording,
                                   struct trc_game_state *gamestate) {
-    recording->PacketNumber++;
-    recording->Base.HasReachedEnd =
-            (recording->PacketNumber == recording->PacketCount);
+    struct trc_packet *packet = recording->Next;
+    struct trc_data_reader reader = {.Length = packet->Length,
+                                     .Data = packet->Data};
 
-    uint16_t packetLength;
-    if (!datareader_ReadU16(&recording->Reader, &packetLength)) {
-        return trc_ReportError("Could not read packet length");
-    }
-
-    struct trc_data_reader packetReader;
-    if (!datareader_Slice(&recording->Reader, packetLength, &packetReader)) {
-        return trc_ReportError("Bad packet length");
-    }
-
-    while (datareader_Remaining(&packetReader) > 0) {
-        if (!parser_ParsePacket(&packetReader, gamestate)) {
+    while (datareader_Remaining(&reader) > 0) {
+        if (!parser_ParsePacket(&reader, gamestate)) {
             return trc_ReportError("Failed to parse Tibia data packet");
         }
     }
 
-    if (!recording->Base.HasReachedEnd) {
-        uint32_t timestamp;
+    if (packet->Next != NULL) {
+        packet = packet->Next;
 
-        if (!datareader_ReadU32(&recording->Reader, &timestamp)) {
-            return trc_ReportError("Could not read packet timestamp");
-        }
-
-        if (timestamp < recording->Base.NextPacketTimestamp) {
-            return trc_ReportError("Invalid packet timestamp");
-        }
-
-        recording->Base.NextPacketTimestamp = timestamp;
+        recording->Base.NextPacketTimestamp = packet->Timestamp;
+        recording->Next = packet;
         return true;
     }
 
-    return datareader_Remaining(&recording->Reader) == 0;
+    recording->Base.HasReachedEnd = true;
+    return true;
 }
 
 static bool rec_QueryTibiaVersion(const struct trc_data_reader *file,
@@ -109,13 +93,7 @@ struct trc_rec_consolidate_state {
     EVP_CIPHER_CTX *AES;
 #endif
 
-    struct {
-        enum { TRC_UNPACK_STATE_HEADER, TRC_UNPACK_STATE_PAYLOAD } State;
-        uint32_t Timestamp;
-
-        uint32_t Emitted;
-        uint32_t Remaining;
-    } Packet;
+    struct trc_demuxer Demuxer;
 
     struct {
         uint32_t Timestamp;
@@ -126,22 +104,6 @@ struct trc_rec_consolidate_state {
         uint8_t *PlainData;
     } Frame;
 };
-
-static void rec_ExpandBuffer(struct trc_recording_rec *recording,
-                             struct trc_rec_consolidate_state *state,
-                             size_t need) {
-    ABORT_UNLESS(state->Packet.Emitted <= recording->Size);
-
-    if ((recording->Size - state->Packet.Emitted) < need) {
-        uint8_t *data = checked_allocate(2, recording->Size);
-
-        memcpy(data, recording->Data, state->Packet.Emitted);
-        checked_deallocate(recording->Data);
-
-        recording->Data = data;
-        recording->Size *= 2;
-    }
-}
 
 static bool rec_DeobfuscateFrame(struct trc_recording_rec *recording,
                                  struct trc_rec_consolidate_state *state) {
@@ -206,77 +168,10 @@ static bool rec_DeobfuscateFrame(struct trc_recording_rec *recording,
     return true;
 }
 
-static bool rec_UnpackFrame(struct trc_recording_rec *recording,
-                            struct trc_rec_consolidate_state *state) {
-    struct trc_data_reader reader = {.Length = state->Frame.Length,
-                                     .Position = 0,
-                                     .Data = state->Frame.PlainData};
-
-    while (datareader_Remaining(&reader) > 0) {
-        if (state->Packet.Remaining == 0) {
-            switch (state->Packet.State) {
-            case TRC_UNPACK_STATE_PAYLOAD:
-                /* We've got a full packet (or just started), emit its
-                 * timestamp. */
-                uint8_t *writer;
-
-                rec_ExpandBuffer(recording, state, 4);
-
-                writer = &recording->Data[state->Packet.Emitted];
-                writer[0] = (state->Packet.Timestamp >> 0x00);
-                writer[1] = (state->Packet.Timestamp >> 0x08);
-                writer[2] = (state->Packet.Timestamp >> 0x10);
-                writer[3] = (state->Packet.Timestamp >> 0x18);
-                state->Packet.Emitted += 4;
-
-                /* Read the length of the next packet into the datastream to
-                 * simplify the annoyingly common case of packet lengths being
-                 * split over two frames.
-                 *
-                 * The header logic will need to read the _produced_ data
-                 * determine the length of the next packet. */
-                state->Packet.State = TRC_UNPACK_STATE_HEADER;
-                state->Packet.Remaining = 2;
-
-                recording->PacketCount++;
-                break;
-            case TRC_UNPACK_STATE_HEADER:
-                uint8_t *header;
-
-                ABORT_UNLESS(state->Packet.Emitted >= 6);
-                header = &recording->Data[state->Packet.Emitted - 2];
-
-                state->Packet.State = TRC_UNPACK_STATE_PAYLOAD;
-                state->Packet.Timestamp = state->Frame.Timestamp;
-                state->Packet.Remaining = ((uint16_t)header[0] << 0x00) |
-                                          ((uint16_t)header[1] << 0x08);
-                break;
-            }
-        }
-
-        uint32_t to_copy =
-                MIN(datareader_Remaining(&reader), state->Packet.Remaining);
-
-        rec_ExpandBuffer(recording, state, to_copy);
-
-        if (!datareader_ReadRaw(&reader,
-                                to_copy,
-                                &recording->Data[state->Packet.Emitted])) {
-            return trc_ReportError("Failed to read frame data");
-        }
-
-        state->Packet.Remaining -= to_copy;
-        state->Packet.Emitted += to_copy;
-    }
-
-    return true;
-}
-
 static bool rec_Consolidate(struct trc_recording_rec *recording,
                             struct trc_data_reader *reader,
                             struct trc_rec_consolidate_state *state,
                             uint32_t frameCount) {
-
     for (int32_t i = 0; i < frameCount; i++) {
         if (!((state->Obfuscation & TRC_REC_OBFUSCATION_U16_FRAME_LENGTHS)
                       ? datareader_ReadU16(reader, &state->Frame.Length)
@@ -302,8 +197,12 @@ static bool rec_Consolidate(struct trc_recording_rec *recording,
             return trc_ReportError("Failed to deobfuscate frame");
         }
 
-        if (!rec_UnpackFrame(recording, state)) {
-            return trc_ReportError("Failed to unpack frame");
+        if (!demuxer_Submit(&state->Demuxer,
+                            state->Frame.Timestamp,
+                            &(struct trc_data_reader){
+                                    .Length = state->Frame.Length,
+                                    .Data = state->Frame.PlainData})) {
+            return trc_ReportError("Failed to demux frame");
         }
 
         if (state->Obfuscation & TRC_REC_OBFUSCATION_CHECKSUM) {
@@ -313,13 +212,18 @@ static bool rec_Consolidate(struct trc_recording_rec *recording,
         }
     }
 
-    recording->Base.Runtime = state->Frame.Timestamp;
-
-    recording->Reader.Position = 0;
-    recording->Reader.Length = state->Packet.Emitted;
-    recording->Reader.Data = recording->Data;
+    if (!demuxer_Finish(&state->Demuxer,
+                        &recording->Base.Runtime,
+                        &recording->Packets)) {
+        return trc_ReportError("Failed to finish demuxing");
+    }
 
     return true;
+}
+
+static void rec_Rewind(struct trc_recording_rec *recording) {
+    recording->Next = recording->Packets;
+    recording->Base.NextPacketTimestamp = (recording->Next)->Timestamp;
 }
 
 static bool rec_Open(struct trc_recording_rec *recording,
@@ -365,10 +269,6 @@ static bool rec_Open(struct trc_recording_rec *recording,
         frameCount -= 57;
     }
 
-    if (frameCount <= 0) {
-        return trc_ReportError("Invalid frame count");
-    }
-
     if (containerVersion >= 515) {
         obfuscation |= TRC_REC_OBFUSCATION_CHECKSUM;
     }
@@ -377,12 +277,11 @@ static bool rec_Open(struct trc_recording_rec *recording,
         obfuscation |= TRC_REC_OBFUSCATION_AES_DATA;
     }
 
-    struct trc_rec_consolidate_state state = {
-            .Obfuscation = obfuscation,
-            .Packet = {.State = TRC_UNPACK_STATE_PAYLOAD,
-                       .Emitted = 0,
-                       .Remaining = 0,
-                       .Timestamp = 0}};
+    if (frameCount <= 0) {
+        return trc_ReportError("Invalid frame count");
+    }
+
+    struct trc_rec_consolidate_state state = {.Obfuscation = obfuscation};
     bool success;
 
     if (obfuscation & TRC_REC_OBFUSCATION_AES_DATA) {
@@ -390,15 +289,10 @@ static bool rec_Open(struct trc_recording_rec *recording,
         return trc_ReportError("Cannot load recording, crypto library "
                                "missing");
 #else
-        uint8_t key[32] = {0x54, 0x68, 0x79, 0x20, 0x6B, 0x65, 0x79, 0x20,
-                           0x69, 0x73, 0x20, 0x6D, 0x69, 0x6E, 0x65, 0x20,
-                           0xA9, 0x20, 0x32, 0x30, 0x30, 0x36, 0x20, 0x47,
-                           0x42, 0x20, 0x4D, 0x6F, 0x6E, 0x61, 0x63, 0x6F};
-
         state.AES = EVP_CIPHER_CTX_new();
         EVP_CIPHER_CTX_init(state.AES);
 
-        if (!EVP_DecryptInit(state.AES, EVP_aes_256_ecb(), key, NULL)) {
+        if (!EVP_DecryptInit(state.AES, EVP_aes_256_ecb(), aes_key, NULL)) {
             EVP_CIPHER_CTX_free(state.AES);
             return trc_ReportError("Failed to set up cipher context");
         }
@@ -411,18 +305,15 @@ static bool rec_Open(struct trc_recording_rec *recording,
         state.Frame.CipherData = state.Frame.PlainData;
     }
 
-    /* Conservatively allocate a buffer twice the size of the incoming
-     * recording.
-     *
-     * We may still need to grow it later as we prefix every Tibia
-     * packet with a 4-byte timestamp. */
-    recording->Size = datareader_Remaining(&reader);
-    recording->Data = checked_allocate(2, recording->Size);
-
+    /* Allocate a buffer the size of the incoming recording, the demuxer will
+     * grow it if needed. */
+    demuxer_Initialize(&state.Demuxer, 2);
     success = rec_Consolidate(recording, &reader, &state, frameCount);
+    demuxer_Free(&state.Demuxer);
+
     checked_deallocate(state.Frame.PlainData);
 
-#ifdef DISABLE_OPENSSL_CRYPTO
+#ifndef DISABLE_OPENSSL_CRYPTO
     if (obfuscation & TRC_REC_OBFUSCATION_AES_DATA) {
         EVP_CIPHER_CTX_free(state.AES);
     }
@@ -432,26 +323,22 @@ static bool rec_Open(struct trc_recording_rec *recording,
         return trc_ReportError("Failed to consolidate recording");
     }
 
-    ABORT_UNLESS(datareader_ReadU32(&recording->Reader,
-                                    &recording->Base.NextPacketTimestamp));
-
     recording->Base.Version = version;
-    recording->Base.NextPacketTimestamp = 0;
     recording->Base.HasReachedEnd = 0;
+    rec_Rewind(recording);
 
     return true;
 }
 
-static void rec_Rewind(struct trc_recording_rec *recording) {
-    recording->Reader.Position = 0;
-    recording->PacketNumber = 0;
-
-    ABORT_UNLESS(datareader_ReadU32(&recording->Reader,
-                                    &recording->Base.NextPacketTimestamp));
-}
-
 static void rec_Free(struct trc_recording_rec *recording) {
-    checked_deallocate(recording->Data);
+    struct trc_packet *iterator = recording->Packets;
+
+    while (iterator != NULL) {
+        struct trc_packet *prev = iterator;
+        iterator = iterator->Next;
+        packet_Free(prev);
+    }
+
     checked_deallocate(recording);
 }
 
