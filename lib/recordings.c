@@ -32,6 +32,7 @@ static const struct {
         {"tibiacast", ".recording"},
         {"tmv2", ".tmv2"},
         {"trp", ".trp"},
+        {"ttm", ".ttm"},
         {"yatc", ".yatc"},
 };
 
@@ -81,6 +82,7 @@ struct trc_recording *recording_Create(enum TrcRecordingFormat format) {
     extern struct trc_recording *tibiacast_Create(void);
     extern struct trc_recording *tmv2_Create(void);
     extern struct trc_recording *trp_Create(void);
+    extern struct trc_recording *ttm_Create(void);
     extern struct trc_recording *yatc_Create(void);
 
     switch (format) {
@@ -92,6 +94,8 @@ struct trc_recording *recording_Create(enum TrcRecordingFormat format) {
         return tmv2_Create();
     case RECORDING_FORMAT_TRP:
         return trp_Create();
+    case RECORDING_FORMAT_TTM:
+        return ttm_Create();
     case RECORDING_FORMAT_YATC:
         return yatc_Create();
     default:

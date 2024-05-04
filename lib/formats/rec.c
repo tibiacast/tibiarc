@@ -156,14 +156,7 @@ static bool rec_DeobfuscateFrame(struct trc_recording_rec *recording,
             alpha = (key + i * 33) & 0xFF;
 
             if ((divisor & (divisor - 1)) == 0) {
-                /* Versions with power-of-2 divisors use unsigned remainder
-                 * instead of signed remainder.
-                 *
-                 * This is most likely a side-effect of the original author
-                 * doing all the transformations on signed chars, and their
-                 * compiler deducing that they cannot be negative because of
-                 * the previous operations, giving it free rein to optimize
-                 * this into a bitwise-and. */
+                /* Versions with power-of-2 divisors use bitwise-and. */
                 beta = alpha & (divisor - 1);
             } else {
                 beta = ((alpha - (alpha >> 7)) % divisor);
