@@ -67,6 +67,7 @@ static bool ttm_ProcessNextPacket(struct trc_recording_ttm *recording,
             break;
         case 1:
             recording->Base.NextPacketTimestamp += 1000;
+            break;
         default:
             return trc_ReportError("Invalid packet type");
         }
