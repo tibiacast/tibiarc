@@ -72,12 +72,13 @@ First, make sure that you have all dependencies:
 * `make`
 * `pkg-config`
 * `zlib`
+* `libssl` 3.0 or later
 
 The following should install everything on Debian and derived distros like
 Ubuntu:
 
 ```
-$ sudo apt install binutils clang cmake libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev libswscale-dev make pkg-config zlib1g-dev
+$ sudo apt install binutils clang cmake libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev libssl-dev libswscale-dev make pkg-config zlib1g-dev
 ```
 
 Then jump into the project folder and run the following commands, if all goes
@@ -99,7 +100,7 @@ set up the required packages:
 ```
 $ git clone https://github.com/mxe/mxe.git
 $ cd mxe
-$ make -j8 x264 x265 ffmpeg sdl2 zlib MXE_TARGETS='x86_64-w64-mingw32.static'
+$ make -j8 ffmpeg openssl sdl2 x264 x265 zlib MXE_TARGETS='x86_64-w64-mingw32.static'
 ```
 
 Then build `tibiarc` with the MXE toolchain:
