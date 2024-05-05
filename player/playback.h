@@ -47,6 +47,9 @@ struct playback {
 bool playback_Init(struct playback *playback,
                    const char *recording_name,
                    struct trc_data_reader *recording,
+                   int major,
+                   int minor,
+                   int preview,
                    struct trc_data_reader *pic,
                    struct trc_data_reader *spr,
                    struct trc_data_reader *dat);
