@@ -121,6 +121,8 @@ struct trc_version {
     } Protocol;
 
     struct {
+        uint8_t CapacityDivisor;
+
         bool AnimationPhases : 1;
         bool FrameGroups : 1;
         bool IconBar : 1;
