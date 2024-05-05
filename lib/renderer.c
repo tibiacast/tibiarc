@@ -2612,10 +2612,11 @@ bool renderer_DrawInventoryArea(const struct trc_render_options *options,
                                     "Cap:",
                                     canvas);
 
-    textLength = (uint16_t)snprintf(textBuffer,
-                                    sizeof(textBuffer),
-                                    "%u",
-                                    gamestate->Player.Stats.Capacity / 100);
+    uint32_t capacity = gamestate->Player.Stats.Capacity /
+                        gamestate->Version->Features.CapacityDivisor;
+
+    textLength =
+            (uint16_t)snprintf(textBuffer, sizeof(textBuffer), "%u", capacity);
     textrenderer_DrawCenteredString(&fonts->InterfaceFontLarge,
                                     &foregroundColor,
                                     16 + baseX + 90,

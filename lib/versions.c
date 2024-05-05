@@ -332,12 +332,18 @@ static void version_InitSpeakTypes(struct trc_version *version) {
 }
 
 static void version_InitFeatures(struct trc_version *version) {
+    version->Features.CapacityDivisor = 1;
+
     if (VERSION_AT_LEAST(version, 7, 50)) {
         version->Features.IconBar = 1;
     }
 
     if (VERSION_AT_LEAST(version, 7, 55)) {
         version->Features.TypeZDiv = 1;
+    }
+
+    if (VERSION_AT_LEAST(version, 8, 30)) {
+        version->Features.CapacityDivisor = 100;
     }
 
     if (VERSION_AT_LEAST(version, 8, 53)) {

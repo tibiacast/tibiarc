@@ -158,7 +158,7 @@ void load_files(uintptr_t recording_data,
     dat.Data = (const uint8_t *)dat_data;
     dat.Length = dat_length;
 
-    playback_Init(&playback, "", &recording, &pic, &spr, &dat);
+    playback_Init(&playback, "", &recording, 0, 0, 0, &pic, &spr, &dat);
 
     free((void *)pic_data);
     free((void *)spr_data);
@@ -187,7 +187,7 @@ static bool player_OpenData(const char *dataFolder, struct player_data *data) {
                  "%s%s",
                  dataFolder,
                  DIR_SEP "Tibia.pic") < 0) {
-        (void)fprintf(stderr, "Could not merge data path with Tibia.pic");
+        (void)fprintf(stderr, "Could not merge data path with Tibia.pic\n");
         return false;
     }
 
@@ -196,7 +196,7 @@ static bool player_OpenData(const char *dataFolder, struct player_data *data) {
                  "%s%s",
                  dataFolder,
                  DIR_SEP "Tibia.spr") < 0) {
-        (void)fprintf(stderr, "Could not merge data path with Tibia.spr");
+        (void)fprintf(stderr, "Could not merge data path with Tibia.spr\n");
         return false;
     }
 
@@ -205,20 +205,20 @@ static bool player_OpenData(const char *dataFolder, struct player_data *data) {
                  "%s%s",
                  dataFolder,
                  DIR_SEP "Tibia.dat") < 0) {
-        (void)fprintf(stderr, "Could not merge data path with Tibia.dat");
+        (void)fprintf(stderr, "Could not merge data path with Tibia.dat\n");
         return false;
     }
 
     if (!memoryfile_Open(picturePath, &data->PictureFile)) {
-        (void)fprintf(stderr, "Failed to open Tibia.pic");
+        (void)fprintf(stderr, "Failed to open Tibia.pic\n");
         return false;
     } else {
         if (!memoryfile_Open(spritePath, &data->SpriteFile)) {
-            (void)fprintf(stderr, "Failed to open Tibia.spr");
+            (void)fprintf(stderr, "Failed to open Tibia.spr\n");
             return false;
         } else {
             if (!memoryfile_Open(typePath, &data->TypeFile)) {
-                (void)fprintf(stderr, "Failed to open Tibia.dat");
+                (void)fprintf(stderr, "Failed to open Tibia.dat\n");
                 return false;
             } else {
                 data->Pictures.Data = data->PictureFile.View;
@@ -253,9 +253,19 @@ static void player_CloseData(struct player_data *data) {
 
 int main(int argc, char *argv[]) {
 #ifndef EMSCRIPTEN
-    if (argc != 3) {
-        fprintf(stderr, "usage: %s DATA_FOLDER RECORDING \n", argv[0]);
+    int major = 0, minor = 0, preview = 0;
+
+    if (argc < 3 || argc > 4) {
+        fprintf(stderr, "usage: %s DATA_FOLDER RECORDING [VERSION]\n", argv[0]);
         return 1;
+    }
+
+    if (argc == 4) {
+        if (sscanf(argv[3], "%u.%u.%u", &major, &minor, &preview) < 2) {
+            fprintf(stderr,
+                    "version must be in the format 'X.Y', e.g. '8.55'\n");
+            return 1;
+        }
     }
 
     trc_ChangeErrorReporting(TRC_ERROR_REPORT_MODE_TEXT);
@@ -277,6 +287,9 @@ int main(int argc, char *argv[]) {
                        &(struct trc_data_reader){.Data = file_recording.View,
                                                  .Length = file_recording.Size,
                                                  .Position = 0},
+                       major,
+                       minor,
+                       preview,
                        &data.Pictures,
                        &data.Sprites,
                        &data.Types)) {
