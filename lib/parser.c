@@ -730,17 +730,17 @@ static bool parser_ParseContainerOpen(struct trc_data_reader *reader,
     }
 
     ParseAssert(datareader_ReadU8(reader, &container->ItemCount));
-    ParseAssert(container->ItemCount <
-                (sizeof(container->Items) / sizeof(struct trc_object)));
 
     if (!(gamestate->Version)->Protocol.ContainerPagination) {
         container->TotalObjects =
                 MIN(container->TotalObjects, container->ItemCount);
-    }
-
-    if (container->ItemCount > container->TotalObjects) {
+    } else {
         container->TotalObjects = container->ItemCount;
     }
+
+    container->SlotsPerPage =
+            MIN(container->SlotsPerPage,
+                (sizeof(container->Items) / sizeof(struct trc_object)));
 
     for (itemIdx = 0;
          itemIdx < MIN(container->ItemCount, container->SlotsPerPage);
