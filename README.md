@@ -16,8 +16,9 @@ added a basic translation layer that lets it support arbitrary Tibia versions
 as long as the appropriate `.dat`/`.spr`/`.pic` files are present. If you
 cannot find a `.pic` file, you can safely use one from a later Tibia version.
 
-There's currently support for all Tibia versions between 7.11 and 7.92, but
-others may be hit or miss as I haven't had enough files to test with.
+There's currently good support for all Tibia versions between 7.11 and 7.92,
+and passable support between 8.00 and 8.57, but others may be hit or miss as I
+haven't had enough files to test with.
 
 I hope someone finds this useful. :-)
 
@@ -65,15 +66,23 @@ First, make sure that you have all dependencies:
 * `binutils`
 * `clang` or `gcc`
 * `cmake`
-* `libavcodec`
-* `libavformat`
-* `libavutil`
-* `libsdl2`
-* `libswscale`
 * `make`
 * `pkg-config`
-* `zlib`
-* `libssl` 3.0 or later
+
+The following optional dependencies are required for certain formats and utilities:
+
+* `libavcodec` [^1]
+* `libavformat` [^1]
+* `libavutil` [^1]
+* `libswscale` [^1]
+* `libsdl2` [^2]
+* `zlib` [^3]
+* `openssl` [^4]
+
+[^1]: Used in the recording converter example.
+[^2]: Used in the recording player example.
+[^3]: Required to open Tibiacast recordings
+[^4]: Required to open `.rec` files for Tibia versions 7.71 and later.
 
 The following should install everything on Debian and derived distros like
 Ubuntu:
