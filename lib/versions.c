@@ -406,8 +406,9 @@ static void version_InitProtocol(struct trc_version *version) {
     if (VERSION_AT_LEAST(version, 8, 30)) {
         version->Protocol.NPCVendorWeight = 1;
         version->Protocol.CapacityU32 = 1;
+    }
 
-        /* ??? */
+    if (VERSION_AT_LEAST(version, 8, 40)) {
         version->Protocol.TextEditObject = 1;
     }
 

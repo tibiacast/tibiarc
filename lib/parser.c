@@ -1625,8 +1625,11 @@ static bool parser_ValidateTextMessage(enum TrcMessageMode messageMode,
          * PoI levers. */
         ParseAssert(messageMode == MESSAGEMODE_MONSTER_SAY ||
                     messageMode == MESSAGEMODE_MONSTER_YELL ||
-                    (messageMode == MESSAGEMODE_SAY &&
+                    ((messageMode == MESSAGEMODE_SAY ||
+                      messageMode == MESSAGEMODE_NPC_START ||
+                      messageMode == MESSAGEMODE_NPC_CONTINUED) &&
                      (!strcmp(author, "a ghostly knight") ||
+                      !strcmp(author, "a dead bureaucrat") ||
                       !strcmp(message, "Hicks!"))));
         return true;
     }
