@@ -1236,6 +1236,8 @@ static bool parser_ParseCreatureImpassable(struct trc_data_reader *reader,
     uint8_t impassable;
     uint32_t creatureId;
 
+    ParseAssert((gamestate->Version)->Protocol.PassableCreatures);
+
     ParseAssert(datareader_ReadU32(reader, &creatureId));
     ParseAssert(datareader_ReadU8(reader, &impassable));
 
