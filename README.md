@@ -137,8 +137,8 @@ Where `data_folder` points at folder with appropriate data files (`Tibia.dat`,
 the desired output file.
 
 The converter will try to guess the input format, but if it fails you can use
-the `--input-format` flag to force the right format. `tibiacast`, `tmv2`
-(Tibia-Movie), `trp` (TibiaReplay), and `yatc` files are supported at present.
+the `--input-format` flag to force the right format, which must be one of the
+[supported recording formats](#supported-recording-formats).
 
 By default the output format is guessed by the file extension, but
 `--output-format` can be used to select a specific one, e.g. `matroska`.
