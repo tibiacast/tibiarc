@@ -1236,6 +1236,8 @@ static bool parser_ParseCreatureImpassable(struct trc_data_reader *reader,
     uint8_t impassable;
     uint32_t creatureId;
 
+    ParseAssert((gamestate->Version)->Protocol.PassableCreatures);
+
     ParseAssert(datareader_ReadU32(reader, &creatureId));
     ParseAssert(datareader_ReadU8(reader, &impassable));
 
@@ -1663,28 +1665,32 @@ static bool parser_ValidateTextMessage(enum TrcMessageMode messageMode,
     default: {
         /* Certain texts only happen with certain modes, so we can use them to
          * check whether our versioned message mode mapping is correct. */
-        static const struct {
-            enum TrcMessageMode Mode;
+        const struct {
+            uint64_t Modes;
             const char *Prefix;
-        } Prefixes[] = {{MESSAGEMODE_FAILURE, "Message sent to"},
-                        {MESSAGEMODE_FAILURE, "Sorry, not possible"},
-                        {MESSAGEMODE_FAILURE, "Target lost"},
-                        {MESSAGEMODE_GAME, "You advanced "},
-                        {MESSAGEMODE_LOGIN, "Your last visit in Tibia:"},
-                        {MESSAGEMODE_LOOK, "You have left the party"},
-                        {MESSAGEMODE_LOOK, "You see a"},
-                        {MESSAGEMODE_LOOK, "Your party has been disbanded"},
-                        {MESSAGEMODE_LOOT, "Loot of "},
-                        {MESSAGEMODE_STATUS, "You are poisoned"},
-                        {MESSAGEMODE_STATUS, "Your depot contains"},
-                        {MESSAGEMODE_WARNING, "Server is saving game in "},
-                        {MESSAGEMODE_WARNING, "Warning! The murder of "},
-                        {0, NULL}},
+        } Prefixes[] =
+                {{(1ull << MESSAGEMODE_FAILURE), "Message sent to"},
+                 {(1ull << MESSAGEMODE_FAILURE), "Sorry, not possible"},
+                 {(1ull << MESSAGEMODE_FAILURE), "Target lost"},
+                 {(1ull << MESSAGEMODE_GAME), "You advanced "},
+                 {(1ull << MESSAGEMODE_LOGIN), "Your last visit in Tibia:"},
+                 {(1ull << MESSAGEMODE_LOOK), "You have left the party"},
+                 {(1ull << MESSAGEMODE_LOOK), "You see a"},
+                 {(1ull << MESSAGEMODE_LOOK), "Your party has been"},
+                 {(1ull << MESSAGEMODE_LOOK) | (1ull << MESSAGEMODE_LOOT),
+                  "Loot of "},
+                 {(1ull << MESSAGEMODE_STATUS), "You are poisoned"},
+                 {(1ull << MESSAGEMODE_STATUS), "Your depot contains"},
+                 {(1ull << MESSAGEMODE_WARNING), "Server is saving game"},
+                 {(1ull << MESSAGEMODE_WARNING), "Warning! The murder of "},
+                 {(1ull << MESSAGEMODE_LOOK) | (1ull << MESSAGEMODE_HOTKEY),
+                  "Using "},
+                 {0, NULL}},
           *scanner = Prefixes;
 
         while (scanner->Prefix != NULL) {
             if (!strncmp(scanner->Prefix, message, strlen(scanner->Prefix))) {
-                return scanner->Mode == messageMode;
+                return !!(scanner->Modes & (1ull << messageMode));
             }
 
             scanner++;

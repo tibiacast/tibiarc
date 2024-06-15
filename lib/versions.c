@@ -424,6 +424,9 @@ static void version_InitProtocol(struct trc_version *version) {
 
     if (VERSION_AT_LEAST(version, 8, 53)) {
         version->Protocol.PassableCreatures = 1;
+    }
+
+    if (VERSION_AT_LEAST(version, 8, 54)) {
         version->Protocol.WarIcon = 1;
     }
 
