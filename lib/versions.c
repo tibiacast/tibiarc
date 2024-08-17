@@ -41,14 +41,18 @@ static void translation_Initialize(struct trc_translation_table *table) {
 
 static void translation_Insert(struct trc_translation_table *table,
                                int index,
+                               int8_t expected,
                                int8_t value) {
     ABORT_UNLESS(MAX(table->Max, index) < sizeof(table->Map));
 
     if (index <= table->Max) {
+        ABORT_UNLESS(expected == table->Map[index]);
         memmove(&table->Map[index + 1],
                 &table->Map[index],
                 table->Max - index + 1);
         table->Max++;
+    } else {
+        ABORT_UNLESS(expected == -1);
     }
 
     table->Max = MAX(table->Max, index);
@@ -57,8 +61,8 @@ static void translation_Insert(struct trc_translation_table *table,
 
 static void translation_Remove(struct trc_translation_table *table,
                                int index,
-                               int8_t value) {
-    ABORT_UNLESS(table->Map[index] == value);
+                               int8_t expected) {
+    ABORT_UNLESS(table->Map[index] == expected);
 
     if (index < table->Max) {
         memmove(&table->Map[index], &table->Map[index + 1], table->Max - index);
@@ -72,11 +76,11 @@ static void translation_Remove(struct trc_translation_table *table,
 
 static void translation_Replace(struct trc_translation_table *table,
                                 int index,
-                                int8_t from,
-                                int8_t to) {
-    ABORT_UNLESS(table->Map[index] == from);
+                                int8_t expected,
+                                int8_t value) {
+    ABORT_UNLESS(table->Map[index] == expected);
     ABORT_UNLESS(index <= table->Max);
-    table->Map[index] = to;
+    table->Map[index] = value;
 }
 
 static bool translation_Get(const struct trc_translation_table *table,
@@ -126,36 +130,36 @@ static void version_InitTypeProperties(struct trc_version *version) {
 
     /* 7.00 - 7.30, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 00));
-    translation_Insert(table, 0, TYPEPROPERTY_GROUND);
-    translation_Insert(table, 1, TYPEPROPERTY_CLIP);
-    translation_Insert(table, 2, TYPEPROPERTY_BOTTOM);
-    translation_Insert(table, 3, TYPEPROPERTY_CONTAINER);
-    translation_Insert(table, 4, TYPEPROPERTY_STACKABLE);
-    translation_Insert(table, 5, TYPEPROPERTY_USABLE);
-    translation_Insert(table, 6, TYPEPROPERTY_FORCE_USE);
-    translation_Insert(table, 7, TYPEPROPERTY_WRITE);
-    translation_Insert(table, 8, TYPEPROPERTY_WRITE_ONCE);
-    translation_Insert(table, 9, TYPEPROPERTY_LIQUID_CONTAINER);
-    translation_Insert(table, 10, TYPEPROPERTY_LIQUID_POOL);
-    translation_Insert(table, 11, TYPEPROPERTY_BLOCKING);
-    translation_Insert(table, 12, TYPEPROPERTY_UNMOVABLE);
-    translation_Insert(table, 13, TYPEPROPERTY_BLOCKING);
-    translation_Insert(table, 14, TYPEPROPERTY_UNPATHABLE);
-    translation_Insert(table, 15, TYPEPROPERTY_TAKEABLE);
-    translation_Insert(table, 16, TYPEPROPERTY_LIGHT);
-    translation_Insert(table, 17, TYPEPROPERTY_DONT_HIDE);
-    translation_Insert(table, 18, TYPEPROPERTY_BLOCKING);
-    translation_Insert(table, 19, TYPEPROPERTY_HEIGHT);
-    translation_Insert(table, 20, TYPEPROPERTY_DISPLACEMENT_LEGACY);
-    translation_Insert(table, 21, -1);
-    translation_Insert(table, 22, TYPEPROPERTY_AUTOMAP);
-    translation_Insert(table, 23, TYPEPROPERTY_ROTATE);
-    translation_Insert(table, 24, TYPEPROPERTY_CORPSE);
-    translation_Insert(table, 25, TYPEPROPERTY_HANGABLE);
-    translation_Insert(table, 26, TYPEPROPERTY_UNKNOWN_U16);
-    translation_Insert(table, 27, TYPEPROPERTY_HORIZONTAL);
-    translation_Insert(table, 28, TYPEPROPERTY_ANIMATE_IDLE);
-    translation_Insert(table, 29, TYPEPROPERTY_LENSHELP);
+    translation_Insert(table, 0, -1, TYPEPROPERTY_GROUND);
+    translation_Insert(table, 1, -1, TYPEPROPERTY_CLIP);
+    translation_Insert(table, 2, -1, TYPEPROPERTY_BOTTOM);
+    translation_Insert(table, 3, -1, TYPEPROPERTY_CONTAINER);
+    translation_Insert(table, 4, -1, TYPEPROPERTY_STACKABLE);
+    translation_Insert(table, 5, -1, TYPEPROPERTY_USABLE);
+    translation_Insert(table, 6, -1, TYPEPROPERTY_FORCE_USE);
+    translation_Insert(table, 7, -1, TYPEPROPERTY_WRITE);
+    translation_Insert(table, 8, -1, TYPEPROPERTY_WRITE_ONCE);
+    translation_Insert(table, 9, -1, TYPEPROPERTY_LIQUID_CONTAINER);
+    translation_Insert(table, 10, -1, TYPEPROPERTY_LIQUID_POOL);
+    translation_Insert(table, 11, -1, TYPEPROPERTY_BLOCKING);
+    translation_Insert(table, 12, -1, TYPEPROPERTY_UNMOVABLE);
+    translation_Insert(table, 13, -1, TYPEPROPERTY_BLOCKING);
+    translation_Insert(table, 14, -1, TYPEPROPERTY_UNPATHABLE);
+    translation_Insert(table, 15, -1, TYPEPROPERTY_TAKEABLE);
+    translation_Insert(table, 16, -1, TYPEPROPERTY_LIGHT);
+    translation_Insert(table, 17, -1, TYPEPROPERTY_DONT_HIDE);
+    translation_Insert(table, 18, -1, TYPEPROPERTY_BLOCKING);
+    translation_Insert(table, 19, -1, TYPEPROPERTY_HEIGHT);
+    translation_Insert(table, 20, -1, TYPEPROPERTY_DISPLACEMENT_LEGACY);
+    translation_Insert(table, 21, -1, -1);
+    translation_Insert(table, 22, -1, TYPEPROPERTY_AUTOMAP);
+    translation_Insert(table, 23, -1, TYPEPROPERTY_ROTATE);
+    translation_Insert(table, 24, -1, TYPEPROPERTY_CORPSE);
+    translation_Insert(table, 25, -1, TYPEPROPERTY_HANGABLE);
+    translation_Insert(table, 26, -1, TYPEPROPERTY_UNKNOWN_U16);
+    translation_Insert(table, 27, -1, TYPEPROPERTY_HORIZONTAL);
+    translation_Insert(table, 28, -1, TYPEPROPERTY_ANIMATE_IDLE);
+    translation_Insert(table, 29, -1, TYPEPROPERTY_LENSHELP);
 
     if (VERSION_AT_LEAST(version, 7, 40)) {
         translation_Replace(table,
@@ -165,7 +169,7 @@ static void version_InitTypeProperties(struct trc_version *version) {
     }
 
     if (VERSION_AT_LEAST(version, 7, 55)) {
-        translation_Insert(table, 3, TYPEPROPERTY_TOP);
+        translation_Insert(table, 3, TYPEPROPERTY_CONTAINER, TYPEPROPERTY_TOP);
 
         /* FORCE_USE and USABLE have changed places. */
         translation_Replace(table,
@@ -228,12 +232,18 @@ static void version_InitTypeProperties(struct trc_version *version) {
                             29,
                             TYPEPROPERTY_ANIMATE_IDLE,
                             TYPEPROPERTY_LENSHELP);
-        translation_Insert(table, 30, TYPEPROPERTY_WALKABLE);
+        translation_Insert(table,
+                           30,
+                           TYPEPROPERTY_LENSHELP,
+                           TYPEPROPERTY_WALKABLE);
     }
 
     if (VERSION_AT_LEAST(version, 7, 80)) {
-        translation_Insert(table, 8, TYPEPROPERTY_RUNE);
-        translation_Insert(table, 32, TYPEPROPERTY_LOOK_THROUGH);
+        translation_Insert(table, 8, TYPEPROPERTY_WRITE, TYPEPROPERTY_RUNE);
+        translation_Insert(table,
+                           32,
+                           TYPEPROPERTY_LENSHELP,
+                           TYPEPROPERTY_LOOK_THROUGH);
     }
 
     if (VERSION_AT_LEAST(version, 8, 60)) {
@@ -241,7 +251,10 @@ static void version_InitTypeProperties(struct trc_version *version) {
     }
 
     if (VERSION_AT_LEAST(version, 10, 10)) {
-        translation_Insert(table, 16, TYPEPROPERTY_NO_MOVE_ANIMATION);
+        translation_Insert(table,
+                           16,
+                           TYPEPROPERTY_TAKEABLE,
+                           TYPEPROPERTY_NO_MOVE_ANIMATION);
     }
 
     /* TODO: Figure out which versions these belong to:
@@ -261,34 +274,52 @@ static void version_InitMessageTypes(struct trc_version *version) {
 
     /* 7.11, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 11));
-    translation_Insert(table, 16, MESSAGEMODE_GAME);
-    translation_Insert(table, 17, MESSAGEMODE_LOGIN);
-    translation_Insert(table, 18, MESSAGEMODE_STATUS);
-    translation_Insert(table, 19, MESSAGEMODE_LOOK);
-    translation_Insert(table, 20, MESSAGEMODE_FAILURE);
+    translation_Insert(table, 14, -1, MESSAGEMODE_CONSOLE_ORANGE);
+    translation_Insert(table, 15, -1, MESSAGEMODE_BROADCAST);
+    translation_Insert(table, 16, -1, MESSAGEMODE_GAME);
+    translation_Insert(table, 17, -1, MESSAGEMODE_LOGIN);
+    translation_Insert(table, 18, -1, MESSAGEMODE_STATUS);
+    translation_Insert(table, 19, -1, MESSAGEMODE_LOOK);
+    translation_Insert(table, 20, -1, MESSAGEMODE_FAILURE);
 
     if (VERSION_AT_LEAST(version, 7, 20)) {
         /* Dummy entry, no idea where this should be. */
-        translation_Insert(table, 0, -1);
+        translation_Insert(table, 0, -1, -1);
 
-        translation_Insert(table, 17, MESSAGEMODE_WARNING);
+        translation_Insert(table, 17, MESSAGEMODE_GAME, MESSAGEMODE_WARNING);
     }
 
     if (VERSION_AT_LEAST(version, 7, 24)) {
         /* Dummy entry, no idea where this should be. */
-        translation_Insert(table, 0, -1);
+        translation_Insert(table, 0, -1, -1);
     }
 
     if (VERSION_AT_LEAST(version, 8, 20)) {
-        /* Red message to console */
-        translation_Insert(table, 19, -1);
-        /* Event-related status message */
-        translation_Insert(table, 20, MESSAGEMODE_STATUS);
+        translation_Insert(table,
+                           17,
+                           MESSAGEMODE_BROADCAST,
+                           MESSAGEMODE_CONSOLE_RED);
+        translation_Insert(table, 18, MESSAGEMODE_BROADCAST, -1);
     }
 
     if (VERSION_AT_LEAST(version, 8, 40)) {
-        /* Unhandled orange console message */
-        translation_Insert(table, 20, -1);
+        translation_Insert(table,
+                           20,
+                           MESSAGEMODE_WARNING,
+                           MESSAGEMODE_CONSOLE_ORANGE);
+    }
+
+    /* TibiaCamTV decided to move their slogan to MESSAGEMODE_WARNING in 8.60,
+     * keep that in mind when adding new versions. */
+
+    if (VERSION_AT_LEAST(version, 8, 61)) {
+        translation_Remove(table, 0, -1);
+        translation_Remove(table, 0, -1);
+        translation_Remove(table, 0, -1);
+        translation_Remove(table, 0, -1);
+        translation_Remove(table, 0, -1);
+        translation_Remove(table, 0, -1);
+        translation_Insert(table, 22, -1, MESSAGEMODE_WARNING);
     }
 }
 
@@ -299,35 +330,59 @@ static void version_InitSpeakTypes(struct trc_version *version) {
 
     /* 7.11, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 11));
-    translation_Insert(table, 1, MESSAGEMODE_SAY);
-    translation_Insert(table, 2, MESSAGEMODE_WHISPER);
-    translation_Insert(table, 3, MESSAGEMODE_YELL);
-    translation_Insert(table, 4, MESSAGEMODE_PRIVATE_IN);
-    translation_Insert(table, 5, MESSAGEMODE_CHANNEL_YELLOW);
-    translation_Insert(table, 9, MESSAGEMODE_BROADCAST);
-    translation_Insert(table, 10, MESSAGEMODE_CHANNEL_RED);
-    translation_Insert(table, 13, MESSAGEMODE_MONSTER_SAY);
-    translation_Insert(table, 14, MESSAGEMODE_MONSTER_YELL);
+    translation_Insert(table, 1, -1, MESSAGEMODE_SAY);
+    translation_Insert(table, 2, -1, MESSAGEMODE_WHISPER);
+    translation_Insert(table, 3, -1, MESSAGEMODE_YELL);
+    translation_Insert(table, 4, -1, MESSAGEMODE_PRIVATE_IN);
+    translation_Insert(table, 5, -1, MESSAGEMODE_CHANNEL_YELLOW);
+    translation_Insert(table, 6, -1, MESSAGEMODE_RULE_VIOLATION_CHANNEL);
+    translation_Insert(table, 7, -1, MESSAGEMODE_RULE_VIOLATION_ANSWER);
+    translation_Insert(table, 8, -1, MESSAGEMODE_RULE_VIOLATION_CONTINUE);
+    translation_Insert(table, 9, -1, MESSAGEMODE_BROADCAST);
+    translation_Insert(table, 10, -1, MESSAGEMODE_CHANNEL_RED);
+    translation_Insert(table, 11, -1, MESSAGEMODE_GM_TO_PLAYER);
+    translation_Insert(table, 12, -1, MESSAGEMODE_CHANNEL_ANONYMOUS_RED);
+    translation_Insert(table, 13, -1, MESSAGEMODE_MONSTER_SAY);
+    translation_Insert(table, 14, -1, MESSAGEMODE_MONSTER_YELL);
 
     if (VERSION_AT_LEAST(version, 7, 20)) {
-        translation_Insert(table, 12, MESSAGEMODE_CHANNEL_ORANGE);
-
-        /* TODO: Figure out what was added before MESSAGEMODE_MONSTER_SAY */
-        translation_Insert(table, 13, -1);
+        translation_Insert(table,
+                           12,
+                           MESSAGEMODE_CHANNEL_ANONYMOUS_RED,
+                           MESSAGEMODE_CHANNEL_ORANGE);
+        translation_Insert(table, 13, MESSAGEMODE_CHANNEL_ANONYMOUS_RED, -1);
     }
 
     if (VERSION_AT_LEAST(version, 7, 23)) {
-        /* TODO: Figure out what was added before MESSAGEMODE_MONSTER_SAY */
-        translation_Insert(table, 13, -1);
+        translation_Insert(table, 15, MESSAGEMODE_MONSTER_SAY, -1);
     }
 
     if (VERSION_AT_LEAST(version, 8, 20)) {
-        translation_Insert(table, 4, MESSAGEMODE_PLAYER_TO_NPC);
-        translation_Insert(table, 5, MESSAGEMODE_NPC_START);
+        translation_Insert(table,
+                           4,
+                           MESSAGEMODE_PRIVATE_IN,
+                           MESSAGEMODE_PLAYER_TO_NPC);
+        translation_Insert(table,
+                           5,
+                           MESSAGEMODE_PRIVATE_IN,
+                           MESSAGEMODE_NPC_START);
     }
 
     if (VERSION_AT_LEAST(version, 8, 40)) {
-        translation_Insert(table, 8, MESSAGEMODE_CHANNEL_WHITE);
+        translation_Insert(table,
+                           8,
+                           MESSAGEMODE_RULE_VIOLATION_CHANNEL,
+                           MESSAGEMODE_CHANNEL_WHITE);
+    }
+
+    if (VERSION_AT_LEAST(version, 8, 61)) {
+        translation_Remove(table, 9, MESSAGEMODE_RULE_VIOLATION_CHANNEL);
+        translation_Remove(table, 9, MESSAGEMODE_RULE_VIOLATION_ANSWER);
+        translation_Remove(table, 9, MESSAGEMODE_RULE_VIOLATION_CONTINUE);
+
+        translation_Remove(table, 13, -1);
+        translation_Remove(table, 13, MESSAGEMODE_CHANNEL_ANONYMOUS_RED);
+        translation_Remove(table, 13, -1);
     }
 }
 
