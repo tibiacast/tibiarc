@@ -107,24 +107,25 @@ struct trc_rec_consolidate_state {
 
 static bool rec_DeobfuscateFrame(struct trc_recording_rec *recording,
                                  struct trc_rec_consolidate_state *state) {
-    uint8_t divisor = (state->Obfuscation & TRC_REC_OBFUSCATION_DIVISOR_MASK);
+    const int32_t divisor =
+            (state->Obfuscation & TRC_REC_OBFUSCATION_DIVISOR_MASK);
 
-    if (divisor) {
-        uint32_t key = state->Frame.Length + state->Frame.Timestamp + 2;
+    if (divisor > 0) {
+        const uint32_t key =
+                (state->Frame.Length + state->Frame.Timestamp + 2) & 0xFF;
 
         for (uint32_t i = 0; i < state->Frame.Length; i++) {
-            uint32_t beta, alpha;
+            int32_t alpha, beta;
 
             alpha = (key + i * 33) & 0xFF;
+            alpha -= (alpha > 127) ? 256 : 0;
 
-            if ((divisor & (divisor - 1)) == 0) {
-                /* Versions with power-of-2 divisors use bitwise-and. */
-                beta = alpha & (divisor - 1);
-            } else {
-                beta = ((alpha - (alpha >> 7)) % divisor);
-            }
+            beta = alpha % divisor;
+            beta += (beta < 0) ? divisor : 0;
 
-            state->Frame.CipherData[i] -= alpha + (beta ? divisor - beta : 0);
+            alpha += (beta != 0) ? (divisor - beta) : 0;
+
+            state->Frame.CipherData[i] -= alpha;
         }
     }
 

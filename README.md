@@ -43,14 +43,11 @@ not have happened without you.
 * TibiaMovie `.tmv2`
 * TibiaReplay `.trp`
 * TibiaTimeMachine `.ttm`
-* TibiCAM `.rec` (only for Tibia versions 7.11 - 7.92)
+* TibiCAM `.rec`
 * YATC `.yatc`
 
-`.rec` files from Tibia version 8.0 and onwards have not yet been
-reverse-engineered, and contributions to help with that are highly welcome.
-
-`.byn` files, and perhaps also `.rec` files for version 8.0 onwards can be
-converted to the supported `.ttm` format by using  [TibiaTimeMachine].
+`.byn` files can be converted to the supported `.ttm` format by using
+[TibiaTimeMachine].
 
 [TibiaTimeMachine]: https://github.com/tulio150/tibia-ttm/
 
