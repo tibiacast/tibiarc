@@ -16,9 +16,8 @@ added a basic translation layer that lets it support arbitrary Tibia versions
 as long as the appropriate `.dat`/`.spr`/`.pic` files are present. If you
 cannot find a `.pic` file, you can safely use one from a later Tibia version.
 
-There's currently good support for all Tibia versions between 7.11 and 7.92,
-and passable support between 8.00 and 8.57, but others may be hit or miss as I
-haven't had enough files to test with.
+There's currently good support for all Tibia versions between 7.11 and 8.62,
+but others may be hit or miss as I haven't had enough files to test with.
 
 I hope someone finds this useful. :-)
 

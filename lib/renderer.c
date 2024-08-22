@@ -1889,6 +1889,11 @@ static int renderer_MessageColor(enum TrcMessageMode mode) {
     case MESSAGEMODE_YELL:
         return 210;
     case MESSAGEMODE_MONSTER_SAY:
+#ifdef DEBUG
+        /* Helps distinguish between monster say/yell when figuring out speak
+         * types. */
+        return 10;
+#endif
     case MESSAGEMODE_MONSTER_YELL:
         return 192;
     case MESSAGEMODE_NPC_START:
@@ -1904,6 +1909,11 @@ static int renderer_MessageColor(enum TrcMessageMode mode) {
         /* Red, center screen */
         return 194;
     case MESSAGEMODE_HOTKEY:
+#ifdef DEBUG
+        /* Helps distinguish between hotkey/look when figuring out speak
+         * types. */
+        return 10;
+#endif
     case MESSAGEMODE_NPC_TRADE:
     case MESSAGEMODE_GUILD:
     case MESSAGEMODE_LOOT:
