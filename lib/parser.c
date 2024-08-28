@@ -34,14 +34,25 @@
         return trc_ReportError(#Expr);                                         \
     }
 
+static bool parser_ValidatePosition(struct trc_position *position) {
+    ParseAssert(CHECK_RANGE(position->X,
+                            TILE_BUFFER_WIDTH,
+                            UINT16_MAX - TILE_BUFFER_WIDTH));
+    ParseAssert(CHECK_RANGE(position->Y,
+                            TILE_BUFFER_HEIGHT,
+                            UINT16_MAX - TILE_BUFFER_HEIGHT));
+    ParseAssert(CHECK_RANGE(position->Z, 0, 15));
+
+    return true;
+}
+
 static bool parser_ParsePosition(struct trc_data_reader *reader,
                                  struct trc_position *position) {
     ParseAssert(datareader_ReadU16(reader, &position->X));
     ParseAssert(datareader_ReadU16(reader, &position->Y));
     ParseAssert(datareader_ReadU8(reader, &position->Z));
-    ParseAssert(CHECK_RANGE(position->Z, 0, 15));
 
-    return true;
+    return parser_ValidatePosition(position);
 }
 
 static bool parser_ParseOutfit(struct trc_data_reader *reader,
@@ -438,6 +449,8 @@ static bool parser_ParseTileSetObject(struct trc_data_reader *reader,
     } else {
         uint32_t creatureId;
 
+        ParseAssert(gamestate->Version->Features.ModernStacking);
+
         /* Skip the 0xFFFF marker */
         ParseAssert(datareader_ReadU16(reader, &peekValue));
 
@@ -473,6 +486,8 @@ static bool parser_ParseTileRemoveObject(struct trc_data_reader *reader,
                                       stackPosition));
     } else {
         uint32_t creatureId;
+
+        ParseAssert(gamestate->Version->Features.ModernStacking);
 
         /* Skip the 0xFFFF marker */
         ParseAssert(datareader_ReadU16(reader, &peekValue));
@@ -515,6 +530,8 @@ static bool parser_ParseTileMoveCreature(struct trc_data_reader *reader,
 
         creatureId = tileObject.CreatureId;
     } else {
+        ParseAssert(gamestate->Version->Features.ModernStacking);
+
         /* Skip the 0xFFFF marker */
         ParseAssert(datareader_ReadU16(reader, &peekValue));
         ParseAssert(datareader_ReadU32(reader, &creatureId));
@@ -2556,6 +2573,7 @@ bool parser_ParsePacket(struct trc_data_reader *reader,
     case 0x65:
         /* Move north */
         gamestate->Map.Position.Y--;
+        ParseAssert(parser_ValidatePosition(&gamestate->Map.Position));
 
         return parser_ParseMapDescription(reader,
                                           gamestate,
@@ -2566,6 +2584,7 @@ bool parser_ParsePacket(struct trc_data_reader *reader,
     case 0x66:
         /* Move east */
         gamestate->Map.Position.X++;
+        ParseAssert(parser_ValidatePosition(&gamestate->Map.Position));
 
         return parser_ParseMapDescription(reader,
                                           gamestate,
@@ -2576,6 +2595,7 @@ bool parser_ParsePacket(struct trc_data_reader *reader,
     case 0x67:
         /* Move south */
         gamestate->Map.Position.Y++;
+        ParseAssert(parser_ValidatePosition(&gamestate->Map.Position));
 
         return parser_ParseMapDescription(reader,
                                           gamestate,
@@ -2586,6 +2606,7 @@ bool parser_ParsePacket(struct trc_data_reader *reader,
     case 0x68:
         /* Move west */
         gamestate->Map.Position.X--;
+        ParseAssert(parser_ValidatePosition(&gamestate->Map.Position));
 
         return parser_ParseMapDescription(reader,
                                           gamestate,
