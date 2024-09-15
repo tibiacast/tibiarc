@@ -51,7 +51,7 @@ TRC_UNUSED static struct trc_tile *map_GetTile(struct trc_map *map,
                                                int X,
                                                int Y,
                                                int Z) {
-    ASSERT(X > 0 && Y > 0 && Z > 0);
+    ASSERT(X >= 0 && Y >= 0 && Z >= 0);
 
     X %= TILE_BUFFER_WIDTH;
     Y %= TILE_BUFFER_HEIGHT;
@@ -63,10 +63,10 @@ TRC_UNUSED static struct trc_tile *map_GetTile(struct trc_map *map,
 TRC_UNUSED static uint8_t map_GetRenderHeight(struct trc_map *map,
                                               int rX,
                                               int bY) {
-    ASSERT(rX > 0 && bY > 0);
-
+    ASSERT((rX / 32) >= 0 && (bY / 32) >= 0);
     ASSERT((rX / 32) + ((bY / 32) * TILE_BUFFER_WIDTH) <=
            RENDER_HEIGHTMAP_SIZE);
+
     return map->RenderHeightMap[(rX / 32) + ((bY / 32) * TILE_BUFFER_WIDTH)];
 }
 
@@ -74,10 +74,10 @@ TRC_UNUSED static void map_UpdateRenderHeight(struct trc_map *map,
                                               int rX,
                                               int bY,
                                               uint8_t Z) {
-    ASSERT(rX > 0 && bY > 0);
-
+    ASSERT((rX / 32) >= 0 && (bY / 32) >= 0);
     ASSERT((rX / 32) + ((bY / 32) * TILE_BUFFER_WIDTH) <=
            RENDER_HEIGHTMAP_SIZE);
+
     map->RenderHeightMap[(rX / 32) + ((bY / 32) * TILE_BUFFER_WIDTH)] = Z;
 }
 

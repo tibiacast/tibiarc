@@ -1830,7 +1830,7 @@ static bool renderer_DrawMapOverlay(const struct trc_render_options *options,
             if (rightX > (NATIVE_RESOLUTION_X + 32) ||
                 bottomY > (NATIVE_RESOLUTION_Y + 32)) {
                 continue;
-            } else if (rightX < -32 || bottomY < -32) {
+            } else if (rightX <= -32 || bottomY <= -32) {
                 continue;
             }
 
