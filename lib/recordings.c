@@ -31,6 +31,7 @@ static const struct {
         {"cam", ".cam"},
         {"rec", ".rec"},
         {"tibiacast", ".recording"},
+        {"tmv1", ".tmv"},
         {"tmv2", ".tmv2"},
         {"trp", ".trp"},
         {"ttm", ".ttm"},
@@ -82,6 +83,7 @@ struct trc_recording *recording_Create(enum TrcRecordingFormat format) {
     extern struct trc_recording *cam_Create(void);
     extern struct trc_recording *rec_Create(void);
     extern struct trc_recording *tibiacast_Create(void);
+    extern struct trc_recording *tmv1_Create(void);
     extern struct trc_recording *tmv2_Create(void);
     extern struct trc_recording *trp_Create(void);
     extern struct trc_recording *ttm_Create(void);
@@ -94,6 +96,8 @@ struct trc_recording *recording_Create(enum TrcRecordingFormat format) {
         return rec_Create();
     case RECORDING_FORMAT_TIBIACAST:
         return tibiacast_Create();
+    case RECORDING_FORMAT_TMV1:
+        return tmv1_Create();
     case RECORDING_FORMAT_TMV2:
         return tmv2_Create();
     case RECORDING_FORMAT_TRP:

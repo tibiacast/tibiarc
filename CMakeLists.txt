@@ -82,6 +82,7 @@ add_library(tibiarc
   "lib/formats/tibiacast.c"
   "lib/formats/tibiareplay.c"
   "lib/formats/tmv2.c"
+  "lib/formats/tmv1.c"
   "lib/formats/ttm.c"
   "lib/formats/yatc.c"
   "lib/gamestate.c"

@@ -39,7 +39,7 @@ not have happened without you.
 
 * TibiaCAM `.cam`
 * Tibiacast `.recording`
-* TibiaMovie `.tmv2`
+* TibiaMovie `.tmv2`, `.tmv`
 * TibiaReplay `.trp`
 * TibiaTimeMachine `.ttm`
 * TibiCAM `.rec`
@@ -77,7 +77,7 @@ The following optional dependencies are required for certain formats and utiliti
 
 [^1]: Used in the recording converter example.
 [^2]: Used in the recording player example.
-[^3]: Required to open Tibiacast recordings
+[^3]: Required to open Tibiacast and TibiaMovie recordings
 [^4]: Required to open `.rec` files for Tibia versions 7.71 and later.
 
 The following should install everything on Debian and derived distros like
