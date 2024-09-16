@@ -250,6 +250,19 @@ static void version_InitTypeProperties(struct trc_version *version) {
         translation_Remove(table, 8, TYPEPROPERTY_RUNE);
     }
 
+    /* FIXME: These are completely taken out of thin air. I do not know the
+     * exact versions in which they appear.
+     *
+     * TODO: It would be nice if we had a tool to test this alone. Perhaps we
+     * should break out `version_DumpItems` into a simple utility as
+     * additional justification for this. */
+    if (VERSION_AT_LEAST(version, 9, 80)) {
+        translation_Insert(table, 33, -1, TYPEPROPERTY_MARKET_ITEM);
+        translation_Insert(table, 34, -1, TYPEPROPERTY_DEFAULT_ACTION);
+        translation_Insert(table, 35, -1, TYPEPROPERTY_WRAPPABLE);
+        translation_Insert(table, 36, -1, TYPEPROPERTY_TOP_EFFECT);
+    }
+
     if (VERSION_AT_LEAST(version, 10, 10)) {
         translation_Insert(table,
                            16,
@@ -267,10 +280,72 @@ static void version_InitTypeProperties(struct trc_version *version) {
      * 38:  TYPEPROPERTY_TOP_EFFECT */
 }
 
+static void version_InitUnifiedMessageTypes(
+        struct trc_version *version,
+        struct trc_translation_table *table) {
+    translation_Insert(table, 1, -1, MESSAGEMODE_SAY);
+    translation_Insert(table, 2, -1, MESSAGEMODE_WHISPER);
+    translation_Insert(table, 3, -1, MESSAGEMODE_YELL);
+    translation_Insert(table, 4, -1, MESSAGEMODE_PRIVATE_IN);
+    translation_Insert(table, 5, -1, MESSAGEMODE_PRIVATE_OUT);
+    translation_Insert(table, 6, -1, MESSAGEMODE_CHANNEL_WHITE);
+    translation_Insert(table, 7, -1, MESSAGEMODE_CHANNEL_WHITE);
+    translation_Insert(table, 8, -1, MESSAGEMODE_CHANNEL_WHITE);
+    translation_Insert(table, 9, -1, MESSAGEMODE_SPELL);
+    translation_Insert(table, 10, -1, MESSAGEMODE_NPC_START);
+    translation_Insert(table, 11, -1, MESSAGEMODE_PLAYER_TO_NPC);
+    translation_Insert(table, 12, -1, MESSAGEMODE_BROADCAST);
+    translation_Insert(table, 13, -1, MESSAGEMODE_CHANNEL_RED);
+    translation_Insert(table, 14, -1, MESSAGEMODE_GM_TO_PLAYER);
+    translation_Insert(table, 15, -1, MESSAGEMODE_PLAYER_TO_GM);
+    translation_Insert(table, 16, -1, MESSAGEMODE_LOGIN);
+    translation_Insert(table, 17, -1, MESSAGEMODE_WARNING);
+    translation_Insert(table, 18, -1, MESSAGEMODE_GAME);
+    translation_Insert(table, 19, -1, MESSAGEMODE_FAILURE);
+    translation_Insert(table, 20, -1, MESSAGEMODE_LOOK);
+    translation_Insert(table, 21, -1, MESSAGEMODE_DAMAGE_DEALT);
+    translation_Insert(table, 22, -1, MESSAGEMODE_DAMAGE_RECEIVED);
+    translation_Insert(table, 23, -1, MESSAGEMODE_HEALING);
+    translation_Insert(table, 24, -1, MESSAGEMODE_EXPERIENCE);
+    translation_Insert(table, 25, -1, MESSAGEMODE_DAMAGE_RECEIVED_OTHERS);
+    translation_Insert(table, 26, -1, MESSAGEMODE_HEALING_OTHERS);
+    translation_Insert(table, 27, -1, MESSAGEMODE_EXPERIENCE_OTHERS);
+    translation_Insert(table, 28, -1, MESSAGEMODE_STATUS);
+    translation_Insert(table, 29, -1, MESSAGEMODE_LOOT);
+    translation_Insert(table, 30, -1, MESSAGEMODE_NPC_TRADE);
+    translation_Insert(table, 31, -1, MESSAGEMODE_GUILD);
+    translation_Insert(table, 32, -1, MESSAGEMODE_PARTY_WHITE);
+    translation_Insert(table, 33, -1, MESSAGEMODE_PARTY);
+    translation_Insert(table, 34, -1, MESSAGEMODE_MONSTER_SAY);
+    translation_Insert(table, 35, -1, MESSAGEMODE_MONSTER_YELL);
+    translation_Insert(table, 36, -1, MESSAGEMODE_REPORT);
+    translation_Insert(table, 37, -1, MESSAGEMODE_HOTKEY);
+    translation_Insert(table, 38, -1, MESSAGEMODE_TUTORIAL);
+    translation_Insert(table, 39, -1, MESSAGEMODE_THANK_YOU);
+    translation_Insert(table, 40, -1, MESSAGEMODE_MARKET);
+    translation_Insert(table, 41, -1, MESSAGEMODE_MANA);
+
+    if (VERSION_AT_LEAST(version, 10, 36)) {
+        translation_Insert(table,
+                           11,
+                           MESSAGEMODE_PLAYER_TO_NPC,
+                           MESSAGEMODE_NPC_CONTINUED);
+    }
+
+    if (VERSION_AT_LEAST(version, 10, 54)) {
+        translation_Insert(table, 29, MESSAGEMODE_FAILURE, MESSAGEMODE_GAME);
+    }
+}
+
 static void version_InitMessageTypes(struct trc_version *version) {
     struct trc_translation_table *table = &version->MessageModes;
 
     translation_Initialize(table);
+
+    if (VERSION_AT_LEAST(version, 9, 00)) {
+        version_InitUnifiedMessageTypes(version, table);
+        return;
+    }
 
     /* 7.11, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 11));
@@ -327,6 +402,11 @@ static void version_InitSpeakTypes(struct trc_version *version) {
     struct trc_translation_table *table = &version->SpeakModes;
 
     translation_Initialize(table);
+
+    if (VERSION_AT_LEAST(version, 9, 00)) {
+        version_InitUnifiedMessageTypes(version, table);
+        return;
+    }
 
     /* 7.11, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 11));
@@ -390,11 +470,11 @@ static void version_InitFeatures(struct trc_version *version) {
     version->Features.CapacityDivisor = 1;
 
     if (VERSION_AT_LEAST(version, 7, 50)) {
-        version->Features.IconBar = 1;
+        version->Features.IconBar = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 55)) {
-        version->Features.TypeZDiv = 1;
+        version->Features.TypeZDiv = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 30)) {
@@ -402,188 +482,197 @@ static void version_InitFeatures(struct trc_version *version) {
     }
 
     if (VERSION_AT_LEAST(version, 8, 53)) {
-        version->Features.ModernStacking = 1;
+        version->Features.ModernStacking = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 6)) {
-        version->Features.SpriteIndexU32 = 1;
+        version->Features.SpriteIndexU32 = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 50)) {
-        version->Features.AnimationPhases = 1;
+        version->Features.AnimationPhases = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 57)) {
-        version->Features.FrameGroups = 1;
+        version->Features.FrameGroups = true;
     }
 }
 
 static void version_InitProtocol(struct trc_version *version) {
     if (VERSION_AT_LEAST(version, 7, 20)) {
-        version->Protocol.BugReporting = 1;
-        version->Protocol.SkullIcon = 1;
+        version->Protocol.BugReporting = true;
+        version->Protocol.SkullIcon = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 24)) {
-        version->Protocol.ShieldIcon = 1;
+        version->Protocol.ShieldIcon = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 40)) {
-        version->Protocol.MoveDeniedDirection = 1;
-        version->Protocol.SkillPercentages = 1;
+        version->Protocol.MoveDeniedDirection = true;
+        version->Protocol.SkillPercentages = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 50)) {
-        version->Protocol.SoulPoints = 1;
+        version->Protocol.SoulPoints = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 55)) {
-        version->Protocol.RawEffectIds = 1;
+        version->Protocol.RawEffectIds = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 60)) {
-        version->Protocol.TextEditAuthorName = 1;
-        version->Protocol.LevelU16 = 1;
+        version->Protocol.TextEditAuthorName = true;
+        version->Protocol.LevelU16 = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 70)) {
-        version->Protocol.ReportMessages = 1;
-        version->Protocol.OutfitsU16 = 1;
+        version->Protocol.ReportMessages = true;
+        version->Protocol.OutfitsU16 = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 80)) {
-        version->Protocol.RuneChargeCount = 1;
-        version->Protocol.OutfitAddons = 1;
-        version->Protocol.Stamina = 1;
-        version->Protocol.SpeakerLevel = 1;
-        version->Protocol.IconsU16 = 1;
+        version->Protocol.RuneChargeCount = true;
+        version->Protocol.OutfitAddons = true;
+        version->Protocol.Stamina = true;
+        version->Protocol.SpeakerLevel = true;
+        version->Protocol.IconsU16 = true;
     }
 
     if (VERSION_AT_LEAST(version, 7, 90)) {
-        version->Protocol.TextEditDate = 1;
-        version->Protocol.OutfitNames = 1;
+        version->Protocol.TextEditDate = true;
+        version->Protocol.OutfitNames = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 30)) {
-        version->Protocol.NPCVendorWeight = 1;
-        version->Protocol.CapacityU32 = 1;
+        version->Protocol.NPCVendorWeight = true;
+        version->Protocol.CapacityU32 = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 40)) {
-        version->Protocol.TextEditObject = 1;
+        version->Protocol.TextEditObject = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 41)) {
-        version->Protocol.AddObjectStackPosition = 1;
+        version->Protocol.AddObjectStackPosition = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 53)) {
-        version->Protocol.PassableCreatures = 1;
+        version->Protocol.PassableCreatures = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 54)) {
-        version->Protocol.WarIcon = 1;
+        version->Protocol.WarIcon = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 60)) {
-        version->Protocol.CancelAttackId = 1;
+        version->Protocol.CancelAttackId = true;
     }
 
     if (VERSION_AT_LEAST(version, 8, 70)) {
-        version->Protocol.Mounts = 1;
+        version->Protocol.Mounts = true;
     }
 
     /* HAZY: Catch-all for properties of unknown versions to get 8.55 rolling.
      *
      * These may belong to any version between 8.55 and 9.32. */
     if (VERSION_AT_LEAST(version, 9, 0)) {
-        version->Protocol.CancelAttackId = 1;
-        version->Protocol.HazyNewTileStuff = 1;
-        version->Protocol.MaxCapacity = 1;
-        version->Protocol.ExperienceU64 = 1;
-        version->Protocol.PlayerSpeed = 1;
-        version->Protocol.PlayerHunger = 1;
-        version->Protocol.ItemAnimation = 1;
-        version->Protocol.NPCVendorName = 1;
-        version->Protocol.MessageEffects = 1;
-        version->Protocol.ChannelParticipants = 1;
+        version->Protocol.CancelAttackId = true;
+        version->Protocol.EnvironmentalEffects = true;
+        version->Protocol.MaxCapacity = true;
+        version->Protocol.ExperienceU64 = true;
+        version->Protocol.PlayerSpeed = true;
+        version->Protocol.PlayerHunger = true;
+        version->Protocol.ItemAnimation = true;
+        version->Protocol.NPCVendorName = true;
+        version->Protocol.MessageEffects = true;
+        version->Protocol.ChannelParticipants = true;
 
         /* ?? */
-        version->Protocol.OutfitCountU16 = 1;
+        version->Protocol.SpeedAdjustment = true;
+        version->Protocol.CreatureTypes = true;
+        version->Protocol.SkillBonuses = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 32)) {
-        version->Protocol.NPCVendorItemCountU16 = 1;
+        version->Protocol.NPCVendorItemCountU16 = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 54)) {
-        version->Protocol.OfflineStamina = 1;
-        version->Protocol.PassableCreatureUpdate = 1;
+        version->Protocol.OfflineStamina = true;
+        version->Protocol.PassableCreatureUpdate = true;
+    }
+
+    if (VERSION_AT_LEAST(version, 9, 62)) {
+        version->Protocol.ExtendedVIPData = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 72)) {
-        version->Protocol.PlayerMoneyU64 = 1;
-        version->Protocol.ExtendedDeathDialog = 1;
+        version->Protocol.PlayerMoneyU64 = true;
+        version->Protocol.ExtendedDeathDialog = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 83)) {
-        version->Protocol.ContainerIndexU16 = 1;
+        version->Protocol.ContainerIndexU16 = true;
     }
 
     if ((version->Major == 9 && version->Minor == 83) && version->Preview) {
-        version->Protocol.PreviewByte = 1;
+        version->Protocol.PreviewByte = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 84)) {
-        version->Protocol.PreviewByte = 1;
-        version->Protocol.ContainerPagination = 1;
+        version->Protocol.PreviewByte = true;
+        version->Protocol.ContainerPagination = true;
     }
 
     if (VERSION_AT_LEAST(version, 9, 86) ||
         (version->Major == 9 && version->Minor == 85 && version->Preview)) {
-        version->Protocol.CreatureMarks = 1;
-        version->Protocol.ItemMarks = 1;
+        version->Protocol.CreatureMarks = true;
+        version->Protocol.ItemMarks = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 36)) {
-        version->Protocol.NPCCategory = 1;
-        version->Protocol.SinglePVPHelper = 1;
-        version->Protocol.LoyaltyBonus = 1;
+        version->Protocol.NPCCategory = true;
+        version->Protocol.SinglePVPHelper = true;
+        version->Protocol.LoyaltyBonus = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 37)) {
-        version->Protocol.PremiumUntil = 1;
+        version->Protocol.PremiumUntil = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 53) ||
         (version->Major == 10 && version->Minor == 52 && version->Preview)) {
-        version->Protocol.PVPFraming = 1;
+        version->Protocol.PVPFraming = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 54) ||
         (version->Major == 10 && version->Minor == 53 && version->Preview)) {
-        version->Protocol.ExperienceBonus = 1;
+        version->Protocol.ExperienceBonus = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 55)) {
-        version->Protocol.UnfairFightReduction = 1;
+        version->Protocol.UnfairFightReduction = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 58)) {
-        version->Protocol.ExpertMode = 1;
+        version->Protocol.ExpertMode = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 59)) {
-        version->Protocol.CreatureSpeedPadding = 1;
+        version->Protocol.CreatureSpeedPadding = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 65)) {
-        version->Protocol.GuildChannelId = 1;
-        version->Protocol.PartyChannelId = 1;
+        version->Protocol.GuildChannelId = true;
+        version->Protocol.PartyChannelId = true;
     }
 
     if (VERSION_AT_LEAST(version, 10, 95)) {
-        version->Protocol.SkillsUnknownPadding = 1;
+        version->Protocol.SkillsUnknownPadding = true;
+
+        /* ??? */
+        version->Protocol.OutfitCountU16 = true;
     }
 }
 
@@ -890,9 +979,14 @@ bool version_TranslatePictureIndex(const struct trc_version *version,
     ABORT_UNLESS(CHECK_RANGE((int)index,
                              (int)PICTURE_INDEX_TUTORIAL,
                              (int)PICTURE_INDEX_LAST));
-    /* As the enum, but PICTURE_INDEX_SPLASH_LOGO is missing. We need to figure
-     * out when that was added. */
-    translated = (int)index - 1;
+
+    /* FIXME: When was PICTURE_INDEX_SPLASH_LOGO added? I don't have the
+     * .pic files for most versions, just .dat and .spr */
+    if (VERSION_AT_LEAST(version, 9, 00)) {
+        translated = (int)index;
+    } else {
+        translated = (int)index - 1;
+    }
 
     *out = translated;
     return true;

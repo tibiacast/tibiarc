@@ -47,7 +47,7 @@ static bool tmv2_ProcessNextPacket(struct trc_recording_tmv2 *recording,
     uint32_t timestamp;
 
     if (recording->PacketNumber == recording->PacketCount) {
-        recording->Base.HasReachedEnd = 1;
+        recording->Base.HasReachedEnd = true;
         return true;
     }
 

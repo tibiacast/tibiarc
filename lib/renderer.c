@@ -853,8 +853,7 @@ static bool renderer_DrawMovingCreatures(struct trc_game_state *gamestate,
 
                     if (!renderer_UpdateWalkOffset(gamestate, creature)) {
                         return trc_ReportError(
-                                "Could not update walk offset of "
-                                "creature");
+                                "Could not update walk offset of creature");
                     }
 
                     if (creature->MovementInformation.WalkEndTick <= tick) {
@@ -968,7 +967,7 @@ static bool renderer_DrawTile(const struct trc_render_options *options,
                               int viewOffsetX,
                               int viewOffsetY,
                               uint32_t tick,
-                              int *redrawNearbyTop,
+                              bool *redrawNearbyTop,
                               struct trc_canvas *canvas) {
     int heightDisplacement, horizontal, vertical, rightX, bottomY;
     struct trc_tile *tile;
@@ -1103,7 +1102,7 @@ static bool renderer_DrawTile(const struct trc_render_options *options,
                 vertical = vertical || itemType->Properties.Vertical;
 
                 if (itemType->Properties.RedrawNearbyTop) {
-                    (*redrawNearbyTop) = 1;
+                    (*redrawNearbyTop) = true;
                 }
             }
         }
@@ -1378,7 +1377,7 @@ bool renderer_DrawGamestate(const struct trc_render_options *options,
         for (int xIdx = 0; xIdx <= 17; xIdx++) {
             for (int yIdx = 0; yIdx <= 13; yIdx++) {
                 struct trc_position tilePosition;
-                int redrawNearbyTop;
+                bool redrawNearbyTop;
 
                 tilePosition.X =
                         gamestate->Map.Position.X - 8 + xIdx + xyOffset;
@@ -1386,7 +1385,7 @@ bool renderer_DrawGamestate(const struct trc_render_options *options,
                         gamestate->Map.Position.Y - 6 + yIdx + xyOffset;
                 tilePosition.Z = zIdx;
 
-                redrawNearbyTop = 0;
+                redrawNearbyTop = false;
 
                 if (!renderer_DrawTile(options,
                                        gamestate,
@@ -1943,12 +1942,12 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
     struct trc_message *message;
 
     int preserveCoordinates, canMerge;
-    int drawnWhiteNotification;
-    int drawnGreenNotification;
-    int drawnRedNotification;
-    int drawnPrivateMessage;
-    int drawnStatusMessage;
-    int drawnMessages;
+    bool drawnWhiteNotification;
+    bool drawnGreenNotification;
+    bool drawnRedNotification;
+    bool drawnPrivateMessage;
+    bool drawnStatusMessage;
+    bool drawnMessages;
     int centerX, bottomY;
 
     pixel_SetRGB(&foregroundColor, 0, 0, 0);
@@ -1978,7 +1977,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnWhiteNotification = 1;
+            drawnWhiteNotification = true;
             break;
         case MESSAGEMODE_WARNING:
             if (drawnRedNotification) {
@@ -1986,7 +1985,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnRedNotification = 1;
+            drawnRedNotification = true;
             break;
         case MESSAGEMODE_SPELL:
             if (options->SkipRenderingSpellMessages) {
@@ -2000,7 +1999,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnGreenNotification = 1;
+            drawnGreenNotification = true;
             break;
         case MESSAGEMODE_LOOT:
             if (options->SkipRenderingLootMessages || drawnGreenNotification) {
@@ -2008,7 +2007,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnGreenNotification = 1;
+            drawnGreenNotification = true;
             break;
         case MESSAGEMODE_NPC_TRADE:
         case MESSAGEMODE_GUILD:
@@ -2018,7 +2017,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnGreenNotification = 1;
+            drawnGreenNotification = true;
             break;
         case MESSAGEMODE_PRIVATE_IN:
             if (options->SkipRenderingPrivateMessages || drawnPrivateMessage) {
@@ -2026,7 +2025,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnPrivateMessage = 1;
+            drawnPrivateMessage = true;
             break;
         case MESSAGEMODE_FAILURE:
         case MESSAGEMODE_STATUS:
@@ -2036,7 +2035,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
 
-            drawnStatusMessage = 1;
+            drawnStatusMessage = true;
             break;
         case MESSAGEMODE_YELL:
             transformations |= TEXTTRANSFORM_UPPERCASE;
@@ -2056,7 +2055,7 @@ static bool renderer_DrawMessages(const struct trc_render_options *options,
                 continue;
             }
         } else {
-            drawnMessages = 1;
+            drawnMessages = true;
             pixel_SetTextColor(&foregroundColor,
                                renderer_MessageColor(message->Type));
 

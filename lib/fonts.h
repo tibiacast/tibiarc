@@ -27,7 +27,7 @@
 #include "sprites.h"
 
 struct trc_font {
-    int IsBordered;
+    bool IsBordered;
     int Height;
 
     struct {

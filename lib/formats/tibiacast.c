@@ -113,7 +113,7 @@ static bool tibiacast_ParseCreatureList(
 
         creaturelist_ReplaceCreature(creatureList, creatureId, 0, &creature);
 
-        if (version->Protocol.CreatureMarks) {
+        if (version->Protocol.CreatureTypes) {
             uint8_t type;
             if (!datareader_ReadU8(&recording->Reader, &type) ||
                 !CHECK_RANGE(type, CREATURE_TYPE_FIRST, CREATURE_TYPE_LAST)) {
@@ -690,7 +690,7 @@ static bool tibiacast_Open(struct trc_recording_tibiacast *recording,
     if ((version->Major == 9 && version->Minor == 80)) {
         /* Tibiacast generated buggy initialization packets for recordings for a
          * short while. */
-        version->Protocol.TibiacastBuggedInitialization = 1;
+        version->Protocol.TibiacastBuggedInitialization = true;
     }
 
     if (!tibiacast_Uncompress(recording, &reader)) {

@@ -119,6 +119,10 @@ static bool ttm_Open(struct trc_recording_ttm *recording,
         return trc_ReportError("Failed to skip server name");
     }
 
+    if (serverLength > 0 && !datareader_Skip(&reader, 2)) {
+        return trc_ReportError("Failed to skip server port");
+    }
+
     if (!datareader_ReadU32(&reader, &runtime)) {
         return trc_ReportError("Failed to read runtime");
     }
@@ -126,7 +130,7 @@ static bool ttm_Open(struct trc_recording_ttm *recording,
     recording->Base.Version = version;
     recording->Base.Runtime = runtime;
     recording->Base.NextPacketTimestamp = 0;
-    recording->Base.HasReachedEnd = 0;
+    recording->Base.HasReachedEnd = false;
 
     recording->InitialReader = reader;
     recording->Reader = reader;

@@ -34,6 +34,9 @@
         return trc_ReportError(#Expr);                                         \
     }
 
+#define CLAMP_RANGE(LValue, Min, Max)                                          \
+    (LValue) = MAX(MAX((LValue), (Min)), MIN((LValue), (Max)))
+
 static bool parser_ValidatePosition(struct trc_position *position) {
     ParseAssert(CHECK_RANGE(position->X,
                             TILE_BUFFER_WIDTH,
@@ -109,7 +112,7 @@ static bool parser_ParseCreature(struct trc_data_reader *reader,
                                      removeId,
                                      &creature);
 
-        if ((gamestate->Version)->Protocol.CreatureMarks) {
+        if ((gamestate->Version)->Protocol.CreatureTypes) {
             uint8_t creatureType;
             ParseAssert(datareader_ReadU8(reader, &creatureType));
             ParseAssert(CHECK_RANGE(creatureType,
@@ -130,7 +133,7 @@ static bool parser_ParseCreature(struct trc_data_reader *reader,
 
     if (objectId != 0x63) {
         ParseAssert(datareader_ReadU8(reader, &creature->Health));
-        ParseAssert(CHECK_RANGE(creature->Health, 0, 100));
+        CLAMP_RANGE(creature->Health, 0, 100);
     }
 
     uint8_t direction;
@@ -215,7 +218,8 @@ static bool parser_ParseObject(struct trc_data_reader *reader,
 
     switch (objectId) {
     case 0:
-        /* Null object; behavior added in 9.83 */
+        /* Null object; behavior added in 9.83. */
+        ParseAssert(VERSION_AT_LEAST(gamestate->Version, 9, 83));
         break;
     case 0x61:
     case 0x62:
@@ -267,16 +271,20 @@ static bool parser_ParseObject(struct trc_data_reader *reader,
 
 static bool parser_ParseTileDescription(struct trc_data_reader *reader,
                                         struct trc_game_state *gamestate,
-                                        struct trc_tile *tile) {
+                                        struct trc_tile *tile,
+                                        uint16_t *tileSkip) {
     uint16_t peekValue;
 
     tile_Clear(tile);
 
     ParseAssert(datareader_PeekU16(reader, &peekValue));
 
-    if ((gamestate->Version)->Protocol.HazyNewTileStuff) {
+    if ((gamestate->Version)->Protocol.EnvironmentalEffects) {
+        /* This is either a tile skip or an environmental effect. Since we
+         * haven't implemented rendering for the latter, just ignore it. */
         if (peekValue < 0xFF00) {
             ParseAssert(datareader_ReadU16(reader, &peekValue));
+            ParseAssert(datareader_PeekU16(reader, &peekValue));
         }
     }
 
@@ -290,13 +298,16 @@ static bool parser_ParseTileDescription(struct trc_data_reader *reader,
         } else {
             struct trc_object nullObject;
 
-            /* We don't particularly care about the result here -- we just need
-             * to parse it to catch all relevant creatures */
+            /* We don't particularly care about the result here -- we just
+             * need to parse it to catch all relevant creatures */
             ParseAssert(parser_ParseObject(reader, gamestate, &nullObject));
         }
 
         ParseAssert(datareader_PeekU16(reader, &peekValue));
     }
+
+    ParseAssert(datareader_ReadU16(reader, &peekValue));
+    (*tileSkip) = peekValue & 0xFF;
 
     return true;
 }
@@ -315,11 +326,10 @@ static bool parser_ParseFloorDescription(struct trc_data_reader *reader,
             struct trc_tile *tile = map_GetTile(&gamestate->Map, xIdx, yIdx, Z);
 
             if ((*tileSkip) == 0) {
-                ParseAssert(
-                        parser_ParseTileDescription(reader, gamestate, tile));
-
-                ParseAssert(datareader_ReadU16(reader, tileSkip));
-                (*tileSkip) = (*tileSkip) & 0xFF;
+                ParseAssert(parser_ParseTileDescription(reader,
+                                                        gamestate,
+                                                        tile,
+                                                        tileSkip));
             } else {
                 tile_Clear(tile);
 
@@ -383,10 +393,10 @@ static bool parser_ParseTileUpdate(struct trc_data_reader *reader,
                               tilePosition.Y,
                               tilePosition.Z);
 
-    ParseAssert(parser_ParseTileDescription(reader, gamestate, currentTile));
-
-    /* Doesn't do anything, we still need to skip it however. */
-    ParseAssert(datareader_ReadU16(reader, &tileSkip));
+    ParseAssert(parser_ParseTileDescription(reader,
+                                            gamestate,
+                                            currentTile,
+                                            &tileSkip));
 
     return true;
 }
@@ -1131,7 +1141,7 @@ static bool parser_ParseCreatureHealth(struct trc_data_reader *reader,
 
     ParseAssert(datareader_ReadU32(reader, &creatureId));
     ParseAssert(datareader_ReadU8(reader, &health));
-    ParseAssert(CHECK_RANGE(health, 0, 100));
+    CLAMP_RANGE(health, 0, 100);
 
     if (creaturelist_GetCreature(&gamestate->CreatureList,
                                  creatureId,
@@ -1442,9 +1452,10 @@ static bool parser_ParsePlayerDataCurrent(struct trc_data_reader *reader,
                                           struct trc_game_state *gamestate) {
     ParseAssert(datareader_ReadI16(reader, &gamestate->Player.Stats.Health));
     ParseAssert(datareader_ReadI16(reader, &gamestate->Player.Stats.MaxHealth));
-    ParseAssert(CHECK_RANGE(gamestate->Player.Stats.Health,
-                            0,
-                            gamestate->Player.Stats.MaxHealth));
+
+    CLAMP_RANGE(gamestate->Player.Stats.Health,
+                0,
+                gamestate->Player.Stats.MaxHealth);
 
     if ((gamestate->Version)->Protocol.CapacityU32) {
         ParseAssert(
@@ -1498,7 +1509,7 @@ static bool parser_ParsePlayerDataCurrent(struct trc_data_reader *reader,
 
     ParseAssert(datareader_ReadU8(reader, &gamestate->Player.Stats.MagicLevel));
 
-    if ((gamestate->Version)->Protocol.LoyaltyBonus) {
+    if ((gamestate->Version)->Protocol.SkillBonuses) {
         ParseAssert(datareader_ReadU8(reader,
                                       &gamestate->Player.Stats.MagicLevelBase));
     }
@@ -1552,7 +1563,7 @@ static bool parser_ParsePlayerSkills(struct trc_data_reader *reader,
             ParseAssert(
                     datareader_ReadU8(reader, &player->Skills[i].Effective));
 
-            if ((gamestate->Version)->Protocol.LoyaltyBonus) {
+            if ((gamestate->Version)->Protocol.SkillBonuses) {
                 ParseAssert(
                         datareader_ReadU8(reader, &player->Skills[i].Actual));
             }
@@ -1698,12 +1709,16 @@ static bool parser_ValidateTextMessage(enum TrcMessageMode messageMode,
                  {(1ull << MESSAGEMODE_LOOK), "Your party has been"},
                  {(1ull << MESSAGEMODE_LOOK) | (1ull << MESSAGEMODE_LOOT),
                   "Loot of "},
-                 {(1ull << MESSAGEMODE_STATUS), "You are poisoned"},
-                 {(1ull << MESSAGEMODE_STATUS), "Your depot contains"},
+                 /* OpenTibia servers sometimes use LOGIN here. */
+                 {(1ull << MESSAGEMODE_STATUS) | (1ull << MESSAGEMODE_LOGIN),
+                  "You are poisoned"},
+                 {(1ull << MESSAGEMODE_STATUS) | (1ull << MESSAGEMODE_LOGIN),
+                  "Your depot contains"},
                  {(1ull << MESSAGEMODE_WARNING), "Server is saving game"},
                  {(1ull << MESSAGEMODE_WARNING), "Warning! The murder of "},
                  /* Some 8.x recordings consistently use LOGIN for hotkeys,
-                  * while others have it under LOOK. I'm at a loss as to why. */
+                  * while others have it under LOOK. I'm at a loss as to why,
+                  * perhaps they're on OT? */
                  {(1ull << MESSAGEMODE_LOOK) | (1ull << MESSAGEMODE_HOTKEY) |
                           (1ull << MESSAGEMODE_LOGIN),
                   "Using "},
@@ -2287,6 +2302,12 @@ static bool parser_ParseVIPStatus(struct trc_data_reader *reader,
 
     ParseAssert(datareader_ReadU32(reader, &playerId));
     ParseAssert(datareader_SkipString(reader));
+
+    if (gamestate->Version->Protocol.ExtendedVIPData) {
+        ParseAssert(datareader_SkipString(reader));
+        ParseAssert(datareader_Skip(reader, 5));
+    }
+
     ParseAssert(datareader_ReadU8(reader, &isOnline));
 
     return true;
@@ -2298,12 +2319,21 @@ static bool parser_ParseVIPOnline(struct trc_data_reader *reader,
 
     ParseAssert(datareader_ReadU32(reader, &playerId));
 
+    if ((gamestate->Version)->Protocol.ExtendedVIPData) {
+        /* Online/offline. */
+        ParseAssert(datareader_Skip(reader, 1));
+    }
+
     return true;
 }
 
 static bool parser_ParseVIPOffline(struct trc_data_reader *reader,
                                    struct trc_game_state *gamestate) {
     uint32_t playerId;
+
+    /* This whole packet type is replaced by a boolean field in
+     * `parser_ParseVIPOnline`. */
+    ParseAssert(!(gamestate->Version)->Protocol.ExtendedVIPData);
 
     ParseAssert(datareader_ReadU32(reader, &playerId));
 
@@ -2553,12 +2583,14 @@ bool parser_ParsePacket(struct trc_data_reader *reader,
         if (!VERSION_AT_LEAST(gamestate->Version, 9, 72)) {
             return parser_ParseInitialization(reader, gamestate);
         }
-        break;
+
+        return true;
     case 0x0B:
         return parser_ParseGMActions(reader, gamestate);
     case 0x0F:
         return true;
     case 0x17:
+        ParseAssert(VERSION_AT_LEAST(gamestate->Version, 9, 72));
         return parser_ParseInitialization(reader, gamestate);
     case 0x1D:
     case 0x1E:

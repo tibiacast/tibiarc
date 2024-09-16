@@ -59,7 +59,7 @@
 
 #ifdef __cplusplus
 #    define _Static_assert static_assert
-#    defined _Alignof alignof
+#    define _Alignof alignof
 #endif
 
 TRC_UNUSED static void *checked_allocate(size_t elements, size_t size) {

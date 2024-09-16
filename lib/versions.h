@@ -65,13 +65,15 @@ struct trc_version {
         bool ContainerIndexU16 : 1;
         bool ContainerPagination : 1;
         bool CreatureMarks : 1;
+        bool CreatureTypes : 1;
         bool CreatureSpeedPadding : 1;
         bool ExperienceBonus : 1;
         bool ExperienceU64 : 1;
         bool ExpertMode : 1;
         bool ExtendedDeathDialog : 1;
+        bool ExtendedVIPData : 1;
         bool GuildChannelId : 1;
-        bool HazyNewTileStuff : 1;
+        bool EnvironmentalEffects : 1;
         bool IconsU16 : 1;
         bool ItemAnimation : 1;
         bool ItemMarks : 1;
@@ -105,6 +107,7 @@ struct trc_version {
         bool ShieldIcon : 1;
         bool SinglePVPHelper : 1;
         bool SkillPercentages : 1;
+        bool SkillBonuses : 1;
         bool SkillsU16 : 1; /* Implies LoyaltyBonus and SkillPercentages */
         bool SkillsUnknownPadding : 1;
         bool SkullIcon : 1;

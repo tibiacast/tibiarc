@@ -239,7 +239,7 @@ static bool cam_Open(struct trc_recording_cam *recording,
     }
 
     recording->Base.Version = version;
-    recording->Base.HasReachedEnd = 0;
+    recording->Base.HasReachedEnd = false;
     cam_Rewind(recording);
 
     return true;

@@ -138,7 +138,7 @@ static bool trp_Open(struct trc_recording_trp *recording,
     recording->Base.Version = version;
     recording->Base.Runtime = runtime;
     recording->Base.NextPacketTimestamp = 0;
-    recording->Base.HasReachedEnd = 0;
+    recording->Base.HasReachedEnd = false;
 
     recording->Reader = reader;
     recording->PacketCount = frames;
