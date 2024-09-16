@@ -113,7 +113,7 @@ static bool tibiacast_ParseCreatureList(
 
         creaturelist_ReplaceCreature(creatureList, creatureId, 0, &creature);
 
-        if (version->Protocol.CreatureMarks) {
+        if (version->Protocol.CreatureTypes) {
             uint8_t type;
             if (!datareader_ReadU8(&recording->Reader, &type) ||
                 !CHECK_RANGE(type, CREATURE_TYPE_FIRST, CREATURE_TYPE_LAST)) {

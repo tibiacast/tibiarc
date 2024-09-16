@@ -251,24 +251,16 @@ static void version_InitTypeProperties(struct trc_version *version) {
     }
 
     /* FIXME: These are completely taken out of thin air. I do not know the
-     * exact versions in which they appear. */
+     * exact versions in which they appear.
+     *
+     * TODO: It would be nice if we had a tool to test this alone. Perhaps we
+     * should break out `version_DumpItems` into a simple utility as
+     * additional justification for this. */
     if (VERSION_AT_LEAST(version, 9, 80)) {
-        translation_Insert(table,
-                           33,
-                           -1,
-                           TYPEPROPERTY_MARKET_ITEM);
-        translation_Insert(table,
-                           34,
-                           -1,
-                           TYPEPROPERTY_DEFAULT_ACTION);
-        translation_Insert(table,
-                           35,
-                           -1,
-                           TYPEPROPERTY_WRAPPABLE);
-        translation_Insert(table,
-                           36,
-                           -1,
-                           TYPEPROPERTY_TOP_EFFECT);
+        translation_Insert(table, 33, -1, TYPEPROPERTY_MARKET_ITEM);
+        translation_Insert(table, 34, -1, TYPEPROPERTY_DEFAULT_ACTION);
+        translation_Insert(table, 35, -1, TYPEPROPERTY_WRAPPABLE);
+        translation_Insert(table, 36, -1, TYPEPROPERTY_TOP_EFFECT);
     }
 
     if (VERSION_AT_LEAST(version, 10, 10)) {
@@ -288,10 +280,72 @@ static void version_InitTypeProperties(struct trc_version *version) {
      * 38:  TYPEPROPERTY_TOP_EFFECT */
 }
 
+static void version_InitUnifiedMessageTypes(
+        struct trc_version *version,
+        struct trc_translation_table *table) {
+    translation_Insert(table, 1, -1, MESSAGEMODE_SAY);
+    translation_Insert(table, 2, -1, MESSAGEMODE_WHISPER);
+    translation_Insert(table, 3, -1, MESSAGEMODE_YELL);
+    translation_Insert(table, 4, -1, MESSAGEMODE_PRIVATE_IN);
+    translation_Insert(table, 5, -1, MESSAGEMODE_PRIVATE_OUT);
+    translation_Insert(table, 6, -1, MESSAGEMODE_CHANNEL_WHITE);
+    translation_Insert(table, 7, -1, MESSAGEMODE_CHANNEL_WHITE);
+    translation_Insert(table, 8, -1, MESSAGEMODE_CHANNEL_WHITE);
+    translation_Insert(table, 9, -1, MESSAGEMODE_SPELL);
+    translation_Insert(table, 10, -1, MESSAGEMODE_NPC_START);
+    translation_Insert(table, 11, -1, MESSAGEMODE_PLAYER_TO_NPC);
+    translation_Insert(table, 12, -1, MESSAGEMODE_BROADCAST);
+    translation_Insert(table, 13, -1, MESSAGEMODE_CHANNEL_RED);
+    translation_Insert(table, 14, -1, MESSAGEMODE_GM_TO_PLAYER);
+    translation_Insert(table, 15, -1, MESSAGEMODE_PLAYER_TO_GM);
+    translation_Insert(table, 16, -1, MESSAGEMODE_LOGIN);
+    translation_Insert(table, 17, -1, MESSAGEMODE_WARNING);
+    translation_Insert(table, 18, -1, MESSAGEMODE_GAME);
+    translation_Insert(table, 19, -1, MESSAGEMODE_FAILURE);
+    translation_Insert(table, 20, -1, MESSAGEMODE_LOOK);
+    translation_Insert(table, 21, -1, MESSAGEMODE_DAMAGE_DEALT);
+    translation_Insert(table, 22, -1, MESSAGEMODE_DAMAGE_RECEIVED);
+    translation_Insert(table, 23, -1, MESSAGEMODE_HEALING);
+    translation_Insert(table, 24, -1, MESSAGEMODE_EXPERIENCE);
+    translation_Insert(table, 25, -1, MESSAGEMODE_DAMAGE_RECEIVED_OTHERS);
+    translation_Insert(table, 26, -1, MESSAGEMODE_HEALING_OTHERS);
+    translation_Insert(table, 27, -1, MESSAGEMODE_EXPERIENCE_OTHERS);
+    translation_Insert(table, 28, -1, MESSAGEMODE_STATUS);
+    translation_Insert(table, 29, -1, MESSAGEMODE_LOOT);
+    translation_Insert(table, 30, -1, MESSAGEMODE_NPC_TRADE);
+    translation_Insert(table, 31, -1, MESSAGEMODE_GUILD);
+    translation_Insert(table, 32, -1, MESSAGEMODE_PARTY_WHITE);
+    translation_Insert(table, 33, -1, MESSAGEMODE_PARTY);
+    translation_Insert(table, 34, -1, MESSAGEMODE_MONSTER_SAY);
+    translation_Insert(table, 35, -1, MESSAGEMODE_MONSTER_YELL);
+    translation_Insert(table, 36, -1, MESSAGEMODE_REPORT);
+    translation_Insert(table, 37, -1, MESSAGEMODE_HOTKEY);
+    translation_Insert(table, 38, -1, MESSAGEMODE_TUTORIAL);
+    translation_Insert(table, 39, -1, MESSAGEMODE_THANK_YOU);
+    translation_Insert(table, 40, -1, MESSAGEMODE_MARKET);
+    translation_Insert(table, 41, -1, MESSAGEMODE_MANA);
+
+    if (VERSION_AT_LEAST(version, 10, 36)) {
+        translation_Insert(table,
+                           11,
+                           MESSAGEMODE_PLAYER_TO_NPC,
+                           MESSAGEMODE_NPC_CONTINUED);
+    }
+
+    if (VERSION_AT_LEAST(version, 10, 54)) {
+        translation_Insert(table, 29, MESSAGEMODE_FAILURE, MESSAGEMODE_GAME);
+    }
+}
+
 static void version_InitMessageTypes(struct trc_version *version) {
     struct trc_translation_table *table = &version->MessageModes;
 
     translation_Initialize(table);
+
+    if (VERSION_AT_LEAST(version, 9, 00)) {
+        version_InitUnifiedMessageTypes(version, table);
+        return;
+    }
 
     /* 7.11, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 11));
@@ -348,6 +402,11 @@ static void version_InitSpeakTypes(struct trc_version *version) {
     struct trc_translation_table *table = &version->SpeakModes;
 
     translation_Initialize(table);
+
+    if (VERSION_AT_LEAST(version, 9, 00)) {
+        version_InitUnifiedMessageTypes(version, table);
+        return;
+    }
 
     /* 7.11, serving as a baseline. */
     ABORT_UNLESS(VERSION_AT_LEAST(version, 7, 11));
@@ -519,7 +578,7 @@ static void version_InitProtocol(struct trc_version *version) {
      * These may belong to any version between 8.55 and 9.32. */
     if (VERSION_AT_LEAST(version, 9, 0)) {
         version->Protocol.CancelAttackId = 1;
-        version->Protocol.HazyNewTileStuff = 1;
+        version->Protocol.EnvironmentalEffects = 1;
         version->Protocol.MaxCapacity = 1;
         version->Protocol.ExperienceU64 = 1;
         version->Protocol.PlayerSpeed = 1;
@@ -530,7 +589,9 @@ static void version_InitProtocol(struct trc_version *version) {
         version->Protocol.ChannelParticipants = 1;
 
         /* ?? */
-        version->Protocol.OutfitCountU16 = 1;
+        version->Protocol.SpeedAdjustment = 1;
+        version->Protocol.CreatureTypes = 1;
+        version->Protocol.SkillBonuses = 1;
     }
 
     if (VERSION_AT_LEAST(version, 9, 32)) {
@@ -540,6 +601,10 @@ static void version_InitProtocol(struct trc_version *version) {
     if (VERSION_AT_LEAST(version, 9, 54)) {
         version->Protocol.OfflineStamina = 1;
         version->Protocol.PassableCreatureUpdate = 1;
+    }
+
+    if (VERSION_AT_LEAST(version, 9, 62)) {
+        version->Protocol.ExtendedVIPData = 1;
     }
 
     if (VERSION_AT_LEAST(version, 9, 72)) {
@@ -605,6 +670,9 @@ static void version_InitProtocol(struct trc_version *version) {
 
     if (VERSION_AT_LEAST(version, 10, 95)) {
         version->Protocol.SkillsUnknownPadding = 1;
+
+        /* ??? */
+        version->Protocol.OutfitCountU16 = 1;
     }
 }
 
@@ -911,9 +979,14 @@ bool version_TranslatePictureIndex(const struct trc_version *version,
     ABORT_UNLESS(CHECK_RANGE((int)index,
                              (int)PICTURE_INDEX_TUTORIAL,
                              (int)PICTURE_INDEX_LAST));
-    /* As the enum, but PICTURE_INDEX_SPLASH_LOGO is missing. We need to figure
-     * out when that was added. */
-    translated = (int)index - 1;
+
+    /* FIXME: When was PICTURE_INDEX_SPLASH_LOGO added? I don't have the
+     * .pic files for most versions, just .dat and .spr */
+    if (VERSION_AT_LEAST(version, 9, 00)) {
+        translated = (int)index;
+    } else {
+        translated = (int)index - 1;
+    }
 
     *out = translated;
     return true;
