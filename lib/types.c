@@ -76,31 +76,31 @@ static bool types_ReadTypeProperties(struct trc_version *version,
             type->Properties.StackPriority = 3;
             break;
         case TYPEPROPERTY_STACKABLE:
-            type->Properties.Stackable = 1;
+            type->Properties.Stackable = true;
             break;
         case TYPEPROPERTY_RUNE:
-            type->Properties.Rune = 1;
+            type->Properties.Rune = true;
             break;
         case TYPEPROPERTY_LIQUID_CONTAINER:
-            type->Properties.LiquidContainer = 1;
+            type->Properties.LiquidContainer = true;
             break;
         case TYPEPROPERTY_LIQUID_POOL:
-            type->Properties.LiquidPool = 1;
+            type->Properties.LiquidPool = true;
             break;
         case TYPEPROPERTY_UNLOOKABLE:
-            type->Properties.Unlookable = 1;
+            type->Properties.Unlookable = true;
             break;
         case TYPEPROPERTY_HANGABLE:
-            type->Properties.Hangable = 1;
+            type->Properties.Hangable = true;
             break;
         case TYPEPROPERTY_VERTICAL:
-            type->Properties.Vertical = 1;
+            type->Properties.Vertical = true;
             break;
         case TYPEPROPERTY_HORIZONTAL:
-            type->Properties.Horizontal = 1;
+            type->Properties.Horizontal = true;
             break;
         case TYPEPROPERTY_DONT_HIDE:
-            type->Properties.DontHide = 1;
+            type->Properties.DontHide = true;
             break;
         case TYPEPROPERTY_DISPLACEMENT:
             if (!datareader_ReadU16(reader, &type->Properties.DisplacementX)) {
@@ -123,10 +123,10 @@ static bool types_ReadTypeProperties(struct trc_version *version,
 
             break;
         case TYPEPROPERTY_REDRAW_NEARBY_TOP:
-            type->Properties.RedrawNearbyTop = 1;
+            type->Properties.RedrawNearbyTop = true;
             break;
         case TYPEPROPERTY_ANIMATE_IDLE:
-            type->Properties.AnimateIdle = 1;
+            type->Properties.AnimateIdle = true;
             break;
 
             /* Optional properties follow: these are parsed but not used. */

@@ -690,7 +690,7 @@ static bool tibiacast_Open(struct trc_recording_tibiacast *recording,
     if ((version->Major == 9 && version->Minor == 80)) {
         /* Tibiacast generated buggy initialization packets for recordings for a
          * short while. */
-        version->Protocol.TibiacastBuggedInitialization = 1;
+        version->Protocol.TibiacastBuggedInitialization = true;
     }
 
     if (!tibiacast_Uncompress(recording, &reader)) {

@@ -84,7 +84,7 @@ bool fonts_Load(struct trc_version *version) {
         return trc_ReportError("Failed to load game font");
     }
 
-    fonts->GameFont.IsBordered = 1;
+    fonts->GameFont.IsBordered = true;
 
     if (!fonts_LoadFont(version,
                         PICTURE_INDEX_FONT_INTERFACE_SMALL,

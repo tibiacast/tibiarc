@@ -443,83 +443,83 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
 
     case ARGUMENT_SKIP_RENDERING_CREATURE_HEALTH_BARS:
         /* skip-rendering-creature-health-bars */
-        settings->RenderOptions.SkipRenderingCreatureHealthBars = 1;
+        settings->RenderOptions.SkipRenderingCreatureHealthBars = true;
         break;
     case ARGUMENT_SKIP_RENDERING_CREATURE_ICONS:
         /* skip-rendering-creature-icons */
-        settings->RenderOptions.SkipRenderingCreatureIcons = 1;
+        settings->RenderOptions.SkipRenderingCreatureIcons = true;
         break;
     case ARGUMENT_SKIP_RENDERING_NON_PLAYER_NAMES:
         /* skip-rendering-non-player-names */
-        settings->RenderOptions.SkipRenderingNonPlayerNames = 1;
+        settings->RenderOptions.SkipRenderingNonPlayerNames = true;
         break;
     case ARGUMENT_SKIP_RENDERING_CREATURES:
         /* skip-rendering-creatures */
-        settings->RenderOptions.SkipRenderingCreatures = 1;
+        settings->RenderOptions.SkipRenderingCreatures = true;
         break;
     case ARGUMENT_SKIP_RENDERING_GRAPHICAL_EFFECTS:
         /* skip-rendering-graphical-effects */
-        settings->RenderOptions.SkipRenderingGraphicalEffects = 1;
+        settings->RenderOptions.SkipRenderingGraphicalEffects = true;
         break;
     case ARGUMENT_SKIP_RENDERING_HOTKEY_MESSAGES:
         /* skip-rendering-hotkey-messages */
-        settings->RenderOptions.SkipRenderingHotkeyMessages = 1;
+        settings->RenderOptions.SkipRenderingHotkeyMessages = true;
         break;
     case ARGUMENT_SKIP_RENDERING_ICON_BAR:
         /* skip-rendering-icon-bar */
-        settings->RenderOptions.SkipRenderingIconBar = 1;
+        settings->RenderOptions.SkipRenderingIconBar = true;
         break;
     case ARGUMENT_SKIP_RENDERING_INVENTORY:
         /* skip-rendering-inventory */
-        settings->RenderOptions.SkipRenderingInventory = 1;
+        settings->RenderOptions.SkipRenderingInventory = true;
         break;
     case ARGUMENT_SKIP_RENDERING_ITEMS:
         /* skip-rendering-items */
-        settings->RenderOptions.SkipRenderingItems = 1;
+        settings->RenderOptions.SkipRenderingItems = true;
         break;
     case ARGUMENT_SKIP_RENDERING_LOOT_MESSAGES:
         /* skip-rendering-loot-messages */
-        settings->RenderOptions.SkipRenderingLootMessages = 1;
+        settings->RenderOptions.SkipRenderingLootMessages = true;
         break;
     case ARGUMENT_SKIP_RENDERING_MESSAGES:
         /* skip-rendering-messages */
-        settings->RenderOptions.SkipRenderingMessages = 1;
+        settings->RenderOptions.SkipRenderingMessages = true;
         break;
     case ARGUMENT_SKIP_RENDERING_MISSILES:
         /* skip-rendering-missiles */
-        settings->RenderOptions.SkipRenderingMissiles = 1;
+        settings->RenderOptions.SkipRenderingMissiles = true;
         break;
     case ARGUMENT_SKIP_RENDERING_NUMERICAL_EFFECTS:
         /* skip-rendering-numerical-effects */
-        settings->RenderOptions.SkipRenderingNumericalEffects = 1;
+        settings->RenderOptions.SkipRenderingNumericalEffects = true;
         break;
     case ARGUMENT_SKIP_RENDERING_PLAYER_NAMES:
         /* skip-rendering-player-names */
-        settings->RenderOptions.SkipRenderingPlayerNames = 1;
+        settings->RenderOptions.SkipRenderingPlayerNames = true;
         break;
     case ARGUMENT_SKIP_RENDERING_PRIVATE_MESSAGES:
         /* skip-rendering-private-messages */
-        settings->RenderOptions.SkipRenderingPrivateMessages = 1;
+        settings->RenderOptions.SkipRenderingPrivateMessages = true;
         break;
     case ARGUMENT_SKIP_RENDERING_STATUS_MESSAGES:
         /* skip-rendering-status-messages */
-        settings->RenderOptions.SkipRenderingStatusMessages = 1;
+        settings->RenderOptions.SkipRenderingStatusMessages = true;
         break;
     case ARGUMENT_SKIP_RENDERING_SPELL_MESSAGES:
         /* skip-rendering-spell-messages */
-        settings->RenderOptions.SkipRenderingSpellMessages = 1;
+        settings->RenderOptions.SkipRenderingSpellMessages = true;
         break;
     case ARGUMENT_SKIP_RENDERING_STATUS_BARS:
         /* skip-rendering-status-bars */
-        settings->RenderOptions.SkipRenderingStatusBars = 1;
+        settings->RenderOptions.SkipRenderingStatusBars = true;
         break;
     case ARGUMENT_SKIP_RENDERING_UPPER_FLOORS:
         /* skip-rendering-upper-floors */
-        settings->RenderOptions.SkipRenderingUpperFloors = 1;
+        settings->RenderOptions.SkipRenderingUpperFloors = true;
         break;
     case ARGUMENT_SKIP_RENDERING_YELLING_MESSAGES:
         /* skip-rendering-yelling-messages */
-        settings->RenderOptions.SkipRenderingYellingMessages = 1;
+        settings->RenderOptions.SkipRenderingYellingMessages = true;
         break;
     default:
         return ARGP_ERR_UNKNOWN;
