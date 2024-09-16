@@ -250,6 +250,27 @@ static void version_InitTypeProperties(struct trc_version *version) {
         translation_Remove(table, 8, TYPEPROPERTY_RUNE);
     }
 
+    /* FIXME: These are completely taken out of thin air. I do not know the
+     * exact versions in which they appear. */
+    if (VERSION_AT_LEAST(version, 9, 80)) {
+        translation_Insert(table,
+                           33,
+                           -1,
+                           TYPEPROPERTY_MARKET_ITEM);
+        translation_Insert(table,
+                           34,
+                           -1,
+                           TYPEPROPERTY_DEFAULT_ACTION);
+        translation_Insert(table,
+                           35,
+                           -1,
+                           TYPEPROPERTY_WRAPPABLE);
+        translation_Insert(table,
+                           36,
+                           -1,
+                           TYPEPROPERTY_TOP_EFFECT);
+    }
+
     if (VERSION_AT_LEAST(version, 10, 10)) {
         translation_Insert(table,
                            16,
