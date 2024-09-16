@@ -323,7 +323,7 @@ static bool rec_Open(struct trc_recording_rec *recording,
     }
 
     recording->Base.Version = version;
-    recording->Base.HasReachedEnd = 0;
+    recording->Base.HasReachedEnd = false;
     rec_Rewind(recording);
 
     return true;

@@ -853,8 +853,7 @@ static bool renderer_DrawMovingCreatures(struct trc_game_state *gamestate,
 
                     if (!renderer_UpdateWalkOffset(gamestate, creature)) {
                         return trc_ReportError(
-                                "Could not update walk offset of "
-                                "creature");
+                                "Could not update walk offset of creature");
                     }
 
                     if (creature->MovementInformation.WalkEndTick <= tick) {

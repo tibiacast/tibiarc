@@ -126,7 +126,7 @@ static bool ttm_Open(struct trc_recording_ttm *recording,
     recording->Base.Version = version;
     recording->Base.Runtime = runtime;
     recording->Base.NextPacketTimestamp = 0;
-    recording->Base.HasReachedEnd = 0;
+    recording->Base.HasReachedEnd = false;
 
     recording->InitialReader = reader;
     recording->Reader = reader;
