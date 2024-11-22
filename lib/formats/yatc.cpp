@@ -1,0 +1,72 @@
+/*
+ * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
+ * Copyright 2023-2024 "John Högberg"
+ *
+ * This file is part of tibiarc.
+ *
+ * tibiarc is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * tibiarc is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with tibiarc. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "recordings.hpp"
+#include "versions.hpp"
+
+#include "utils.hpp"
+
+#include "parser.hpp"
+
+namespace trc {
+namespace Recordings {
+namespace YATC {
+bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
+                       [[maybe_unused]] int &major,
+                       [[maybe_unused]] int &minor,
+                       [[maybe_unused]] int &preview) {
+    return false;
+}
+
+std::unique_ptr<Recording> Read(const DataReader &file,
+                                const Version &version,
+                                Recovery recovery) {
+    DataReader reader = file;
+
+    auto recording = std::make_unique<Recording>();
+
+    try {
+        Parser parser(version, recovery == Recovery::Repair);
+
+        while (reader.Remaining() > 0) {
+            auto timestamp = reader.ReadU32();
+            auto packetReader = reader.Slice(reader.ReadU16());
+
+            recording->Frames.emplace_back(timestamp,
+                                           parser.Parse(packetReader));
+        }
+
+        if (recording->Frames.empty()) {
+            throw InvalidDataError();
+        }
+    } catch ([[maybe_unused]] const InvalidDataError &e) {
+        if (recovery != Recovery::PartialReturn) {
+            throw;
+        }
+    }
+
+    recording->Runtime = recording->Frames.back().Timestamp;
+
+    return recording;
+}
+
+} // namespace YATC
+} // namespace Recordings
+} // namespace trc

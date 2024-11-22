@@ -1,0 +1,156 @@
+/*
+ * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
+ * Copyright 2023-2024 "John Högberg"
+ *
+ * This file is part of tibiarc.
+ *
+ * tibiarc is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * tibiarc is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with tibiarc. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "recordings.hpp"
+#include "versions.hpp"
+
+#ifndef DISABLE_ZLIB
+extern "C" {
+#    include <zlib.h>
+}
+#endif
+
+#include "utils.hpp"
+
+#include "parser.hpp"
+
+namespace trc {
+namespace Recordings {
+namespace TibiaMovie2 {
+bool QueryTibiaVersion(const DataReader &file,
+                       int &major,
+                       int &minor,
+                       int &preview) {
+    DataReader reader = file;
+
+    /* Header prologue. */
+    reader.Skip(10);
+
+    uint8_t tibiaVersion[3];
+    reader.Copy(3, tibiaVersion);
+
+    major = tibiaVersion[0];
+    minor = tibiaVersion[1] * 10 + tibiaVersion[2];
+    preview = 0;
+
+    return major >= 7 && major <= 12 && minor < 99;
+}
+
+void ReadNextFrame(DataReader &reader, Parser &parser, Recording &recording) {
+    auto outerLength = reader.ReadU16();
+    auto timestamp = reader.ReadU32();
+    auto innerLength = reader.ReadU16();
+
+    if (outerLength != (innerLength + 2)) {
+        throw InvalidDataError();
+    }
+
+    DataReader packetReader = reader.Slice(innerLength);
+    auto &frame = recording.Frames.emplace_back();
+    frame.Timestamp = timestamp;
+
+    while (packetReader.Remaining() > 0) {
+        frame.Events.splice(frame.Events.end(), parser.Parse(packetReader));
+    }
+}
+
+std::unique_ptr<Recording> Read(const DataReader &file,
+                                const Version &version,
+                                Recovery recovery) {
+    DataReader reader = file;
+
+    /* Magic */
+    reader.SkipU32<0x32564D54, 0x32564D54>();
+
+    /* Options bitfield, 1 means compressed */
+    bool compressed = reader.ReadU32<0, 1>();
+
+    /* Container version, must be 1 */
+    reader.SkipU16<1, 1>();
+
+    /* Tibia version */
+    reader.Skip(3);
+
+    /* Creation time (POSIX?) */
+    reader.SkipU32();
+
+    auto packetCount = reader.ReadU32();
+
+    /* Broken timestamp field; useless */
+    reader.SkipU32();
+
+    auto decompressedSize = reader.ReadU32();
+
+    auto recording = std::make_unique<Recording>();
+
+    try {
+        Parser parser(version, recovery == Recovery::Repair);
+
+        if (compressed) {
+#ifdef DISABLE_ZLIB
+            throw NotSupportedError();
+#else
+            uLongf actualSize;
+            int result;
+
+            auto buffer = std::make_unique<uint8_t[]>(decompressedSize);
+
+            result = uncompress((Bytef *)buffer.get(),
+                                &actualSize,
+                                reader.RawData(),
+                                reader.Remaining());
+
+            if (result != Z_OK) {
+                throw InvalidDataError();
+            }
+
+            if (actualSize != decompressedSize) {
+                throw InvalidDataError();
+            }
+
+            reader = DataReader(decompressedSize, buffer.get());
+
+            while (packetCount--) {
+                ReadNextFrame(reader, parser, *recording);
+            }
+#endif
+        } else {
+            while (packetCount--) {
+                ReadNextFrame(reader, parser, *recording);
+            }
+        }
+
+        if (recording->Frames.empty()) {
+            throw InvalidDataError();
+        }
+    } catch ([[maybe_unused]] const InvalidDataError &e) {
+        if (recovery != Recovery::PartialReturn) {
+            throw;
+        }
+    }
+
+    recording->Runtime = recording->Frames.back().Timestamp;
+
+    return recording;
+}
+
+} // namespace TibiaMovie2
+} // namespace Recordings
+} // namespace trc

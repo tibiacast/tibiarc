@@ -218,6 +218,17 @@ a web browser.
 
     ./player data/folder tests/8.40/sample.tmv2
 
+### JSON export
+
+Using the `miner` utility, you can export recordings to a JSON representation
+of all the events that occurred in the recording.
+
+    ./miner --skip-terrain data/folder tests/8.40/sample.tmv2
+
+Options like `--skip-terrain` or `--skip-effects` can be used to filter out
+noisy events you're not interested in. For a full list of options, run
+`./miner --help`.
+
 ## Testing
 
 The tests can be run by executing `make` in the `tests/` directory, but note
