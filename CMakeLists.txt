@@ -24,7 +24,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(tibiarc
   VERSION 0.1
-  LANGUAGES C
+  LANGUAGES C CXX
 )
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -37,6 +37,7 @@ if(TIBIARC_CROSSCOMPILING)
   set(TIBIARC_NO_LTO TRUE)
 endif()
 
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
 
@@ -56,16 +57,14 @@ if(RET AND NOT RET EQUAL 0)
 endif()
 
 add_library(tibiarc
-  "lib/canvas.c"
-  "lib/canvas.h"
-  "lib/characterset.h"
-  "lib/container.c"
-  "lib/container.h"
-  "lib/creature.c"
-  "lib/creature.h"
-  "lib/datareader.c"
-  "lib/datareader.h"
-  "lib/demuxer.c"
+  "lib/canvas.cpp"
+  "lib/canvas.hpp"
+  "lib/characterset.cpp"
+  "lib/characterset.hpp"
+  "lib/container.hpp"
+  "lib/creature.hpp"
+  "lib/datareader.hpp"
+  "lib/demuxer.hpp"
   "lib/deps/7z/7zTypes.h"
   "lib/deps/7z/Alloc.c"
   "lib/deps/7z/Alloc.h"
@@ -73,67 +72,74 @@ add_library(tibiarc
   "lib/deps/7z/LzmaDec.c"
   "lib/deps/7z/LzmaDec.h"
   "lib/deps/7z/Precomp.h"
-  "lib/deps/uthash.h"
-  "lib/effect.h"
-  "lib/fonts.c"
-  "lib/fonts.h"
-  "lib/formats/cam.c"
-  "lib/formats/rec.c"
-  "lib/formats/tibiacast.c"
-  "lib/formats/tibiareplay.c"
-  "lib/formats/tmv2.c"
-  "lib/formats/tmv1.c"
-  "lib/formats/ttm.c"
-  "lib/formats/yatc.c"
-  "lib/gamestate.c"
-  "lib/gamestate.h"
-  "lib/icons.c"
-  "lib/icons.h"
-  "lib/map.h"
-  "lib/message.c"
-  "lib/message.h"
-  "lib/missile.h"
-  "lib/object.h"
-  "lib/packet.c"
-  "lib/parser.c"
-  "lib/parser.h"
-  "lib/pictures.c"
-  "lib/pictures.h"
-  "lib/pixel.h"
-  "lib/player.h"
-  "lib/position.h"
-  "lib/recordings.c"
-  "lib/recordings.h"
-  "lib/renderer.c"
-  "lib/renderer.h"
-  "lib/report.c"
-  "lib/report.h"
-  "lib/sprites.c"
-  "lib/sprites.h"
-  "lib/textrenderer.c"
-  "lib/textrenderer.h"
-  "lib/tile.c"
-  "lib/tile.h"
-  "lib/types.c"
-  "lib/types.h"
-  "lib/utils.h"
-  "lib/versions_decl.h"
-  "lib/versions.c"
-  "lib/versions.h"
+  "lib/effect.hpp"
+  "lib/events.cpp"
+  "lib/events.hpp"
+  "lib/fonts.cpp"
+  "lib/fonts.hpp"
+  "lib/formats/cam.cpp"
+  "lib/formats/rec.cpp"
+  "lib/formats/tibiacast.cpp"
+  "lib/formats/tibiareplay.cpp"
+  "lib/formats/tmv2.cpp"
+  "lib/formats/tmv1.cpp"
+  "lib/formats/ttm.cpp"
+  "lib/formats/yatc.cpp"
+  "lib/gamestate.cpp"
+  "lib/gamestate.hpp"
+  "lib/icons.cpp"
+  "lib/icons.hpp"
+  "lib/map.hpp"
+  "lib/message.cpp"
+  "lib/message.hpp"
+  "lib/missile.hpp"
+  "lib/object.hpp"
+  "lib/parser.cpp"
+  "lib/parser.hpp"
+  "lib/pictures.cpp"
+  "lib/pictures.hpp"
+  "lib/pixel.hpp"
+  "lib/player.hpp"
+  "lib/position.hpp"
+  "lib/recordings.cpp"
+  "lib/recordings.hpp"
+  "lib/renderer.cpp"
+  "lib/renderer.hpp"
+  "lib/sprites.cpp"
+  "lib/sprites.hpp"
+  "lib/textrenderer.cpp"
+  "lib/textrenderer.hpp"
+  "lib/tile.cpp"
+  "lib/tile.hpp"
+  "lib/types.cpp"
+  "lib/types.hpp"
+  "lib/utils.hpp"
+  "lib/versions_decl.hpp"
+  "lib/versions.cpp"
+  "lib/versions.hpp"
 )
 target_include_directories(tibiarc PUBLIC "lib")
 target_link_libraries(tibiarc PRIVATE m)
 target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACHE_LINESIZE}")
+
+if(MSVC)
+  target_compile_options(tibiarc PRIVATE /W4 /WX)
+else()
+  target_link_libraries(tibiarc PRIVATE stdc++_libbacktrace)
+  target_compile_options(tibiarc PRIVATE -Wall -Wextra)
+endif()
+
+option(TIBIARC_SANITIZE "Enables address/UB sanitizers" OFF)
+if(TIBIARC_SANITIZE)
+  target_compile_options(tibiarc PUBLIC -fsanitize=address,undefined -fsanitize-trap=all)
+  target_link_options(tibiarc PUBLIC -fsanitize=address,undefined)
+endif()
 
 # Options to help debug certain versioning issues, enable them with e.g.
 # `cmake -DTIBIARC_DUMP_PIC=ON ...`
 option(TIBIARC_DUMP_PIC "Dumps .pic files as bitmaps when loaded" OFF)
 if(TIBIARC_DUMP_PIC)
   target_compile_definitions(tibiarc PRIVATE DUMP_PIC)
-endif()
-option(TIBIARC_DUMP_MESSAGE_TYPES "Writes messages and their types to stdout when received" OFF)
-if(TIBIARC_DUMP_MESSAGE_TYPES)
-  target_compile_definitions(tibiarc PRIVATE DUMP_MESSAGE_TYPES)
 endif()
 option(TIBIARC_DUMP_ITEMS "Dumps item sprites (with properties) as bitmaps when loaded" OFF)
 if(TIBIARC_DUMP_ITEMS)
@@ -154,8 +160,7 @@ else()
   target_compile_definitions(tibiarc PRIVATE DISABLE_ZLIB)
 endif()
 
-
-option(TIBIARC_NO_OPENSSL "Explicitly disable zlib support" OFF)
+option(TIBIARC_NO_OPENSSL "Explicitly disable crypto support" OFF)
 if(NOT TIBIARC_NO_OPENSSL)
   find_package(OpenSSL QUIET)
   if (NOT OPENSSL_FOUND)
@@ -174,15 +179,17 @@ endif()
 # ########################################################################### #
 
 add_executable(converter
-  "converter/converter.c"
-  "converter/encoders/inert.c"
-  "converter/encoders/libav.c"
-  "converter/encoding.c"
-  "converter/encoding.h"
-  "converter/exporter.c"
-  "converter/exporter.h"
-  "utils/memoryfile.c"
-  "utils/memoryfile.h"
+  "converter/converter.cpp"
+  "converter/encoders/inert.cpp"
+  "converter/encoders/inert.hpp"
+  "converter/encoders/libav.cpp"
+  "converter/encoders/libav.hpp"
+  "converter/encoding.cpp"
+  "converter/encoding.hpp"
+  "converter/exporter.cpp"
+  "converter/exporter.hpp"
+  "utils/memoryfile.cpp"
+  "utils/memoryfile.hpp"
 )
 
 target_include_directories(converter PRIVATE "converter" "utils")
@@ -236,17 +243,32 @@ if(OpenMP_C_FOUND)
 endif()
 
 # ########################################################################### #
+## Miner
+# ########################################################################### #
+
+add_executable(miner
+  "miner/deps/json.hpp"
+  "miner/miner.cpp"
+  "miner/serializer.cpp"
+  "miner/serializer.hpp"
+  "utils/memoryfile.cpp"
+  "utils/memoryfile.hpp"
+)
+target_include_directories(miner PRIVATE "utils")
+target_link_libraries(miner PRIVATE tibiarc)
+
+# ########################################################################### #
 ## player
 # ########################################################################### #
 
 add_executable(player
-  "player/player.c"
-  "player/playback.c"
-  "player/playback.h"
-  "player/rendering.c"
-  "player/rendering.h"
-  "utils/memoryfile.c"
-  "utils/memoryfile.h"
+  "player/player.cpp"
+  "player/playback.cpp"
+  "player/playback.hpp"
+  "player/rendering.cpp"
+  "player/rendering.hpp"
+  "utils/memoryfile.cpp"
+  "utils/memoryfile.hpp"
 )
 target_include_directories(player PRIVATE "converter" "utils")
 target_link_libraries(player PRIVATE tibiarc)

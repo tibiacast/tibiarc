@@ -18,6 +18,7 @@ ReflowComments:  true
 PenaltyReturnTypeOnItsOwnLine: 1000000
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
+PackConstructorInitializers: NextLine
 
 ...
 
