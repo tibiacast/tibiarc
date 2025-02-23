@@ -54,19 +54,4 @@ public:
 };
 } // namespace trc
 
-struct memory_file {
-#if defined(_WIN32)
-    HANDLE Mapping;
-    HANDLE Handle;
-#else
-    int Fd;
-#endif
-
-    size_t Size;
-    const uint8_t *View;
-};
-
-bool memoryfile_Open(const char *path, struct memory_file *file);
-void memoryfile_Close(struct memory_file *file);
-
 #endif
