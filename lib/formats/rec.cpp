@@ -176,6 +176,12 @@ std::unique_ptr<Recording> Read(const DataReader &file,
     DataReader reader = file;
     uint32_t obfuscation;
 
+    /* An annoying number of recordings start with an arbitrarily long run of
+     * zeroes, but are otherwise okay. Try to handle this. */
+    while (reader.Peek<uint8_t>() == 0) {
+        reader.SkipU8();
+    }
+
     auto containerVersion = reader.ReadU16();
     auto fragmentCount = reader.ReadS32();
 
