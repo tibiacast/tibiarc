@@ -2079,7 +2079,6 @@ void Parser::ParseNext(DataReader &reader,
         /* Single-byte NPC vendor abort */
         break;
     case 0x7D:
-        break;
     case 0x7E:
         ParsePlayerTradeItems(reader, events);
         break;
