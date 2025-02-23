@@ -125,6 +125,7 @@ void CreatureMoved::Update(Gamestate &gamestate) {
     } else if (xDifference > 0) {
         creature.Heading = Creature::Direction::East;
     }
+
     if (zDifference == 0 &&
         (std::abs(xDifference) <= 1 && std::abs(yDifference) <= 1)) {
         auto &groundObject = toTile.GetObject(gamestate.Version, 0);
