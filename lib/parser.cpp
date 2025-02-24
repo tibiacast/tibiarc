@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2023-2024 "John Högberg"
+ * Copyright 2023-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -622,7 +622,7 @@ void Parser::ParseContainerOpen(DataReader &reader, EventList &events) {
     }
 
     const auto &containerType = Version_.GetItem(event.ItemId);
-    if (containerType.Properties.Animated) {
+    if (Version_.Protocol.ItemAnimation && containerType.Properties.Animated) {
         event.Animation = reader.ReadU8();
     }
 
