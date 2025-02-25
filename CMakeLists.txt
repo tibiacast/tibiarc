@@ -20,7 +20,7 @@
 
 ## Note that this is the oldest version tested against, even older versions
 ## might work.
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.25)
 
 project(tibiarc
   VERSION 0.1
@@ -132,6 +132,12 @@ option(TIBIARC_SANITIZE "Enables address/UB sanitizers" OFF)
 if(TIBIARC_SANITIZE)
   target_compile_options(tibiarc PUBLIC -fsanitize=address,undefined -fsanitize-trap=all)
   target_link_options(tibiarc PUBLIC -fsanitize=address,undefined)
+endif()
+
+option(TIBIARC_COVERAGE "Whether to enable code coverage" ON)
+if(TIBIARC_COVERAGE)
+  target_compile_options(tibiarc PUBLIC -coverage)
+  target_link_options(tibiarc PUBLIC -coverage)
 endif()
 
 # Options to help debug certain versioning issues, enable them with e.g.
@@ -319,3 +325,12 @@ endif()
 
 # Include extra CMakeLists.txt if available
 include(CMakeLists.user.txt OPTIONAL)
+
+# ########################################################################### #
+## Tests
+# ########################################################################### #
+
+if(BUILD_TESTING)
+  include(CTest)
+  include(tests/CTestConfig.cmake)
+endif()

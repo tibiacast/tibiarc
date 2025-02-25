@@ -37,6 +37,8 @@ struct Settings {
     } DesiredTibiaVersion;
 
     std::unordered_set<Events::Type> SkippedEvents;
+
+    bool DryRun = false;
 };
 
 void Serialize(const Settings &settings,
