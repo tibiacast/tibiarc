@@ -78,6 +78,12 @@ void Tile::RemoveObject(const trc::Version &version, uint8_t stackPosition) {
             throw InvalidDataError();
         }
     } else {
+        /* Under the old stacking rules, removing an object from an empty tile
+         * is a no-op. */
+        if (ObjectCount == 0) {
+            return;
+        }
+
         if (stackPosition >= ObjectCount) {
             stackPosition = ObjectCount - 1;
         }
@@ -96,6 +102,10 @@ Object &Tile::GetObject(const trc::Version &version, uint8_t stackPosition) {
             throw InvalidDataError();
         }
     } else {
+        if (ObjectCount == 0) {
+            throw InvalidDataError();
+        }
+
         if (stackPosition >= ObjectCount) {
             stackPosition = ObjectCount - 1;
         }
