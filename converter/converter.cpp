@@ -584,8 +584,8 @@ int main(int argc, char **argv) {
                               parsed.Paths[1],
                               parsed.Paths[2]);
     } catch (const trc::ErrorBase &error) {
-        std::cerr << "Unrecoverable error (" << error.Description() << ") at:\n"
-                  << error.Stacktrace << std::endl;
+        std::cerr << "Unrecoverable error (" << error.Description() << ")"
+                  << std::endl;
         return 1;
     }
 

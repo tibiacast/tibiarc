@@ -125,7 +125,6 @@ target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACH
 if(MSVC)
   target_compile_options(tibiarc PRIVATE /W4 /WX)
 else()
-  target_link_libraries(tibiarc PRIVATE stdc++_libbacktrace)
   target_compile_options(tibiarc PRIVATE -Wall -Wextra)
 endif()
 
@@ -313,6 +312,7 @@ if(NOT TIBIARC_NO_LTO)
       set_target_properties(tibiarc converter
                               PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
       set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+      set_target_properties(miner PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
   endif()
 endif()

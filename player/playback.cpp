@@ -53,9 +53,7 @@ Playback::Playback(const DataReader &file,
                                              pic,
                                              spr,
                                              dat);
-    Recording = Recordings::Read(format,
-                                 file,
-                                 *Version);
+    Recording = Recordings::Read(format, file, *Version);
     Gamestate = std::make_unique<trc::Gamestate>(*Version);
 
     Needle = Recording->Frames.cbegin();
