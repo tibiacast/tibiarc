@@ -637,7 +637,7 @@ static json ToJSON(const Version &version, const ChannelClosed &event) {
 
 static json ToJSON(const Version &version,
                    const PrivateConversationOpened &event) {
-    return json{{"PlayerName", event.Name}};
+    return json{{"PlayerName", CharacterSet::ToUtf8(event.Name)}};
 }
 
 static json ToJSON(const Version &version, const ContainerOpened &event) {
