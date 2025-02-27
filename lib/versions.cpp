@@ -551,28 +551,27 @@ uint8_t VersionBase::TranslateFluidColor(uint8_t color) const {
         FLUID_PURPLE = 0x07
     };
 
-    static const char until_1095[] = {
-            FLUID_EMPTY,
-            FLUID_BLUE,
-            FLUID_PURPLE,
-            FLUID_BROWN,
-            FLUID_BROWN,
-            FLUID_RED,
-            FLUID_GREEN,
-            FLUID_BROWN,
-            FLUID_YELLOW,
-            FLUID_WHITE,
-            FLUID_PURPLE,
-            FLUID_RED,
-            FLUID_YELLOW,
-            FLUID_BROWN,
-            FLUID_YELLOW,
-            FLUID_WHITE,
-            FLUID_BLUE,
-    };
+    static const char until_1095[] = {FLUID_EMPTY,
+                                      FLUID_BLUE,
+                                      FLUID_PURPLE,
+                                      FLUID_BROWN,
+                                      FLUID_BROWN,
+                                      FLUID_RED,
+                                      FLUID_GREEN,
+                                      FLUID_BROWN,
+                                      FLUID_YELLOW,
+                                      FLUID_WHITE,
+                                      FLUID_PURPLE,
+                                      FLUID_RED,
+                                      FLUID_YELLOW,
+                                      FLUID_BROWN,
+                                      FLUID_YELLOW,
+                                      FLUID_WHITE,
+                                      FLUID_BLUE,
+                                      FLUID_PURPLE};
 
     if (AtLeast(7, 80)) {
-        if (color > sizeof(until_1095)) {
+        if (color >= sizeof(until_1095)) {
             throw InvalidDataError();
         }
 

@@ -20,7 +20,7 @@
 
 ## Note that this is the oldest version tested against, even older versions
 ## might work.
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.25)
 
 project(tibiarc
   VERSION 0.1
@@ -125,7 +125,6 @@ target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACH
 if(MSVC)
   target_compile_options(tibiarc PRIVATE /W4 /WX)
 else()
-  target_link_libraries(tibiarc PRIVATE stdc++_libbacktrace)
   target_compile_options(tibiarc PRIVATE -Wall -Wextra)
 endif()
 
@@ -133,6 +132,12 @@ option(TIBIARC_SANITIZE "Enables address/UB sanitizers" OFF)
 if(TIBIARC_SANITIZE)
   target_compile_options(tibiarc PUBLIC -fsanitize=address,undefined -fsanitize-trap=all)
   target_link_options(tibiarc PUBLIC -fsanitize=address,undefined)
+endif()
+
+option(TIBIARC_COVERAGE "Whether to enable code coverage" ON)
+if(TIBIARC_COVERAGE)
+  target_compile_options(tibiarc PUBLIC -coverage)
+  target_link_options(tibiarc PUBLIC -coverage)
 endif()
 
 # Options to help debug certain versioning issues, enable them with e.g.
@@ -313,9 +318,19 @@ if(NOT TIBIARC_NO_LTO)
       set_target_properties(tibiarc converter
                               PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
       set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+      set_target_properties(miner PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
   endif()
 endif()
 
 # Include extra CMakeLists.txt if available
 include(CMakeLists.user.txt OPTIONAL)
+
+# ########################################################################### #
+## Tests
+# ########################################################################### #
+
+if(BUILD_TESTING)
+  include(CTest)
+  include(tests/CTestConfig.cmake)
+endif()

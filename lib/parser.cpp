@@ -1210,14 +1210,11 @@ void Parser::ParsePlayerTactics(DataReader &reader, EventList &events) {
     event.PvPMode = reader.ReadU8();
 }
 
-static void ValidateTextMessage(MessageMode messageMode,
-                                const std::string &message,
-                                const std::string &author = std::string()) {
+static void ValidateTextMessage(
+        [[maybe_unused]] MessageMode messageMode,
+        [[maybe_unused]] const std::string &message,
+        [[maybe_unused]] const std::string &author = std::string()) {
 #ifndef NDEBUG
-    (void)messageMode;
-    (void)message;
-    (void)author;
-#else
     if (author.size() > 0 && author.at(0) == 'a') {
         /* Names that start with a lowercase "a" or "an" are in all likelyhood
          * a monster, though there are exceptions like the ghostly knight in
@@ -1228,7 +1225,10 @@ static void ValidateTextMessage(MessageMode messageMode,
                 messageMode == MessageMode::NPCStart ||
                 messageMode == MessageMode::NPCContinued) &&
                ((author == "a ghostly knight" || author == "a ghostly woman" ||
-                 author == "a dead bureaucrat") ||
+                 author == "a dead bureaucrat" || author == "a prisoner" ||
+                 author == "an old dragonlord" || author == "a ghostly sage" ||
+                 author == "a ghostly guardian" ||
+                 author == "a wrinkled beholder") ||
                 message == "Hicks!")))) {
             throw InvalidDataError();
         }

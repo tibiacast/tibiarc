@@ -637,7 +637,7 @@ static json ToJSON(const Version &version, const ChannelClosed &event) {
 
 static json ToJSON(const Version &version,
                    const PrivateConversationOpened &event) {
-    return json{{"PlayerName", event.Name}};
+    return json{{"PlayerName", CharacterSet::ToUtf8(event.Name)}};
 }
 
 static json ToJSON(const Version &version, const ContainerOpened &event) {
@@ -974,8 +974,12 @@ void Serialize(const Settings &settings,
         }
 
         if (!events.empty()) {
-            frames.emplace_back<json>(
-                    {{"Timestamp", frame.Timestamp}, {"Events", events}});
+            if (settings.DryRun) {
+                volatile std::string effect = json{events}.dump();
+            } else {
+                frames.emplace_back<json>(
+                        {{"Timestamp", frame.Timestamp}, {"Events", events}});
+            }
         }
     }
 

@@ -85,6 +85,8 @@ enum class Type {
 struct Base {
     virtual void Update(trc::Gamestate &gamestate) = 0;
     virtual Events::Type Kind() const = 0;
+
+    virtual ~Base() = default;
 };
 
 struct WorldInitialized : public Base {

@@ -231,14 +231,51 @@ noisy events you're not interested in. For a full list of options, run
 
 ## Testing
 
-The tests can be run by executing `make` in the `tests/` directory, but note
-that they require appropriate data files in each versioned folder (that is,
-make sure `tests/8.50/Tibia.spr` and so on are present), which we aren't free
-to redistribute as part of the repository. If you don't already have those, you
-can find them in [gesior's `.dat/.spr` collection].
+The tests are run through `ctest` from the build directory. For this to work,
+`cmake` must have been invoked with the `-DBUILD_TESTING=On` option, and the
+appropriate Tibia data files must be present in the respective
+`tests/$VERSION/data` directories.
 
-Further files to test with are much appreciated, especially if you recorded
-them yourself and grant us a license to include them in this repository.
+```
+$ cd build
+$ make clean
+$ cmake -DCMAKE_BUILD_TYPE=Debug -DTIBIARC_SANITIZE=On -DBUILD_TESTING=On ..
+$ make -j
+$ ctest --progress --output-on-failure --parallel $(nproc --all) -T Test
+
+# Optionally, to run the tests with code coverage generation:
+$ cd build
+$ make clean
+$ cmake -DCMAKE_BUILD_TYPE=Debug -DTIBIARC_COVERAGE=On -DBUILD_TESTING=On ..
+$ make -j
+$ ctest --progress --output-on-failure --parallel $(nproc --all) -T Test
+$ ctest -T Coverage
+
+# Generating an lcov report from the above:
+$ mkdir coverage
+$ lcov --capture --directory . --output-file coverage/coverage.info
+$ genhtml coverage/coverage.info --output-directory coverage
+```
+
+These tests will run on a few short sample files in the main repository. For a
+full-scale test over a large collection of recordings, you can grab our
+collection with the command below:
+
+```
+$ git submodule update --init --progress
+
+# To fetch updates later on ...
+$ git submodule update --remote --progress
+```
+
+This will download about 10GB into the `recordings/` folder, so it's probably
+best not to do it on a metered connection. To run these tests, you will need to
+place the appropriate data files in the `recordings/$VERSION/data` folders, as
+well as invoke `cmake` once more to help it find the files.
+
+If you don't already have the required data files, you can find them in
+[gesior's `.dat/.spr` collection]. Further files to test with are much
+appreciated, feel to open an issue and share the ones you have.
 
 [gesior's `.dat/.spr` collection]: https://downloads.ots.me/?dir=data/tibia-clients/dat_and_spr_collections
 

@@ -186,8 +186,8 @@ int main(int argc, char *argv[]) {
                                               minor,
                                               preview);
     } catch (const trc::ErrorBase &error) {
-        std::cerr << "Unrecoverable error (" << error.Description() << ") at:\n"
-                  << error.Stacktrace << std::endl;
+        std::cerr << "Unrecoverable error (" << error.Description() << ")"
+                  << std::endl;
         return 1;
     }
 

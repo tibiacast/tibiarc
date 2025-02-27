@@ -1,0 +1,4 @@
+[submodule "recordings"]
+    path = recordings
+    url = git://hogberg.online:9419/tibia-recordings.git
+    branch = main

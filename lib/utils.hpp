@@ -51,9 +51,7 @@ inline void Assert([[maybe_unused]] bool assertion) {
  * Irrecoverable errors (e.g. broken invariants) should instead use
  * std::terminate() */
 struct ErrorBase {
-    std::stacktrace Stacktrace;
-
-    ErrorBase() : Stacktrace(std::stacktrace::current()) {
+    ErrorBase() {
     }
 
     virtual std::string Description() const {

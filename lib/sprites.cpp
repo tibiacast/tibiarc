@@ -332,7 +332,6 @@ SpriteFile::SpriteFile(const VersionBase &version, DataReader data) {
                                   std::forward_as_tuple(id),
                                   std::forward_as_tuple(spriteData, 32, 32));
         } catch ([[maybe_unused]] const InvalidDataError &err) {
-            (void)err;
         }
     }
 }

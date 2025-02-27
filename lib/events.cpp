@@ -350,24 +350,19 @@ void CreatureSpokeOnMap::Update(Gamestate &gamestate) {
     gamestate.AddTextMessage(Mode, Message, AuthorName, Position);
 }
 
-void CreatureSpokeInChannel::Update(Gamestate &gamestate) {
-    (void)gamestate;
+void CreatureSpokeInChannel::Update([[maybe_unused]] Gamestate &gamestate) {
 }
 
-void ChannelListUpdated::Update(Gamestate &gamestate) {
-    (void)gamestate;
+void ChannelListUpdated::Update([[maybe_unused]] Gamestate &gamestate) {
 }
 
-void ChannelOpened::Update(Gamestate &gamestate) {
-    (void)gamestate;
+void ChannelOpened::Update([[maybe_unused]] Gamestate &gamestate) {
 }
 
-void ChannelClosed::Update(Gamestate &gamestate) {
-    (void)gamestate;
+void ChannelClosed::Update([[maybe_unused]] Gamestate &gamestate) {
 }
 
-void PrivateConversationOpened::Update(Gamestate &gamestate) {
-    (void)gamestate;
+void PrivateConversationOpened::Update([[maybe_unused]] Gamestate &gamestate) {
 }
 
 void ContainerOpened::Update(Gamestate &gamestate) {
@@ -489,8 +484,8 @@ void StatusMessageReceived::Update(Gamestate &gamestate) {
     }
 }
 
-void StatusMessageReceivedInChannel::Update(Gamestate &gamestate) {
-    (void)gamestate;
+void StatusMessageReceivedInChannel::Update(
+        [[maybe_unused]] Gamestate &gamestate) {
 }
 
 } // namespace Events

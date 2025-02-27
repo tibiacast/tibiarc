@@ -44,9 +44,7 @@ const char *argp_program_bug_address = "git@hogberg.online";
 enum Arguments {
     /* Setting this to 256 ensures that it won't be mistaken for printable
      * ASCII, and thus won't get a short option name. */
-    ARGUMENT_OUTPUT_BACKEND = 256,
-
-    ARGUMENT_INPUT_FORMAT,
+    ARGUMENT_INPUT_FORMAT = 256,
     ARGUMENT_INPUT_VERSION,
 
     ARGUMENT_SKIP_CREATURE_UPDATE_EVENTS,
@@ -56,6 +54,8 @@ enum Arguments {
     ARGUMENT_SKIP_PLAYER_UPDATE_EVENTS,
     ARGUMENT_SKIP_CREATURE_PRESENCE_EVENTS,
     ARGUMENT_SKIP_TERRAIN_EVENTS,
+
+    ARGUMENT_DRY_RUN,
 };
 
 static struct argp_option options[] = {
@@ -122,6 +122,14 @@ static struct argp_option options[] = {
          0,
          "skips terrain events",
          5},
+
+        {"dry-run",
+         ARGUMENT_DRY_RUN,
+         NULL,
+         0,
+         "suppress output while still generating it. This is only intended "
+         "for testing",
+         6},
 
         {0}};
 
@@ -260,6 +268,9 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
         settings.SkippedEvents.insert(trc::Events::Type::TileObjectRemoved);
         settings.SkippedEvents.insert(trc::Events::Type::TileObjectTransformed);
         break;
+    case ARGUMENT_DRY_RUN:
+        settings.DryRun = true;
+        break;
     default:
         return ARGP_ERR_UNKNOWN;
     }
@@ -312,8 +323,8 @@ int main(int argc, char **argv) {
                                    parsed.Paths[1],
                                    std::cout);
     } catch (const trc::ErrorBase &error) {
-        std::cerr << "Unrecoverable error (" << error.Description() << ") at:\n"
-                  << error.Stacktrace << std::endl;
+        std::cerr << "Unrecoverable error (" << error.Description() << ")"
+                  << std::endl;
         return 1;
     }
 
