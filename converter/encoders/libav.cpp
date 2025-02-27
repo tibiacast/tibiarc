@@ -32,14 +32,13 @@ static void SetBestPixelFormat(const AVCodec *codec, AVCodecContext *context) {
 
     for (int i = 0; codec->pix_fmts[i] != AV_PIX_FMT_NONE; i++) {
         enum AVPixelFormat candidate_format = codec->pix_fmts[i];
-        int loss;
+        [[maybe_unused]] int loss;
 
         best_format = av_find_best_pix_fmt_of_2(best_format,
                                                 candidate_format,
                                                 AV_PIX_FMT_BGR24,
                                                 0,
                                                 &loss);
-        (void)loss;
     }
 
     /* Convert deprecated JPEG-specific formats to their corresponding general
