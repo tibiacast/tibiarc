@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2024 "John Högberg"
+ * Copyright 2024-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -30,35 +30,24 @@
 extern "C" {
 #    include <openssl/evp.h>
 }
-
-static uint8_t aes_key[32] = {0x54, 0x68, 0x79, 0x20, 0x6B, 0x65, 0x79, 0x20,
-                              0x69, 0x73, 0x20, 0x6D, 0x69, 0x6E, 0x65, 0x20,
-                              0xA9, 0x20, 0x32, 0x30, 0x30, 0x36, 0x20, 0x47,
-                              0x42, 0x20, 0x4D, 0x6F, 0x6E, 0x61, 0x63, 0x6F};
 #endif
-
-/* Early .REC versions have 32-bit frame lengths, but I haven't observed any
- * recordings with an actual frame length larger than 64K. */
-#define TRC_REC_MAX_FRAME_SIZE (64 << 10)
-
-#define TRC_REC_OBFUSCATION_DIVISOR_MASK 0x0F
-#define TRC_REC_OBFUSCATION_TWIRL(Divisor) (Divisor)
-#define TRC_REC_OBFUSCATION_FRAME_COUNT_OFFSET (1 << 4)
-#define TRC_REC_OBFUSCATION_U16_FRAME_LENGTHS (1 << 5)
-#define TRC_REC_OBFUSCATION_CHECKSUM (1 << 6)
-#define TRC_REC_OBFUSCATION_AES_DATA (1 << 7)
 
 namespace trc {
 namespace Recordings {
 namespace Rec {
-struct State {
+
 #ifndef DISABLE_OPENSSL_CRYPTO
-    EVP_CIPHER_CTX *AES;
+static const uint8_t AESKey[32] = {
+        0x54, 0x68, 0x79, 0x20, 0x6B, 0x65, 0x79, 0x20, 0x69, 0x73, 0x20,
+        0x6D, 0x69, 0x6E, 0x65, 0x20, 0xA9, 0x20, 0x32, 0x30, 0x30, 0x36,
+        0x20, 0x47, 0x42, 0x20, 0x4D, 0x6F, 0x6E, 0x61, 0x63, 0x6F};
 #endif
 
-    uint32_t Obfuscation;
-    uint32_t FragmentCount;
+/* Early .REC versions have 32-bit frame lengths, but I haven't observed any
+ * recordings with an actual frame length larger than 64K. */
+static constexpr int MaxFrameSize = (64 << 10);
 
+struct State {
     struct {
         uint32_t Timestamp;
         uint32_t Length;
@@ -68,44 +57,88 @@ struct State {
         uint8_t *PlainData;
     } Fragment;
 
-    State(uint32_t obfuscation, uint32_t fragmentCount)
-        : Obfuscation(obfuscation), FragmentCount(fragmentCount), Fragment({}) {
-        if (obfuscation & TRC_REC_OBFUSCATION_AES_DATA) {
+    struct {
 #ifndef DISABLE_OPENSSL_CRYPTO
-            AES = EVP_CIPHER_CTX_new();
-            EVP_CIPHER_CTX_init(AES);
+        EVP_CIPHER_CTX *AES;
+#endif
 
-            if (!EVP_DecryptInit(AES, EVP_aes_256_ecb(), aes_key, NULL)) {
-                EVP_CIPHER_CTX_free(AES);
+        bool Checksum;
+        bool Encrypted;
+        int32_t Twirl;
+    } Obfuscation;
+
+    uint32_t FragmentCount;
+    uint32_t FrameLength;
+
+    State(uint32_t containerVersion, uint32_t fragmentCount)
+        : Fragment({}), Obfuscation({}) {
+
+        if (containerVersion == 259) {
+            FragmentCount = fragmentCount;
+            FrameLength = 4;
+        } else {
+            switch (containerVersion) {
+            case 515:
+                Obfuscation.Twirl = 5;
+                break;
+            case 516:
+            case 517:
+                Obfuscation.Twirl = 8;
+                break;
+            case 518:
+                Obfuscation.Twirl = 6;
+                break;
+            default:
+                throw InvalidDataError();
+            }
+
+            if (fragmentCount < 57) {
+                throw InvalidDataError();
+            }
+
+            FragmentCount = fragmentCount - 57;
+            FrameLength = 2;
+
+            Obfuscation.Encrypted = (containerVersion >= 517);
+            Obfuscation.Checksum = true;
+        }
+
+        if (Obfuscation.Encrypted) {
+#ifndef DISABLE_OPENSSL_CRYPTO
+            Obfuscation.AES = EVP_CIPHER_CTX_new();
+            EVP_CIPHER_CTX_init(Obfuscation.AES);
+
+            if (!EVP_DecryptInit(Obfuscation.AES,
+                                 EVP_aes_256_ecb(),
+                                 AESKey,
+                                 NULL)) {
+                EVP_CIPHER_CTX_free(Obfuscation.AES);
                 throw NotSupportedError();
             }
 
-            Fragment.PlainData = new uint8_t[TRC_REC_MAX_FRAME_SIZE * 2];
-            Fragment.CipherData = &Fragment.PlainData[TRC_REC_MAX_FRAME_SIZE];
+            Fragment.PlainData = new uint8_t[MaxFrameSize * 2];
+            Fragment.CipherData = &Fragment.PlainData[MaxFrameSize];
 #else
             throw NotSupportedError();
 #endif
         } else {
-            Fragment.PlainData = new uint8_t[TRC_REC_MAX_FRAME_SIZE * 1];
+            Fragment.PlainData = new uint8_t[MaxFrameSize * 1];
             Fragment.CipherData = Fragment.PlainData;
-            AES = nullptr;
         }
     }
 
     ~State() {
 #ifndef DISABLE_OPENSSL_CRYPTO
-        if (AES != nullptr) {
-            EVP_CIPHER_CTX_free(AES);
+        if (Obfuscation.AES != nullptr) {
+            EVP_CIPHER_CTX_free(Obfuscation.AES);
         }
 #endif
+
         delete[] Fragment.PlainData;
     }
 
     void Deobfuscate() {
-        const int32_t divisor =
-                (Obfuscation & TRC_REC_OBFUSCATION_DIVISOR_MASK);
-
-        if (divisor > 0) {
+        if (Obfuscation.Twirl > 0) {
             const uint32_t key =
                     (Fragment.Length + Fragment.Timestamp + 2) & 0xFF;
 
@@ -115,30 +148,34 @@ struct State {
                 alpha = (key + i * 33) & 0xFF;
                 alpha -= (alpha > 127) ? 256 : 0;
 
-                beta = alpha % divisor;
-                beta += (beta < 0) ? divisor : 0;
+                beta = alpha % Obfuscation.Twirl;
+                beta += (beta < 0) ? Obfuscation.Twirl : 0;
 
-                alpha += (beta != 0) ? (divisor - beta) : 0;
+                alpha += (beta != 0) ? (Obfuscation.Twirl - beta) : 0;
 
                 Fragment.CipherData[i] -= alpha;
             }
         }
 
-        Assert(!!(Obfuscation & TRC_REC_OBFUSCATION_AES_DATA) ^
+        Assert(Obfuscation.Encrypted ^
                (Fragment.CipherData == Fragment.PlainData));
 
 #ifndef DISABLE_OPENSSL_CRYPTO
-        if (Obfuscation & TRC_REC_OBFUSCATION_AES_DATA) {
+        if (Obfuscation.Encrypted) {
             int plainLength, outLength;
 
             if (Fragment.Length % 16) {
                 throw InvalidDataError();
             }
 
-            AbortUnless(EVP_DecryptInit_ex(AES, NULL, NULL, NULL, NULL));
+            AbortUnless(EVP_DecryptInit_ex(Obfuscation.AES,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           NULL));
 
-            plainLength = TRC_REC_MAX_FRAME_SIZE;
-            if (!EVP_DecryptUpdate(AES,
+            plainLength = MaxFrameSize;
+            if (!EVP_DecryptUpdate(Obfuscation.AES,
                                    Fragment.PlainData,
                                    &plainLength,
                                    Fragment.CipherData,
@@ -146,10 +183,10 @@ struct State {
                 throw InvalidDataError();
             }
 
-            Assert(plainLength < TRC_REC_MAX_FRAME_SIZE);
-            outLength = TRC_REC_MAX_FRAME_SIZE - plainLength;
+            Assert(plainLength < MaxFrameSize);
+            outLength = MaxFrameSize - plainLength;
 
-            if (!EVP_DecryptFinal_ex(AES,
+            if (!EVP_DecryptFinal_ex(Obfuscation.AES,
                                      &Fragment.PlainData[plainLength],
                                      &outLength)) {
                 throw InvalidDataError();
@@ -174,51 +211,11 @@ std::unique_ptr<Recording> Read(const DataReader &file,
                                 const Version &version,
                                 Recovery recovery) {
     DataReader reader = file;
-    uint32_t obfuscation;
 
     auto containerVersion = reader.ReadU16();
     auto fragmentCount = reader.ReadS32();
 
-    obfuscation = 0;
-
-    switch (containerVersion) {
-    case 259:
-        break;
-    case 515:
-        obfuscation |= TRC_REC_OBFUSCATION_TWIRL(5);
-        break;
-    case 516:
-    case 517:
-        obfuscation |= TRC_REC_OBFUSCATION_TWIRL(8);
-        break;
-    case 518:
-        obfuscation |= TRC_REC_OBFUSCATION_TWIRL(6);
-        break;
-    default:
-        throw InvalidDataError();
-    }
-
-    if (containerVersion > 259) {
-        obfuscation |= TRC_REC_OBFUSCATION_FRAME_COUNT_OFFSET;
-        obfuscation |= TRC_REC_OBFUSCATION_U16_FRAME_LENGTHS;
-
-        fragmentCount -= 57;
-    }
-
-    if (containerVersion >= 515) {
-        obfuscation |= TRC_REC_OBFUSCATION_CHECKSUM;
-    }
-
-    if (containerVersion >= 517) {
-        obfuscation |= TRC_REC_OBFUSCATION_AES_DATA;
-    }
-
-    if (fragmentCount <= 0) {
-        throw InvalidDataError();
-    }
-
-    struct State state(obfuscation, fragmentCount);
-
+    struct State state(containerVersion, fragmentCount);
     auto recording = std::make_unique<Recording>();
 
     try {
@@ -226,11 +223,11 @@ std::unique_ptr<Recording> Read(const DataReader &file,
         Demuxer demuxer(2);
 
         for (uint32_t i = 0; i < state.FragmentCount; i++) {
-            if (state.Obfuscation & TRC_REC_OBFUSCATION_U16_FRAME_LENGTHS) {
+            if (state.FrameLength == 2) {
                 state.Fragment.Length = reader.ReadU16();
             } else {
-                state.Fragment.Length =
-                        reader.ReadU32<0, TRC_REC_MAX_FRAME_SIZE>();
+                Assert(state.FrameLength == 4);
+                state.Fragment.Length = reader.ReadU32<0, MaxFrameSize>();
             }
 
             state.Fragment.Timestamp = reader.ReadU32();
@@ -248,7 +245,7 @@ std::unique_ptr<Recording> Read(const DataReader &file,
                                        parser.Parse(packetReader));
                            });
 
-            if (state.Obfuscation & TRC_REC_OBFUSCATION_CHECKSUM) {
+            if (state.Obfuscation.Checksum) {
                 reader.SkipU32();
             }
         }

@@ -1,6 +1,6 @@
 #
 # Copyright 2024 "Simon Sandström"
-# Copyright 2024 "John Högberg"
+# Copyright 2024-2025 "John Högberg"
 #
 # This file is part of tibiarc.
 #
