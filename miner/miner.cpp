@@ -44,7 +44,10 @@ const char *argp_program_bug_address = "git@hogberg.online";
 enum Arguments {
     /* Setting this to 256 ensures that it won't be mistaken for printable
      * ASCII, and thus won't get a short option name. */
-    ARGUMENT_INPUT_FORMAT = 256,
+    ARGUMENT_END_TIME = 256,
+
+    ARGUMENT_INPUT_FORMAT,
+    ARGUMENT_INPUT_PARTIAL,
     ARGUMENT_INPUT_VERSION,
 
     ARGUMENT_SKIP_CREATURE_UPDATE_EVENTS,
@@ -54,25 +57,47 @@ enum Arguments {
     ARGUMENT_SKIP_PLAYER_UPDATE_EVENTS,
     ARGUMENT_SKIP_CREATURE_PRESENCE_EVENTS,
     ARGUMENT_SKIP_TERRAIN_EVENTS,
+    ARGUMENT_START_TIME,
 
     ARGUMENT_DRY_RUN,
 };
 
 static struct argp_option options[] = {
+        {"end-time",
+         ARGUMENT_END_TIME,
+         "end_ms",
+         0,
+         "when to stop encoding, in milliseconds relative to start",
+         1},
+        {"start-time",
+         ARGUMENT_START_TIME,
+         "start_ms",
+         0,
+         "when to start encoding, in milliseconds relative to start",
+         1},
+
         {"input-format",
          ARGUMENT_INPUT_FORMAT,
          "format",
          0,
          "the format of the recording, 'cam', 'rec', 'tibiacast', 'tmv1', "
          "'tmv2', 'trp', or 'yatc'.",
-         1},
+         2},
+        {"input-partial",
+         ARGUMENT_INPUT_PARTIAL,
+         NULL,
+         0,
+         "treats the recording as if it ends normally at the first sign of "
+         "corruption, instead of erroring out. If --end-time is specified, "
+         "error out if the end time cannot be reached.",
+         2},
         {"input-version",
          ARGUMENT_INPUT_VERSION,
          "tibia_version",
          0,
          "the Tibia version of the recording, in case the automatic "
          "detection doesn't work",
-         1},
+         2},
 
         {"skip-creature-presence",
          ARGUMENT_SKIP_CREATURE_PRESENCE_EVENTS,
@@ -164,6 +189,19 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
         break;
     case ARGP_KEY_ERROR:
         break;
+    case ARGUMENT_START_TIME:
+        /* start-time */
+        if (sscanf(arg, "%i", &settings.StartTime) != 1 ||
+            settings.StartTime < 0) {
+            argp_error(state, "start-time must be a time in milliseconds");
+        }
+        break;
+    case ARGUMENT_END_TIME:
+        /* end-time */
+        if (sscanf(arg, "%i", &settings.EndTime) != 1 || settings.EndTime < 0) {
+            argp_error(state, "end-time must be a time in milliseconds");
+        }
+        break;
     case ARGUMENT_INPUT_FORMAT:
         /* input-format */
         if (!strcmp(arg, "cam")) {
@@ -188,6 +226,10 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
                        "'tmv1', 'tmv2', 'trp', 'ttm', or 'yatc'");
         }
 
+        break;
+    case ARGUMENT_INPUT_PARTIAL:
+        /* input-partial */
+        settings.InputRecovery = trc::Recordings::Recovery::PartialReturn;
         break;
     case ARGUMENT_INPUT_VERSION:
         /* input-version */
@@ -311,7 +353,13 @@ static int parse_arguments(int argc,
 int main(int argc, char **argv) {
     /* Set up some sane defaults. */
     struct parsed_arguments parsed = {
-            .Settings = {.InputFormat = trc::Recordings::Format::Unknown}};
+            .Settings = {.InputFormat = trc::Recordings::Format::Unknown,
+                         .InputRecovery = trc::Recordings::Recovery::None,
+
+                         .StartTime = 0,
+                         .EndTime = std::numeric_limits<int>::max(),
+
+                         .DryRun = false}};
 
     if (parse_arguments(argc, argv, &parsed)) {
         return 1;

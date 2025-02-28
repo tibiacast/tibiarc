@@ -44,12 +44,13 @@ const char *argp_program_bug_address = "git@hogberg.online";
 enum Arguments {
     /* Setting this to 256 ensures that it won't be mistaken for printable
      * ASCII, and thus won't get a short option name. */
-    ARGUMENT_OUTPUT_BACKEND = 256,
-    ARGUMENT_END_TIME,
+    ARGUMENT_END_TIME = 256,
     ARGUMENT_FRAME_RATE,
     ARGUMENT_FRAME_SKIP,
     ARGUMENT_INPUT_FORMAT,
+    ARGUMENT_INPUT_PARTIAL,
     ARGUMENT_INPUT_VERSION,
+    ARGUMENT_OUTPUT_BACKEND,
     ARGUMENT_OUTPUT_ENCODING,
     ARGUMENT_OUTPUT_FLAGS,
     ARGUMENT_OUTPUT_FORMAT,
@@ -118,15 +119,22 @@ static struct argp_option options[] = {
          "format",
          0,
          "the format of the recording, 'cam', 'rec', 'tibiacast', 'tmv1', "
-         "'tmv2', 'trp', or 'yatc'.",
+         "'tmv2', 'trp', or 'yatc'",
+         3},
+        {"input-partial",
+         ARGUMENT_INPUT_PARTIAL,
+         NULL,
+         0,
+         "treats the recording as if it ends normally at the first sign of "
+         "corruption, instead of erroring out. If --end-time is specified, "
+         "error out if the end time cannot be reached.",
          3},
         {"input-version",
          ARGUMENT_INPUT_VERSION,
          "tibia_version",
          0,
          "the Tibia version of the recording, in case the automatic "
-         "detection "
-         "doesn't work",
+         "detection doesn't work",
          3},
 
         {"output-backend",
@@ -277,6 +285,14 @@ static struct argp_option options[] = {
          "removes yelling, specifically",
          5},
 
+        {"input-version",
+         ARGUMENT_INPUT_VERSION,
+         "tibia_version",
+         0,
+         "the Tibia version of the recording, in case the automatic "
+         "detection doesn't work",
+         3},
+
         {0}};
 
 static error_t parse_option(int key, char *arg, struct argp_state *state) {
@@ -399,6 +415,10 @@ static error_t parse_option(int key, char *arg, struct argp_state *state) {
                        "'tmv1', 'tmv2', 'trp', 'ttm', or 'yatc'");
         }
 
+        break;
+    case ARGUMENT_INPUT_PARTIAL:
+        /* input-partial */
+        settings.InputRecovery = trc::Recordings::Recovery::PartialReturn;
         break;
     case ARGUMENT_INPUT_VERSION:
         /* input-version */
@@ -565,14 +585,17 @@ int main(int argc, char **argv) {
     /* Set up some sane defaults. */
     struct parsed_arguments parsed = {
             .Settings = {.RenderOptions = {.Width = 640, .Height = 352},
+
+                         .InputFormat = trc::Recordings::Format::Unknown,
+                         .InputRecovery = trc::Recordings::Recovery::None,
+
+                         .EncodeBackend = trc::Encoding::Backend::LibAV,
+
                          .FrameRate = 25,
                          .FrameSkip = 1,
 
                          .StartTime = 0,
-                         .EndTime = INT_MAX,
-
-                         .InputFormat = trc::Recordings::Format::Unknown,
-                         .EncodeBackend = trc::Encoding::Backend::LibAV}};
+                         .EndTime = std::numeric_limits<int>::max()}};
 
     if (parse_arguments(argc, argv, &parsed)) {
         return 1;

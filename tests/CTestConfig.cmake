@@ -36,7 +36,9 @@ function(add_converter_test folder version recording)
   add_test(NAME "converter: ${version}/${recording}"
            COMMAND converter
              --input-version ${version}
-             --output-backend inert --frame-rate 1 --frame-skip 120
+             --output-backend inert
+             --frame-rate 1
+             --frame-skip 120
              "${folder}/data" "${folder}/${recording}")
 endfunction()
 
@@ -63,6 +65,32 @@ function(add_encode_test folder version recording)
   endif()
 endfunction()
 
+function(add_graveyard_test data folder version recording)
+  ## As add_converter_test, but it should fail since this is in the graveyard.
+  add_test(NAME "graveyard-fail: ${version}/${recording}"
+           COMMAND converter
+             --input-version ${version}
+             --output-backend inert
+             --frame-rate 1
+             --frame-skip 120
+             "${data}" "${folder}/${recording}")
+  set_property(TEST "graveyard-fail: ${version}/${recording}"
+               PROPERTY WILL_FAIL true)
+
+  ## The best-effort versioning of the graveyard is based on parsing the first
+  ## two seconds, so all the versioned recordings in the graveyard should pass
+  ## this test.
+  add_test(NAME "graveyard-refine: ${version}/${recording}"
+           COMMAND converter
+             --input-version ${version}
+             --input-partial
+             --end-time 2000
+             --output-backend inert
+             --frame-rate 1
+             --frame-skip 120
+             "${data}" "${folder}/${recording}")
+endfunction()
+
 function(add_miner_test folder version recording)
   add_test(NAME "miner: ${version}/${recording}"
            COMMAND miner
@@ -82,12 +110,28 @@ function(scan_test_corpus)
 
       check_tibia_data(${folder})
       if(TIBIARC_DATA_OK)
+        ## Find and test all the recordings of this version which we know can
+        ## be fully processed without issue.
         file(GLOB recording_names LIST_DIRECTORIES TRUE
              RELATIVE "${folder}/" "${folder}/*.*")
         foreach(recording ${recording_names})
           if(NOT ("${recording}" EQUAL "data"))
             add_converter_test(${folder} ${version} ${recording})
             add_miner_test(${folder} ${version} ${recording})
+          endif()
+        endforeach()
+
+        ## Find and test all recordings that we've determined belongs to this
+        ## version, but cannot be processed in full.
+        set(graveyard "${TIBIARC_RECORDING_ROOT}/graveyard/${version}/")
+        file(GLOB recording_names LIST_DIRECTORIES TRUE
+             RELATIVE "${graveyard}/" "${graveyard}/*.*")
+        foreach(recording ${recording_names})
+          if(NOT ("${recording}" EQUAL "data"))
+            add_graveyard_test("${folder}/data"
+                               ${graveyard}
+                               ${version}
+                               ${recording})
           endif()
         endforeach()
       else()
@@ -99,11 +143,6 @@ function(scan_test_corpus)
       endif()
     endif()
   endforeach()
-
-  ## FIXME: Version the graveyard as best as we are able, and then mark those
-  ## tests as WILLFAIL; testing bad recordings might shake out some bugs that
-  ## are outside the happy path, and will also alert us when we can resurrect
-  ## recordings from the graveyard as a result of bug fixes.
 endfunction()
 
 block()

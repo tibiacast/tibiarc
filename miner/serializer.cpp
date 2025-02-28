@@ -946,7 +946,21 @@ static auto Open(const Settings &settings,
                                              pictures.Reader(),
                                              sprites.Reader(),
                                              types.Reader());
-    auto recording = Recordings::Read(inputFormat, reader, *version);
+
+    auto recording = Recordings::Read(inputFormat,
+                                      reader,
+                                      *version,
+                                      settings.InputRecovery);
+
+    if (settings.InputRecovery == Recordings::Recovery::PartialReturn &&
+        settings.EndTime < std::numeric_limits<int>::max()) {
+        /* If both --input-partial and --end-time are specified, raise an error
+         * if the end time cannot be reached. */
+        if (recording->Frames.empty() ||
+            (recording->Frames.back().Timestamp < settings.EndTime)) {
+            throw InvalidDataError();
+        }
+    }
 
     return std::make_tuple(std::move(recording), std::move(version));
 }
@@ -963,6 +977,13 @@ void Serialize(const Settings &settings,
     auto frames = std::vector<json>();
 
     for (const auto &frame : recording->Frames) {
+        /* Clip to given bounds. */
+        if (frame.Timestamp < settings.StartTime) {
+            continue;
+        } else if (frame.Timestamp > settings.EndTime) {
+            break;
+        }
+
         auto events = std::vector<json>();
 
         for (const auto &event : frame.Events) {
