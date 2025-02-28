@@ -30,15 +30,20 @@
 namespace trc {
 namespace Serializer {
 struct Settings {
+
     Recordings::Format InputFormat;
+    Recordings::Recovery InputRecovery;
+
+    std::unordered_set<Events::Type> SkippedEvents;
+
+    int StartTime;
+    int EndTime;
 
     struct {
         int Major, Minor, Preview;
     } DesiredTibiaVersion;
 
-    std::unordered_set<Events::Type> SkippedEvents;
-
-    bool DryRun = false;
+    bool DryRun;
 };
 
 void Serialize(const Settings &settings,

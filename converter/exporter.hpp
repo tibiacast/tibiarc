@@ -28,18 +28,21 @@
 namespace trc {
 namespace Exporter {
 struct Settings {
-    struct trc::Renderer::Options RenderOptions;
-    int FrameRate;
-    int FrameSkip;
-    int StartTime;
-    int EndTime;
+    struct Renderer::Options RenderOptions;
 
-    trc::Recordings::Format InputFormat;
-    trc::Encoding::Backend EncodeBackend;
+    Recordings::Format InputFormat;
+    Recordings::Recovery InputRecovery;
+
+    Encoding::Backend EncodeBackend;
     std::string EncoderFlags;
 
     std::string OutputFormat;
     std::string OutputEncoding;
+
+    int FrameRate;
+    int FrameSkip;
+    int StartTime;
+    int EndTime;
 
     struct {
         int Major, Minor, Preview;
