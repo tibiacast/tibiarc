@@ -126,8 +126,14 @@ void CreatureMoved::Update(Gamestate &gamestate) {
         creature.Heading = Creature::Direction::East;
     }
 
+    /* Set appropriate start/end ticks for this movement. Note that moves
+     * between floors as well as teleportations are instant.
+     *
+     * Strangely, moving onto an empty tile is okay and counts as a
+     * teleportation. */
     if (zDifference == 0 &&
-        (std::abs(xDifference) <= 1 && std::abs(yDifference) <= 1)) {
+        (std::abs(xDifference) <= 1 && std::abs(yDifference) <= 1) &&
+        toTile.ObjectCount > 0) {
         auto &groundObject = toTile.GetObject(gamestate.Version, 0);
         uint32_t movementSpeed;
 
@@ -156,7 +162,6 @@ void CreatureMoved::Update(Gamestate &gamestate) {
                 (groundType.Properties.Speed * 1000) / movementSpeed;
         creature.MovementInformation.WalkStartTick = gamestate.CurrentTick;
     } else {
-        /* Moves between floors, as well as teleportations, are instant. */
         creature.MovementInformation.WalkStartTick = 0;
         creature.MovementInformation.WalkEndTick = 0;
     }
