@@ -19,357 +19,249 @@
  */
 
 #include "serializer.hpp"
+#include "cli.hpp"
 
 #include <unordered_set>
 #include <climits>
 
 using namespace trc;
 
-struct parsed_arguments {
-    struct Serializer::Settings Settings;
-    std::string Paths[3];
-};
-
-static int parse_arguments(int argc, char **argv, struct parsed_arguments *out);
-
-/* TODO: Turns out that making argp portable requires using autoconf, which is
- * about as fun as a root canal. Despite being more convenient, I now regret
- * picking it over getopt(3) as most users will probably be running Windows. */
-#ifdef __GLIBC__
-#    include <argp.h>
-
-const char *argp_program_version = "tibiarc-miner 0.2";
-const char *argp_program_bug_address = "git@hogberg.online";
-
-enum Arguments {
-    /* Setting this to 256 ensures that it won't be mistaken for printable
-     * ASCII, and thus won't get a short option name. */
-    ARGUMENT_END_TIME = 256,
-
-    ARGUMENT_INPUT_FORMAT,
-    ARGUMENT_INPUT_PARTIAL,
-    ARGUMENT_INPUT_VERSION,
-
-    ARGUMENT_SKIP_CREATURE_UPDATE_EVENTS,
-    ARGUMENT_SKIP_EFFECT_EVENTS,
-    ARGUMENT_SKIP_INVENTORY_EVENTS,
-    ARGUMENT_SKIP_MESSAGE_EVENTS,
-    ARGUMENT_SKIP_PLAYER_UPDATE_EVENTS,
-    ARGUMENT_SKIP_CREATURE_PRESENCE_EVENTS,
-    ARGUMENT_SKIP_TERRAIN_EVENTS,
-    ARGUMENT_START_TIME,
-
-    ARGUMENT_DRY_RUN,
-};
-
-static struct argp_option options[] = {
-        {"end-time",
-         ARGUMENT_END_TIME,
-         "end_ms",
-         0,
-         "when to stop encoding, in milliseconds relative to start",
-         1},
-        {"start-time",
-         ARGUMENT_START_TIME,
-         "start_ms",
-         0,
-         "when to start encoding, in milliseconds relative to start",
-         1},
-
-        {"input-format",
-         ARGUMENT_INPUT_FORMAT,
-         "format",
-         0,
-         "the format of the recording, 'cam', 'rec', 'tibiacast', 'tmv1', "
-         "'tmv2', 'trp', or 'yatc'.",
-         2},
-        {"input-partial",
-         ARGUMENT_INPUT_PARTIAL,
-         NULL,
-         0,
-         "treats the recording as if it ends normally at the first sign of "
-         "corruption, instead of erroring out. If --end-time is specified, "
-         "error out if the end time cannot be reached.",
-         2},
-        {"input-version",
-         ARGUMENT_INPUT_VERSION,
-         "tibia_version",
-         0,
-         "the Tibia version of the recording, in case the automatic "
-         "detection doesn't work",
-         2},
-
-        {"skip-creature-presence",
-         ARGUMENT_SKIP_CREATURE_PRESENCE_EVENTS,
-         NULL,
-         0,
-         "skips creature presence events",
-         5},
-
-        {"skip-creature-updates",
-         ARGUMENT_SKIP_CREATURE_UPDATE_EVENTS,
-         NULL,
-         0,
-         "skips creature update events (e.g. movement, health)",
-         5},
-
-        {"skip-effects",
-         ARGUMENT_SKIP_EFFECT_EVENTS,
-         NULL,
-         0,
-         "skips effect events (e.g. missiles, poofs)",
-         5},
-
-        {"skip-inventory",
-         ARGUMENT_SKIP_INVENTORY_EVENTS,
-         NULL,
-         0,
-         "skips inventory events (e.g. containers)",
-         5},
-
-        {"skip-messages",
-         ARGUMENT_SKIP_MESSAGE_EVENTS,
-         NULL,
-         0,
-         "skips message events",
-         5},
-
-        {"skip-player-updates",
-         ARGUMENT_SKIP_PLAYER_UPDATE_EVENTS,
-         NULL,
-         0,
-         "skips player update events (e.g. movement, skills)",
-         5},
-
-        {"skip-terrain",
-         ARGUMENT_SKIP_TERRAIN_EVENTS,
-         NULL,
-         0,
-         "skips terrain events",
-         5},
-
-        {"dry-run",
-         ARGUMENT_DRY_RUN,
-         NULL,
-         0,
-         "suppress output while still generating it. This is only intended "
-         "for testing",
-         6},
-
-        {0}};
-
-static error_t parse_option(int key, char *arg, struct argp_state *state) {
-    auto args = (struct parsed_arguments *)state->input;
-    auto &settings = args->Settings;
-
-    switch (key) {
-    case ARGP_KEY_INIT:
-        /* Defaults have already been set up in `main`. */
-        break;
-    case ARGP_KEY_FINI:
-        break;
-    case ARGP_KEY_ARG: {
-        if (state->arg_num >= 2) {
-            /* Too many args */
-            argp_usage(state);
-        }
-
-        args->Paths[state->arg_num] = arg;
-        break;
-    }
-    case ARGP_KEY_END: {
-        if (state->arg_num < 2) {
-            /* Too few args */
-            argp_usage(state);
-        }
-
-        break;
-    }
-    case ARGP_KEY_SUCCESS:
-        break;
-    case ARGP_KEY_ERROR:
-        break;
-    case ARGUMENT_START_TIME:
-        /* start-time */
-        if (sscanf(arg, "%i", &settings.StartTime) != 1 ||
-            settings.StartTime < 0) {
-            argp_error(state, "start-time must be a time in milliseconds");
-        }
-        break;
-    case ARGUMENT_END_TIME:
-        /* end-time */
-        if (sscanf(arg, "%i", &settings.EndTime) != 1 || settings.EndTime < 0) {
-            argp_error(state, "end-time must be a time in milliseconds");
-        }
-        break;
-    case ARGUMENT_INPUT_FORMAT:
-        /* input-format */
-        if (!strcmp(arg, "cam")) {
-            settings.InputFormat = Recordings::Format::Cam;
-        } else if (!strcmp(arg, "rec")) {
-            settings.InputFormat = Recordings::Format::Rec;
-        } else if (!strcmp(arg, "tibiacast")) {
-            settings.InputFormat = Recordings::Format::Tibiacast;
-        } else if (!strcmp(arg, "tmv1")) {
-            settings.InputFormat = Recordings::Format::TibiaMovie1;
-        } else if (!strcmp(arg, "tmv2")) {
-            settings.InputFormat = Recordings::Format::TibiaMovie2;
-        } else if (!strcmp(arg, "trp")) {
-            settings.InputFormat = Recordings::Format::TibiaReplay;
-        } else if (!strcmp(arg, "ttm")) {
-            settings.InputFormat = Recordings::Format::TibiaTimeMachine;
-        } else if (!strcmp(arg, "yatc")) {
-            settings.InputFormat = Recordings::Format::YATC;
-        } else {
-            argp_error(state,
-                       "input-format must be 'cam', 'rec', 'tibiacast', "
-                       "'tmv1', 'tmv2', 'trp', 'ttm', or 'yatc'");
-        }
-
-        break;
-    case ARGUMENT_INPUT_PARTIAL:
-        /* input-partial */
-        settings.InputRecovery = trc::Recordings::Recovery::PartialReturn;
-        break;
-    case ARGUMENT_INPUT_VERSION:
-        /* input-version */
-        if (sscanf(arg,
-                   "%u.%u.%u",
-                   &settings.DesiredTibiaVersion.Major,
-                   &settings.DesiredTibiaVersion.Minor,
-                   &settings.DesiredTibiaVersion.Preview) < 2) {
-            argp_error(state,
-                       "input-version must be in the format 'X.Y', e.g. "
-                       "'8.55'");
-        }
-        break;
-    case ARGUMENT_SKIP_CREATURE_PRESENCE_EVENTS:
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureSeen);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureRemoved);
-        break;
-    case ARGUMENT_SKIP_CREATURE_UPDATE_EVENTS:
-        settings.SkippedEvents.insert(
-                trc::Events::Type::CreatureGuildMembersUpdated);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::CreatureHeadingUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureHealthUpdated);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::CreatureImpassableUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureLightUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureMoved);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::CreatureNPCCategoryUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureOutfitUpdated);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::CreaturePvPHelpersUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureShieldUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureSkullUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureSpeedUpdated);
-        break;
-    case ARGUMENT_SKIP_EFFECT_EVENTS:
-        settings.SkippedEvents.insert(trc::Events::Type::GraphicalEffectPopped);
-        settings.SkippedEvents.insert(trc::Events::Type::NumberEffectPopped);
-        settings.SkippedEvents.insert(trc::Events::Type::MissileFired);
-        break;
-    case ARGUMENT_SKIP_INVENTORY_EVENTS:
-        settings.SkippedEvents.insert(trc::Events::Type::ContainerAddedItem);
-        settings.SkippedEvents.insert(trc::Events::Type::ContainerClosed);
-        settings.SkippedEvents.insert(trc::Events::Type::ContainerOpened);
-        settings.SkippedEvents.insert(trc::Events::Type::ContainerRemovedItem);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::ContainerTransformedItem);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::PlayerInventoryUpdated);
-        break;
-    case ARGUMENT_SKIP_MESSAGE_EVENTS:
-        settings.SkippedEvents.insert(trc::Events::Type::ChannelClosed);
-        settings.SkippedEvents.insert(trc::Events::Type::ChannelListUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::ChannelOpened);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureSpoke);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::CreatureSpokeInChannel);
-        settings.SkippedEvents.insert(trc::Events::Type::CreatureSpokeOnMap);
-        settings.SkippedEvents.insert(trc::Events::Type::StatusMessageReceived);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::StatusMessageReceivedInChannel);
-        break;
-    case ARGUMENT_SKIP_PLAYER_UPDATE_EVENTS:
-        settings.SkippedEvents.insert(
-                trc::Events::Type::PlayerBlessingsUpdated);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::PlayerDataBasicUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::PlayerDataUpdated);
-        settings.SkippedEvents.insert(
-                trc::Events::Type::PlayerHotkeyPresetUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::PlayerMoved);
-        settings.SkippedEvents.insert(trc::Events::Type::PlayerSkillsUpdated);
-        break;
-    case ARGUMENT_SKIP_TERRAIN_EVENTS:
-        settings.SkippedEvents.insert(trc::Events::Type::TileUpdated);
-        settings.SkippedEvents.insert(trc::Events::Type::TileObjectAdded);
-        settings.SkippedEvents.insert(trc::Events::Type::TileObjectRemoved);
-        settings.SkippedEvents.insert(trc::Events::Type::TileObjectTransformed);
-        break;
-    case ARGUMENT_DRY_RUN:
-        settings.DryRun = true;
-        break;
-    default:
-        return ARGP_ERR_UNKNOWN;
-    }
-
-    return 0;
-}
-
-static struct argp argp = {options,
-                           parse_option,
-                           "data_folder input_path output_path",
-                           "tibiarc-miner -- a program for converting Tibia "
-                           "packet captures to JSON"};
-
-static int parse_arguments(int argc,
-                           char **argv,
-                           struct parsed_arguments *out) {
-    if (argp_parse(&argp, argc, argv, 0, NULL, out) != 0) {
-        return 1;
-    }
-
-    return 0;
-}
-#else /* !defined(__GLIBC__)*/
-static int parse_arguments(int argc,
-                           char **argv,
-                           struct parsed_arguments *out) {
-    if (argc == 4) {
-        out->Paths[0] = argv[1];
-        out->Paths[1] = argv[2];
-        out->Paths[2] = argv[3];
-        return 0;
-    }
-
-    return 1;
-}
-#endif
-
 int main(int argc, char **argv) {
     /* Set up some sane defaults. */
-    struct parsed_arguments parsed = {
-            .Settings = {.InputFormat = trc::Recordings::Format::Unknown,
-                         .InputRecovery = trc::Recordings::Recovery::None,
+    Serializer::Settings settings = {.InputFormat = Recordings::Format::Unknown,
+                                     .InputRecovery =
+                                             Recordings::Recovery::None,
 
-                         .StartTime = 0,
-                         .EndTime = std::numeric_limits<int>::max(),
+                                     .StartTime = 0,
+                                     .EndTime = std::numeric_limits<int>::max(),
 
-                         .DryRun = false}};
+                                     .DryRun = false};
 
-    if (parse_arguments(argc, argv, &parsed)) {
-        return 1;
-    }
+    auto paths = CLI::Process(
+            argc,
+            argv,
+            "tibiarc-miner -- a program for converting Tibia packet captures "
+            "to JSON",
+            "tibiarc-miner 0.3",
+            {"data_folder", "input_path"},
+            {
+                    {"end-time",
+                     {"when to stop encoding, in milliseconds relative to "
+                      "start",
+                      {"end_ms"},
+                      [&](const CLI::Range &args) {
+                          if (sscanf(args[0].c_str(),
+                                     "%i",
+                                     &settings.EndTime) != 1 ||
+                              settings.EndTime < 0) {
+                              throw "end-time must be a time in milliseconds";
+                          }
+                      }}},
+                    {"start-time",
+                     {"when to start encoding, in milliseconds relative "
+                      "to start",
+                      {"start_ms"},
+                      [&](const CLI::Range &args) {
+                          if (sscanf(args[0].c_str(),
+                                     "%i",
+                                     &settings.StartTime) != 1 ||
+                              settings.StartTime < 0) {
+                              throw "start-time must be a time in milliseconds";
+                          }
+                      }}},
+
+                    {"input-format",
+                     {"the format of the recording, 'cam', 'rec', 'tibiacast', "
+                      "'tmv1', 'tmv2', 'trp', or 'yatc'.",
+                      {"format"},
+                      [&](const CLI::Range &args) {
+                          const auto &format = args[0];
+
+                          if (format == "cam") {
+                              settings.InputFormat = Recordings::Format::Cam;
+                          } else if (format == "rec") {
+                              settings.InputFormat = Recordings::Format::Rec;
+                          } else if (format == "tibiacast") {
+                              settings.InputFormat =
+                                      Recordings::Format::Tibiacast;
+                          } else if (format == "tmv1") {
+                              settings.InputFormat =
+                                      Recordings::Format::TibiaMovie1;
+                          } else if (format == "tmv2") {
+                              settings.InputFormat =
+                                      Recordings::Format::TibiaMovie2;
+                          } else if (format == "trp") {
+                              settings.InputFormat =
+                                      Recordings::Format::TibiaReplay;
+                          } else if (format == "ttm") {
+                              settings.InputFormat =
+                                      Recordings::Format::TibiaTimeMachine;
+                          } else if (format == "yatc") {
+                              settings.InputFormat = Recordings::Format::YATC;
+                          } else {
+                              throw "input-format must be 'cam', 'rec', "
+                                    "'tibiacast', 'tmv1', 'tmv2', 'trp', "
+                                    "'ttm', "
+                                    "or 'yatc'";
+                          }
+                      }}},
+                    {"input-partial",
+                     {"treats the recording as if it ends normally at "
+                      "the first sign of corruption, instead of "
+                      "erroring out. If --end-time is specified, error "
+                      "out if the end time cannot be reached.",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.InputRecovery =
+                                  Recordings::Recovery::PartialReturn;
+                      }}},
+                    {"input-version",
+                     {"the Tibia version of the recording, in case the "
+                      "automatic detection doesn't work",
+                      {"tibia_version"},
+                      [&](const CLI::Range &args) {
+                          if (sscanf(args[0].c_str(),
+                                     "%u.%u.%u",
+                                     &settings.DesiredTibiaVersion.Major,
+                                     &settings.DesiredTibiaVersion.Minor,
+                                     &settings.DesiredTibiaVersion.Preview) <
+                              2) {
+                              throw "input-version must be in the format "
+                                    "'X.Y', e.g. '8.55'";
+                          }
+                      }}},
+
+                    {"skip-creature-presence",
+                     {"skips creature presence events",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureSeen);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureRemoved);
+                      }}},
+                    {"skip-creature-updates",
+                     {"skips creature update events (e.g. movement, health)",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::
+                                          CreatureGuildMembersUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureHeadingUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureHealthUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureImpassableUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureLightUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureMoved);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::
+                                          CreatureNPCCategoryUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureOutfitUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreaturePvPHelpersUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureShieldUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureSkullUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureSpeedUpdated);
+                      }}},
+                    {"skip-effects",
+                     {"skips effect events (e.g. missiles, poofs)",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::GraphicalEffectPopped);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::NumberEffectPopped);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::MissileFired);
+                      }}},
+                    {"skip-inventory",
+                     {"skips inventory events (e.g. containers)",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ContainerAddedItem);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ContainerClosed);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ContainerOpened);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ContainerRemovedItem);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ContainerTransformedItem);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerInventoryUpdated);
+                      }}},
+                    {"skip-messages",
+                     {"skips message events",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ChannelClosed);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ChannelListUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::ChannelOpened);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureSpoke);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureSpokeInChannel);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::CreatureSpokeOnMap);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::StatusMessageReceived);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::
+                                          StatusMessageReceivedInChannel);
+                      }}},
+                    {"skip-player-updates",
+                     {"skips player update events (e.g. movement, skills)",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerBlessingsUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerDataBasicUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerDataUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerHotkeyPresetUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerMoved);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::PlayerSkillsUpdated);
+                      }}},
+                    {"skip-player-terrain",
+                     {"skips terrain events",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::TileUpdated);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::TileObjectAdded);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::TileObjectRemoved);
+                          settings.SkippedEvents.insert(
+                                  trc::Events::Type::TileObjectTransformed);
+                      }}},
+                    {"dry-run",
+                     {"suppress output while still generating it. This is only"
+                      "intended for testing",
+                      {},
+                      [&]([[maybe_unused]] const CLI::Range &args) {
+                          settings.DryRun = true;
+                      }}},
+            });
 
     try {
-        trc::Serializer::Serialize(parsed.Settings,
-                                   parsed.Paths[0],
-                                   parsed.Paths[1],
-                                   std::cout);
+        trc::Serializer::Serialize(settings, paths[0], paths[1], std::cout);
     } catch (const trc::ErrorBase &error) {
         std::cerr << "Unrecoverable error (" << error.Description() << ")"
                   << std::endl;

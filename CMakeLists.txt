@@ -193,6 +193,7 @@ add_executable(converter
   "converter/encoding.hpp"
   "converter/exporter.cpp"
   "converter/exporter.hpp"
+  "utils/cli.hpp"
   "utils/memoryfile.cpp"
   "utils/memoryfile.hpp"
 )
@@ -256,6 +257,7 @@ add_executable(miner
   "miner/miner.cpp"
   "miner/serializer.cpp"
   "miner/serializer.hpp"
+  "utils/cli.hpp"
   "utils/memoryfile.cpp"
   "utils/memoryfile.hpp"
 )

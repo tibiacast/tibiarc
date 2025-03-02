@@ -39,7 +39,9 @@ function(add_converter_test folder version recording)
              --output-backend inert
              --frame-rate 1
              --frame-skip 120
-             "${folder}/data" "${folder}/${recording}")
+             "${folder}/data"
+             "${folder}/${recording}"
+             "inert")
 endfunction()
 
 function(add_encode_test folder version recording)
@@ -51,7 +53,7 @@ function(add_encode_test folder version recording)
     add_test(NAME "encode: ${version}/${recording}"
              COMMAND converter
                --input-version ${version}
-               --resolution 640x352
+               --resolution 640 352
                --output-format image2
                --output-encoding bmp
                --output-flags "update=1"
@@ -73,7 +75,9 @@ function(add_graveyard_test data folder version recording)
              --output-backend inert
              --frame-rate 1
              --frame-skip 120
-             "${data}" "${folder}/${recording}")
+             "${data}"
+             "${folder}/${recording}"
+             "inert")
   set_property(TEST "graveyard-fail: ${version}/${recording}"
                PROPERTY WILL_FAIL true)
 
@@ -88,7 +92,9 @@ function(add_graveyard_test data folder version recording)
              --output-backend inert
              --frame-rate 1
              --frame-skip 120
-             "${data}" "${folder}/${recording}")
+             "${data}"
+             "${folder}/${recording}"
+             "inert")
 endfunction()
 
 function(add_miner_test folder version recording)
