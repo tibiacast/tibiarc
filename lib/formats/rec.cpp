@@ -223,6 +223,13 @@ std::unique_ptr<Recording> Read(const DataReader &file,
         Demuxer demuxer(2);
 
         for (uint32_t i = 0; i < state.FragmentCount; i++) {
+            /* Consider recordings that are truncated exactly at the last frame
+             * boundary; this appears to be a common enough failure that I
+             * suspect it's some sort of race condition in the recorder. */
+            if (i == (state.FragmentCount - 1) && reader.Remaining() == 0) {
+                break;
+            }
+
             if (state.FrameLength == 2) {
                 state.Fragment.Length = reader.ReadU16();
             } else {
