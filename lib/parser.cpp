@@ -558,6 +558,9 @@ void Parser::ParseFullMapDescription(DataReader &reader, EventList &events) {
 void Parser::ParseInitialization(DataReader &reader, EventList &events) {
     auto &event = AddEvent<WorldInitialized>(events);
 
+    /* Known creatures must be cleared in case we've relogged. */
+    KnownCreatures_.clear();
+
     event.PlayerId = reader.ReadU32();
     event.BeatDuration = reader.ReadU16();
 
