@@ -267,6 +267,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
          {Type::PlayerMoved, "PlayerMoved"},
          {Type::PlayerInventoryUpdated, "PlayerInventoryUpdated"},
          {Type::PlayerBlessingsUpdated, "PlayerBlessingsUpdated"},
+         {Type::PlayerDied, "PlayerDied"},
          {Type::PlayerHotkeyPresetUpdated, "PlayerHotkeyPresetUpdated"},
          {Type::PlayerDataBasicUpdated, "PlayerDataBasicUpdated"},
          {Type::PlayerDataUpdated, "PlayerDataUpdated"},
@@ -445,6 +446,20 @@ static json ToJSON(const Version &version,
 static json ToJSON(const Version &version,
                    const PlayerBlessingsUpdated &event) {
     return json{{"Blessings", event.Blessings}};
+}
+
+static json ToJSON(const Version &version, const PlayerDied &event) {
+    json j{};
+
+    if (version.Protocol.ExtendedDeathDialog) {
+        j["Type"] = event.Type;
+
+        if (version.Protocol.UnfairFightReduction) {
+            j["Reduction"] = event.Reduction;
+        }
+    }
+
+    return j;
 }
 
 static json ToJSON(const Version &version,
@@ -794,6 +809,9 @@ static json ToJSON(const Version &version, const Events::Base &base) {
     case Events::Type::PlayerBlessingsUpdated:
         j = ToJSON(version,
                    static_cast<const Events::PlayerBlessingsUpdated &>(base));
+        break;
+    case Events::Type::PlayerDied:
+        j = ToJSON(version, static_cast<const Events::PlayerDied &>(base));
         break;
     case Events::Type::PlayerHotkeyPresetUpdated:
         j = ToJSON(

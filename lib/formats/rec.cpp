@@ -26,6 +26,8 @@
 
 #include "utils.hpp"
 
+#include <algorithm>
+
 #ifndef DISABLE_OPENSSL_CRYPTO
 extern "C" {
 #    include <openssl/evp.h>
@@ -207,6 +209,69 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
     return false;
 }
 
+/* TibiCAM doesn't seem to have cared about what state things were in when
+ * dumping things into the recording, freely mixing game and login packets; the
+ * latter can appear at any time!
+ *
+ * Apparently, the Tibia client doesn't choke on this, so neither should we. */
+class RecParser : public Parser {
+public:
+    RecParser(const trc::Version &version, bool repair)
+        : Parser(version, repair) {
+    }
+
+    Parser::EventList ParseLogin(DataReader &reader) {
+        while (reader.Remaining() > 0) {
+            try {
+                auto peek = reader.Peek<uint32_t>();
+
+                if ((peek & 0xFF) == 0x0A) {
+                    auto stringLength = (peek >> 8) & 0xFFFF;
+                    auto firstChar = peek >> 24;
+
+                    if ((stringLength + 3) == reader.Remaining() &&
+                        CheckRange(firstChar, 'A', 'Z')) {
+                        DataReader lookAhead = reader;
+
+                        lookAhead.Skip(1);
+                        auto string = lookAhead.ReadString();
+
+                        if (std::all_of(string.cbegin(),
+                                        string.cend(),
+                                        [](auto character) {
+                                            return character == '\n' ||
+                                                   character >= ' ';
+                                        })) {
+                            reader = lookAhead;
+                            continue;
+                        }
+                    }
+                }
+            } catch ([[maybe_unused]] const InvalidDataError &e) {
+                /* */
+            }
+
+            return Parser::Parse(reader);
+        }
+
+        return {};
+    }
+
+    Parser::EventList Parse(DataReader &reader) {
+        const auto backtrack = reader;
+
+        try {
+            return Parser::Parse(reader);
+        } catch ([[maybe_unused]] const InvalidDataError &e) {
+            /* This is either a legit parse error or an unexpected login-state
+             * packet; try to recover by handling the latter. */
+            reader = backtrack;
+
+            return ParseLogin(reader);
+        }
+    }
+};
+
 std::unique_ptr<Recording> Read(const DataReader &file,
                                 const Version &version,
                                 Recovery recovery) {
@@ -219,7 +284,7 @@ std::unique_ptr<Recording> Read(const DataReader &file,
     auto recording = std::make_unique<Recording>();
 
     try {
-        Parser parser(version, recovery == Recovery::Repair);
+        RecParser parser(version, recovery == Recovery::Repair);
         Demuxer demuxer(2);
 
         for (uint32_t i = 0; i < state.FragmentCount; i++) {

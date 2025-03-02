@@ -290,6 +290,9 @@ void PlayerBlessingsUpdated::Update(Gamestate &gamestate) {
     gamestate.Player.Blessings = Blessings;
 }
 
+void PlayerDied::Update([[maybe_unused]] Gamestate &gamestate) {
+}
+
 void PlayerHotkeyPresetUpdated::Update(Gamestate &gamestate) {
     gamestate.Player.HotkeyPreset = HotkeyPreset;
 }

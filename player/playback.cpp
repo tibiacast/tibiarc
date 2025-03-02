@@ -57,6 +57,19 @@ Playback::Playback(const DataReader &file,
     Gamestate = std::make_unique<trc::Gamestate>(*Version);
 
     Needle = Recording->Frames.cbegin();
+    Stabilize();
+}
+
+void Playback::Stabilize() {
+    /* Fast-forward until the game state is sufficiently initialized. */
+    while (!Gamestate->Creatures.contains(Gamestate->Player.Id) &&
+           Needle != Recording->Frames.cend()) {
+        for (auto &event : Needle->Events) {
+            event->Update(*Gamestate);
+        }
+
+        Needle = std::next(Needle);
+    }
 }
 
 uint32_t Playback::GetPlaybackTick() {
@@ -109,15 +122,7 @@ void Playback::Skip(int32_t by) {
         Gamestate->Reset();
         Gamestate->CurrentTick = 0;
 
-        /* Fast-forward until the game state is sufficiently initialized. */
-        while (!Gamestate->Creatures.contains(Gamestate->Player.Id) &&
-               Needle != Recording->Frames.cend()) {
-            for (auto &event : Needle->Events) {
-                event->Update(*Gamestate);
-            }
-
-            Needle = std::next(Needle);
-        }
+        Stabilize();
 
         if (BaseTick < -by) {
             BaseTick = 0;

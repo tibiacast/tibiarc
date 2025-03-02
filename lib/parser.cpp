@@ -1901,13 +1901,14 @@ void Parser::ParseMarketBrowse(DataReader &reader,
 
 void Parser::ParseDeathDialog(DataReader &reader,
                               [[maybe_unused]] EventList &events) {
+    auto &event = AddEvent<PlayerDied>(events);
+
     if (Version_.Protocol.ExtendedDeathDialog) {
-        uint8_t dialogType = reader.ReadU8();
+        event.Type = reader.ReadU8();
 
         if (Version_.Protocol.UnfairFightReduction) {
-            if (dialogType == 0) {
-                /* Reduction in percent? */
-                reader.SkipU8();
+            if (event.Type == 0) {
+                event.Reduction = reader.ReadU8();
             }
         }
     }

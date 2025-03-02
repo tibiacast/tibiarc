@@ -30,7 +30,10 @@
 #include "gamestate.hpp"
 
 namespace trc {
-struct Playback {
+class Playback {
+    void Stabilize();
+
+public:
     std::unique_ptr<const trc::Version> Version;
     std::unique_ptr<trc::Gamestate> Gamestate;
     std::unique_ptr<Recordings::Recording> Recording;
