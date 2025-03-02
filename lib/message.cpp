@@ -135,7 +135,6 @@ void MessageList::AddMessage(MessageMode type,
                      position,
                      author,
                      text,
-                     tick,
                      tick + MESSAGE_DISPLAY_TIME);
 }
 
