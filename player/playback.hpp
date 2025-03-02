@@ -21,13 +21,14 @@
 #ifndef PLAYER_PLAYBACK_H
 #define PLAYER_PLAYBACK_H
 
-#include <cstdint>
-
 #include "memoryfile.hpp"
 #include "datareader.hpp"
 #include "versions.hpp"
 #include "recordings.hpp"
 #include "gamestate.hpp"
+
+#include <cstdint>
+#include <filesystem>
 
 namespace trc {
 class Playback {
@@ -44,7 +45,7 @@ public:
     float Scale;
 
     Playback(const DataReader &file,
-             const std::string &name,
+             const std::filesystem::path &name,
              const DataReader &pic,
              const DataReader &spr,
              const DataReader &dat,

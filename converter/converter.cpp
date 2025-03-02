@@ -162,16 +162,6 @@ int main(int argc, char **argv) {
                                     "or 'yatc'";
                           }
                       }}},
-                    {"input-partial",
-                     {"treats the recording as if it ends normally at "
-                      "the first sign of corruption, instead of "
-                      "erroring out. If --end-time is specified, error "
-                      "out if the end time cannot be reached.",
-                      {},
-                      [&]([[maybe_unused]] const CLI::Range &args) {
-                          settings.InputRecovery =
-                                  Recordings::Recovery::PartialReturn;
-                      }}},
                     {"input-version",
                      {"the Tibia version of the recording, in case the "
                       "automatic detection doesn't work",

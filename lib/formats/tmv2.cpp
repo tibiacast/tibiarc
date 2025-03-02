@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2023-2024 "John Högberg"
+ * Copyright 2023-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -71,9 +71,9 @@ void ReadNextFrame(DataReader &reader, Parser &parser, Recording &recording) {
     }
 }
 
-std::unique_ptr<Recording> Read(const DataReader &file,
-                                const Version &version,
-                                Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                 const Version &version,
+                                                 Recovery recovery) {
     DataReader reader = file;
 
     /* Magic */
@@ -99,6 +99,7 @@ std::unique_ptr<Recording> Read(const DataReader &file,
     auto decompressedSize = reader.ReadU32();
 
     auto recording = std::make_unique<Recording>();
+    bool partialReturn = false;
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
@@ -141,14 +142,12 @@ std::unique_ptr<Recording> Read(const DataReader &file,
             throw InvalidDataError();
         }
     } catch ([[maybe_unused]] const InvalidDataError &e) {
-        if (recovery != Recovery::PartialReturn) {
-            throw;
-        }
+        partialReturn = true;
     }
 
     recording->Runtime = recording->Frames.back().Timestamp;
 
-    return recording;
+    return std::make_pair(std::move(recording), partialReturn);
 }
 
 } // namespace TibiaMovie2

@@ -20,6 +20,8 @@
 
 #include "playback.hpp"
 
+#include <iostream>
+
 extern "C" {
 #include <SDL.h>
 }
@@ -27,7 +29,7 @@ extern "C" {
 namespace trc {
 
 Playback::Playback(const DataReader &file,
-                   const std::string &name,
+                   const std::filesystem::path &name,
                    const DataReader &pic,
                    const DataReader &spr,
                    const DataReader &dat,
@@ -53,7 +55,14 @@ Playback::Playback(const DataReader &file,
                                              pic,
                                              spr,
                                              dat);
-    Recording = Recordings::Read(format, file, *Version);
+
+    auto [recording, partial] = Recordings::Read(format, file, *Version);
+
+    if (partial) {
+        throw InvalidDataError();
+    }
+
+    Recording = std::move(recording);
     Gamestate = std::make_unique<trc::Gamestate>(*Version);
 
     Needle = Recording->Frames.cbegin();
@@ -97,11 +106,10 @@ void Playback::ProcessPackets() {
 
 void Playback::Toggle() {
     if (Scale > 0.0) {
-        SetSpeed(0.0);
-        puts("Playback paused");
+        std::cout << "Playback paused" << std::endl;
     } else {
         SetSpeed(1.0);
-        puts("Playback resumed");
+        std::cout << "Playback resumed" << std::endl;
     }
 }
 
@@ -110,7 +118,7 @@ void Playback::SetSpeed(float speed) {
     ScaleTick = SDL_GetTicks();
     Scale = speed;
 
-    printf("Speed changed to %f\n", speed);
+    std::cout << "Speed changed to " << speed << std::endl;
 }
 
 void Playback::Skip(int32_t by) {

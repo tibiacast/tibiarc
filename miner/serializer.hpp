@@ -23,9 +23,9 @@
 #include "recordings.hpp"
 #include "events.hpp"
 
-#include <unordered_set>
-#include <climits>
+#include <filesystem>
 #include <iostream>
+#include <unordered_set>
 
 namespace trc {
 namespace Serializer {
@@ -47,8 +47,8 @@ struct Settings {
 };
 
 void Serialize(const Settings &settings,
-               const std::string &dataFolder,
-               const std::string &inputPath,
+               const std::filesystem::path &dataFolder,
+               const std::filesystem::path &inputPath,
                std::ostream &output);
 
 } // namespace Serializer

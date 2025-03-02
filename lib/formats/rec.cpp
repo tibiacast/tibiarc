@@ -272,9 +272,9 @@ public:
     }
 };
 
-std::unique_ptr<Recording> Read(const DataReader &file,
-                                const Version &version,
-                                Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                 const Version &version,
+                                                 Recovery recovery) {
     DataReader reader = file;
 
     auto containerVersion = reader.ReadU16();
@@ -282,6 +282,7 @@ std::unique_ptr<Recording> Read(const DataReader &file,
 
     struct State state(containerVersion, fragmentCount);
     auto recording = std::make_unique<Recording>();
+    bool partialReturn = false;
 
     try {
         RecParser parser(version, recovery == Recovery::Repair);
@@ -324,15 +325,13 @@ std::unique_ptr<Recording> Read(const DataReader &file,
 
         demuxer.Finish();
     } catch ([[maybe_unused]] const InvalidDataError &e) {
-        if (recovery != Recovery::PartialReturn) {
-            throw;
-        }
+        partialReturn = true;
     }
 
     recording->Runtime =
             std::max(recording->Runtime, recording->Frames.back().Timestamp);
 
-    return recording;
+    return std::make_pair(std::move(recording), partialReturn);
 }
 
 } // namespace Rec

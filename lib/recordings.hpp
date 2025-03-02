@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2023-2024 "John Högberg"
+ * Copyright 2023-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -27,6 +27,7 @@
 #include "versions_decl.hpp"
 #include "events.hpp"
 
+#include <filesystem>
 #include <memory>
 #include <list>
 
@@ -44,7 +45,7 @@ enum class Format {
     Unknown
 };
 
-enum class Recovery { None, PartialReturn, Repair };
+enum class Recovery { None, Repair };
 
 struct Recording {
     struct Frame {
@@ -56,7 +57,7 @@ struct Recording {
     std::list<Frame> Frames;
 };
 
-Format GuessFormat(std::string path, const DataReader &file);
+Format GuessFormat(const std::filesystem::path &path, const DataReader &file);
 std::string FormatName(Format format);
 
 bool QueryTibiaVersion(Format format,
@@ -64,10 +65,11 @@ bool QueryTibiaVersion(Format format,
                        int &major,
                        int &minor,
                        int &preview);
-std::unique_ptr<Recording> Read(Format format,
-                                const DataReader &file,
-                                const Version &version,
-                                Recovery recovery = Recovery::None);
+std::pair<std::unique_ptr<Recording>, bool> Read(
+        Format format,
+        const DataReader &file,
+        const Version &version,
+        Recovery recovery = Recovery::None);
 } // namespace Recordings
 } // namespace trc
 

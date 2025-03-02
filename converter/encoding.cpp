@@ -35,7 +35,7 @@ std::unique_ptr<Encoder> Open(Backend backend,
                               int width,
                               int height,
                               int frameRate,
-                              const std::string &path) {
+                              const std::filesystem::path &path) {
     switch (backend) {
     case Backend::Inert:
         return std::make_unique<Inert>();

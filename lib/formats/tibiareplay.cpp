@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2023-2024 "John Högberg"
+ * Copyright 2023-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -53,9 +53,9 @@ bool QueryTibiaVersion(const DataReader &file,
     return true;
 }
 
-std::unique_ptr<Recording> Read(const DataReader &file,
-                                const Version &version,
-                                Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                 const Version &version,
+                                                 Recovery recovery) {
     DataReader reader = file;
 
     auto magic = reader.ReadU16();
@@ -67,6 +67,7 @@ std::unique_ptr<Recording> Read(const DataReader &file,
     reader.SkipU16();
 
     auto recording = std::make_unique<Recording>();
+    bool partialReturn = false;
 
     recording->Runtime = reader.ReadU32();
     auto frames = reader.ReadU32();
@@ -82,14 +83,11 @@ std::unique_ptr<Recording> Read(const DataReader &file,
                                            parser.Parse(packetReader));
         }
     } catch ([[maybe_unused]] const InvalidDataError &e) {
-        if (recovery != Recovery::PartialReturn) {
-            throw;
-        }
+        partialReturn = true;
     }
 
-    return recording;
+    return std::make_pair(std::move(recording), partialReturn);
 }
-
 } // namespace TibiaReplay
 } // namespace Recordings
 } // namespace trc

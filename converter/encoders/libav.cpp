@@ -76,7 +76,7 @@ LibAV::LibAV(const std::string &format,
              int width,
              int height,
              int frameRate,
-             const std::string &path) {
+             const std::filesystem::path &path) {
     struct AVDictionaryWrapper {
         AVDictionary *Dictionary = nullptr;
 

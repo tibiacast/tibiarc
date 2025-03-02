@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2023-2024 "John Högberg"
+ * Copyright 2023-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -26,7 +26,8 @@
 
 namespace trc {
 namespace Recordings {
-static const std::unordered_map<Format, std::tuple<std::string, std::string>>
+static const std::unordered_map<Format,
+                                std::tuple<std::string, std::filesystem::path>>
         FormatDescriptions({{Format::Cam, {"cam", ".cam"}},
                             {Format::Rec, {"rec", ".rec"}},
                             {Format::Tibiacast, {"tibiacast", ".recording"}},
@@ -41,9 +42,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace Cam
 
 namespace Rec {
@@ -51,9 +52,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace Rec
 
 namespace Tibiacast {
@@ -61,9 +62,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace Tibiacast
 
 namespace TibiaMovie1 {
@@ -71,9 +72,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace TibiaMovie1
 
 namespace TibiaMovie2 {
@@ -81,9 +82,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace TibiaMovie2
 
 namespace TibiaReplay {
@@ -91,9 +92,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace TibiaReplay
 
 namespace TibiaTimeMachine {
@@ -101,9 +102,9 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace TibiaTimeMachine
 
 namespace YATC {
@@ -111,12 +112,12 @@ extern bool QueryTibiaVersion(const DataReader &file,
                               int &major,
                               int &minor,
                               int &preview);
-extern std::unique_ptr<Recording> Read(const DataReader &file,
-                                       const Version &version,
-                                       Recovery recovery);
+extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                        const Version &version,
+                                                        Recovery recovery);
 } // namespace YATC
 
-Format GuessFormat(std::string path, const DataReader &file) {
+Format GuessFormat(const std::filesystem::path &path, const DataReader &file) {
     auto magic = file.Peek<uint32_t>();
 
     switch (magic) {
@@ -134,7 +135,7 @@ Format GuessFormat(std::string path, const DataReader &file) {
     for (const auto &[format, pair] : FormatDescriptions) {
         [[maybe_unused]] const auto &[_name, extension] = pair;
 
-        if (path.ends_with(extension)) {
+        if (path.extension() == extension) {
             return format;
         }
     }
@@ -169,10 +170,10 @@ bool QueryTibiaVersion(Format format,
     }
 }
 
-std::unique_ptr<Recording> Read(Format format,
-                                const DataReader &file,
-                                const Version &version,
-                                Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(Format format,
+                                                 const DataReader &file,
+                                                 const Version &version,
+                                                 Recovery recovery) {
     switch (format) {
     case Format::Cam:
         return Cam::Read(file, version, recovery);

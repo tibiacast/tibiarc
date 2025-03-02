@@ -1,6 +1,6 @@
 /*
  * Copyright 2011-2016 "Silver Squirrel Software Handelsbolag"
- * Copyright 2023-2024 "John Högberg"
+ * Copyright 2023-2025 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -35,12 +35,13 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
     return false;
 }
 
-std::unique_ptr<Recording> Read(const DataReader &file,
-                                const Version &version,
-                                Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
+                                                 const Version &version,
+                                                 Recovery recovery) {
     DataReader reader = file;
 
     auto recording = std::make_unique<Recording>();
+    bool partialReturn = false;
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
@@ -57,14 +58,12 @@ std::unique_ptr<Recording> Read(const DataReader &file,
             throw InvalidDataError();
         }
     } catch ([[maybe_unused]] const InvalidDataError &e) {
-        if (recovery != Recovery::PartialReturn) {
-            throw;
-        }
+        partialReturn = true;
     }
 
     recording->Runtime = recording->Frames.back().Timestamp;
 
-    return recording;
+    return std::make_pair(std::move(recording), partialReturn);
 }
 
 } // namespace YATC

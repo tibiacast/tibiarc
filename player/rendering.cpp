@@ -23,6 +23,8 @@
 #include "versions.hpp"
 #include "textrenderer.hpp"
 
+#include <iostream>
+
 namespace trc {
 Rendering::Wrapper<SDL_Texture> Rendering::CreateTexture(int width,
                                                          int height) {
@@ -99,9 +101,9 @@ void Rendering::HandleResize() {
 
     SDL_GetRendererOutputSize(SdlRenderer.get(), &width, &height);
 
-    printf("handle resize: %dx%d\n", width, height);
+    std::cout << "handle resize: " << width << "x" << height << std::endl;
     if (RenderOptions.Width == width && RenderOptions.Height == height) {
-        fprintf(stderr, "bogus resize event?\n");
+        std::cerr << "bogus resize event?" << std::endl;
         return;
     }
 
