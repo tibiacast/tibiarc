@@ -1066,6 +1066,11 @@ void Parser::ParsePlayerDataBasic(DataReader &reader, EventList &events) {
 void Parser::ParsePlayerDataCurrent(DataReader &reader, EventList &events) {
     auto &event = AddEvent<PlayerDataUpdated>(events);
 
+    /* We do not verify that these values look okay; many .cam recordings have
+     * weird-looking initialization data because the recorder grabs the initial
+     * state from memory, resulting in torn values that are fixed soon after.
+     *
+     * The official client is OK with this, so we need to match that. */
     event.Health = reader.ReadS16();
     event.MaxHealth = reader.ReadS16();
 
@@ -1101,10 +1106,6 @@ void Parser::ParsePlayerDataCurrent(DataReader &reader, EventList &events) {
 
     event.Mana = reader.ReadS16();
     event.MaxMana = reader.ReadS16();
-
-    /* Mana can be negative for de-leveled mages. */
-    ParseAssert(CheckRange(event.Mana, 0, event.MaxMana) ||
-                (event.MaxMana < 0 && event.Mana == 0));
 
     event.MagicLevel = reader.ReadU8();
 
