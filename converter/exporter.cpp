@@ -247,18 +247,22 @@ static void ConvertVideo(
         currentFrame = std::next(currentFrame);
     }
 
-    nextTimestamp = currentFrame->Timestamp;
+    if (currentFrame != recording->Frames.cend()) {
+        nextTimestamp = currentFrame->Timestamp;
+    }
 
     while (frameTimestamp <= endTime) {
-        if (currentFrame != recording->Frames.end()) {
+        while (nextTimestamp <= frameTimestamp &&
+               currentFrame != recording->Frames.cend()) {
             for (const auto &event : currentFrame->Events) {
                 event->Update(gamestate);
             }
 
             currentFrame = std::next(currentFrame);
-            if (currentFrame != recording->Frames.end()) {
-                nextTimestamp = currentFrame->Timestamp;
-            }
+        }
+
+        if (currentFrame != recording->Frames.cend()) {
+            nextTimestamp = currentFrame->Timestamp;
         }
 
         do {
