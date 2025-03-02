@@ -134,7 +134,7 @@ if(TIBIARC_SANITIZE)
   target_link_options(tibiarc PUBLIC -fsanitize=address,undefined)
 endif()
 
-option(TIBIARC_COVERAGE "Whether to enable code coverage" ON)
+option(TIBIARC_COVERAGE "Whether to enable code coverage" OFF)
 if(TIBIARC_COVERAGE)
   target_compile_options(tibiarc PUBLIC -coverage)
   target_link_options(tibiarc PUBLIC -coverage)
