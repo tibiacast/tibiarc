@@ -28,14 +28,9 @@
 #include "versions.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 #include "utils.hpp"
-
-#ifdef _WIN32
-#    define DIR_SEP "\\"
-#else
-#    define DIR_SEP "/"
-#endif
 
 #define SIDEBAR_WIDTH 160
 
@@ -247,18 +242,22 @@ static void ConvertVideo(
         currentFrame = std::next(currentFrame);
     }
 
-    nextTimestamp = currentFrame->Timestamp;
+    if (currentFrame != recording->Frames.cend()) {
+        nextTimestamp = currentFrame->Timestamp;
+    }
 
     while (frameTimestamp <= endTime) {
-        if (currentFrame != recording->Frames.end()) {
+        while (nextTimestamp <= frameTimestamp &&
+               currentFrame != recording->Frames.cend()) {
             for (const auto &event : currentFrame->Events) {
                 event->Update(gamestate);
             }
 
             currentFrame = std::next(currentFrame);
-            if (currentFrame != recording->Frames.end()) {
-                nextTimestamp = currentFrame->Timestamp;
-            }
+        }
+
+        if (currentFrame != recording->Frames.cend()) {
+            nextTimestamp = currentFrame->Timestamp;
         }
 
         do {
@@ -305,12 +304,8 @@ static void ConvertVideo(
             encoder.WriteFrame(outputCanvas);
 
             if ((frameTimestamp % 500) == 0) {
-                fprintf(stdout,
-                        "progress: %u / %u / %u\n",
-                        frameTimestamp,
-                        startTime,
-                        endTime);
-                fflush(stdout);
+                std::cout << "progress: " << frameTimestamp << " / "
+                          << startTime << " / " << endTime << std::endl;
             }
         } while (frameTimestamp <= std::min(nextTimestamp, endTime));
     }
@@ -319,18 +314,16 @@ static void ConvertVideo(
 }
 
 static auto Open(const Settings &settings,
-                 const std::string &dataFolder,
-                 const std::string &path,
+                 const std::filesystem::path &dataFolder,
+                 const std::filesystem::path &path,
                  const DataReader &reader) {
     auto inputFormat = settings.InputFormat;
     int major, minor, preview;
 
     if (inputFormat == Recordings::Format::Unknown) {
         inputFormat = Recordings::GuessFormat(path, reader);
-        fprintf(stderr,
-                "warning: Unknown recording format, guessing %s\n",
-                Recordings::FormatName(inputFormat).c_str());
-        fflush(stderr);
+        std::cerr << "warning: Unknown recording format, guessing "
+                  << Recordings::FormatName(inputFormat) << std::endl;
     }
 
     major = settings.DesiredTibiaVersion.Major;
@@ -346,17 +339,14 @@ static auto Open(const Settings &settings,
                                            preview)) {
             throw InvalidDataError();
         }
-        fprintf(stderr,
-                "warning: Unknown recording version, guessing %i.%i (%i)\n",
-                major,
-                minor,
-                preview);
-        fflush(stderr);
+
+        std::cerr << "warning: Unknown recording version, guessing " << major
+                  << "." << minor << "(" << preview << ")" << std::endl;
     }
 
-    const MemoryFile pictures(dataFolder + DIR_SEP "Tibia.pic");
-    const MemoryFile sprites(dataFolder + DIR_SEP "Tibia.spr");
-    const MemoryFile types(dataFolder + DIR_SEP "Tibia.dat");
+    const MemoryFile pictures(dataFolder / "Tibia.pic");
+    const MemoryFile sprites(dataFolder / "Tibia.spr");
+    const MemoryFile types(dataFolder / "Tibia.dat");
 
     auto version = std::make_unique<Version>(major,
                                              minor,
@@ -364,28 +354,22 @@ static auto Open(const Settings &settings,
                                              pictures.Reader(),
                                              sprites.Reader(),
                                              types.Reader());
-    auto recording = Recordings::Read(inputFormat,
-                                      reader,
-                                      *version,
-                                      settings.InputRecovery);
+    auto [recording, partial] = Recordings::Read(inputFormat,
+                                                 reader,
+                                                 *version,
+                                                 settings.InputRecovery);
 
-    if (settings.InputRecovery == Recordings::Recovery::PartialReturn &&
-        settings.EndTime < std::numeric_limits<int>::max()) {
-        /* If both --input-partial and --end-time are specified, raise an error
-         * if the end time cannot be reached. */
-        if (recording->Frames.empty() ||
-            (recording->Frames.back().Timestamp < settings.EndTime)) {
-            throw InvalidDataError();
-        }
+    if (partial) {
+        throw InvalidDataError();
     }
 
     return std::make_tuple(std::move(recording), std::move(version));
 }
 
 void Export(const Settings &settings,
-            const std::string &dataFolder,
-            const std::string &inputPath,
-            const std::string &outputPath) {
+            const std::filesystem::path &dataFolder,
+            const std::filesystem::path &inputPath,
+            const std::filesystem::path &outputPath) {
     const MemoryFile file(inputPath);
 
     auto [recording, version] =

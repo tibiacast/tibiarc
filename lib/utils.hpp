@@ -22,7 +22,7 @@
 #define __TRC_COMMON_HPP__
 
 #include <exception>
-#include <stacktrace>
+#include <string>
 #include <type_traits>
 
 namespace trc {

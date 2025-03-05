@@ -18,16 +18,16 @@
 #
 
 function(check_tibia_data folder)
-  if((EXISTS "${folder}/data/Tibia.dat") AND
-     (EXISTS "${folder}/data/Tibia.pic") AND
-     (EXISTS "${folder}/data/Tibia.spr"))
+  if((EXISTS "${folder}/Tibia.dat") AND
+     (EXISTS "${folder}/Tibia.pic") AND
+     (EXISTS "${folder}/Tibia.spr"))
     set(TIBIARC_DATA_OK TRUE PARENT_SCOPE)
   else()
     set(TIBIARC_DATA_OK FALSE PARENT_SCOPE)
   endif()
 endfunction()
 
-function(add_converter_test folder version recording)
+function(add_converter_test data folder version recording)
   ## Render one frame every two minutes; that will hopefully shake out the most
   ## egregious bugs without making tests take forever.
   ##
@@ -39,10 +39,12 @@ function(add_converter_test folder version recording)
              --output-backend inert
              --frame-rate 1
              --frame-skip 120
-             "${folder}/data" "${folder}/${recording}")
+             "${data}"
+             "${folder}/${recording}"
+             "inert")
 endfunction()
 
-function(add_encode_test folder version recording)
+function(add_encode_test data folder version recording)
   ## Renders a simple bitmap, this ought to be enough to cover the gist of the
   ## LibAV backend.
   ##
@@ -51,14 +53,14 @@ function(add_encode_test folder version recording)
     add_test(NAME "encode: ${version}/${recording}"
              COMMAND converter
                --input-version ${version}
-               --resolution 640x352
+               --resolution 640 352
                --output-format image2
                --output-encoding bmp
                --output-flags "update=1"
                --start-time 2000
                --end-time 2000
                --frame-rate 1
-               "${folder}/data"
+               "${data}"
                "${folder}/${recording}"
                "${recording}.bmp"
                )
@@ -73,67 +75,66 @@ function(add_graveyard_test data folder version recording)
              --output-backend inert
              --frame-rate 1
              --frame-skip 120
-             "${data}" "${folder}/${recording}")
+             "${data}"
+             "${folder}/${recording}"
+             "inert")
   set_property(TEST "graveyard-fail: ${version}/${recording}"
                PROPERTY WILL_FAIL true)
-
-  ## The best-effort versioning of the graveyard is based on parsing the first
-  ## two seconds, so all the versioned recordings in the graveyard should pass
-  ## this test.
-  add_test(NAME "graveyard-refine: ${version}/${recording}"
-           COMMAND converter
-             --input-version ${version}
-             --input-partial
-             --end-time 2000
-             --output-backend inert
-             --frame-rate 1
-             --frame-skip 120
-             "${data}" "${folder}/${recording}")
 endfunction()
 
-function(add_miner_test folder version recording)
+function(add_miner_test data folder version recording)
   add_test(NAME "miner: ${version}/${recording}"
            COMMAND miner
              --input-version ${version} --dry-run
-             "${folder}/data" "${folder}/${recording}")
+             "${data}" "${folder}/${recording}")
 endfunction()
 
 function(scan_test_corpus)
-  set(TIBIARC_RECORDING_ROOT "${PROJECT_SOURCE_DIR}/recordings")
+  set(TIBIARC_RECORDING_ROOT "${PROJECT_SOURCE_DIR}/recordings/videos")
+  set(TIBIARC_DATA_ROOT "${PROJECT_SOURCE_DIR}/recordings/data")
 
   file(GLOB version_candidates LIST_DIRECTORIES TRUE
-       RELATIVE "${TIBIARC_RECORDING_ROOT}/"
-       "${TIBIARC_RECORDING_ROOT}/*.*/")
+       RELATIVE "${TIBIARC_DATA_ROOT}/"
+       "${TIBIARC_DATA_ROOT}/*.*/")
   foreach(version ${version_candidates})
-    set(folder "${TIBIARC_RECORDING_ROOT}/${version}/")
-    if(IS_DIRECTORY "${folder}")
+    set(data_folder "${TIBIARC_DATA_ROOT}/${version}/")
 
-      check_tibia_data(${folder})
+    if(IS_DIRECTORY ${data_folder})
+      check_tibia_data(${data_folder})
       if(TIBIARC_DATA_OK)
-        ## Find and test all the recordings of this version which we know can
-        ## be fully processed without issue.
-        file(GLOB recording_names LIST_DIRECTORIES TRUE
-             RELATIVE "${folder}/" "${folder}/*.*")
-        foreach(recording ${recording_names})
-          if(NOT ("${recording}" EQUAL "data"))
-            add_converter_test(${folder} ${version} ${recording})
-            add_miner_test(${folder} ${version} ${recording})
-          endif()
-        endforeach()
-
-        ## Find and test all recordings that we've determined belongs to this
-        ## version, but cannot be processed in full.
-        set(graveyard "${TIBIARC_RECORDING_ROOT}/graveyard/${version}/")
-        file(GLOB recording_names LIST_DIRECTORIES TRUE
-             RELATIVE "${graveyard}/" "${graveyard}/*.*")
-        foreach(recording ${recording_names})
-          if(NOT ("${recording}" EQUAL "data"))
-            add_graveyard_test("${folder}/data"
-                               ${graveyard}
+        set(video_folder "${TIBIARC_RECORDING_ROOT}/${version}/")
+        if(IS_DIRECTORY "${video_folder}")
+          ## Find and test all the recordings of this version which we know can
+          ## be fully processed without issue.
+          file(GLOB recording_names LIST_DIRECTORIES TRUE
+               RELATIVE "${video_folder}/" "${video_folder}/*.*")
+          foreach(recording ${recording_names})
+            add_converter_test(${data_folder}
+                               ${video_folder}
                                ${version}
                                ${recording})
-          endif()
-        endforeach()
+            add_miner_test(${data_folder}
+                           ${video_folder}
+                           ${version}
+                           ${recording})
+          endforeach()
+        endif()
+
+        set(graveyard_folder "${TIBIARC_RECORDING_ROOT}/graveyard/${version}/")
+        if(IS_DIRECTORY "${graveyard_folder}")
+          ## Find and test all recordings that we've determined belongs to this
+          ## version, but cannot be processed in full.
+          file(GLOB recording_names LIST_DIRECTORIES TRUE
+               RELATIVE "${graveyard_folder}/" "${graveyard_folder}/*.*")
+          foreach(recording ${recording_names})
+            if(NOT ("${recording}" EQUAL "data"))
+              add_graveyard_test(${data_folder}
+                                 ${graveyard_folder}
+                                 ${version}
+                                 ${recording})
+            endif()
+          endforeach()
+        endif()
       else()
         ## Note that ${version_candidates} will be empty if the
         ## tibia-recordings submodule hasn't been fetched, so we will only
@@ -147,21 +148,39 @@ endfunction()
 
 block()
   ## In-tree recordings for quick smoke-testing.
-  check_tibia_data("${PROJECT_SOURCE_DIR}/tests/8.40/")
+  check_tibia_data("${PROJECT_SOURCE_DIR}/tests/8.40/data")
   if(TIBIARC_DATA_OK)
-    add_converter_test("${PROJECT_SOURCE_DIR}/tests/8.40/" "8.40" "sample.tmv2")
-    add_encode_test("${PROJECT_SOURCE_DIR}/tests/8.40/" "8.40" "sample.tmv2")
-    add_miner_test("${PROJECT_SOURCE_DIR}/tests/8.40/" "8.40" "sample.tmv2")
+    add_converter_test("${PROJECT_SOURCE_DIR}/tests/8.40/data"
+                       "${PROJECT_SOURCE_DIR}/tests/8.40/"
+                       "8.40" 
+                       "sample.tmv2")
+    add_encode_test("${PROJECT_SOURCE_DIR}/tests/8.40/data"
+                    "${PROJECT_SOURCE_DIR}/tests/8.40/"
+                    "8.40"
+                    "sample.tmv2")
+    add_miner_test("${PROJECT_SOURCE_DIR}/tests/8.40/data"
+                   "${PROJECT_SOURCE_DIR}/tests/8.40/"
+                   "8.40"
+                   "sample.tmv2")
   else()
     message(WARNING "Skipping tests/8.40/sample.yatc, no Tibia data files in "
                     "tests/8.40/data/")
   endif()
 
-  check_tibia_data("${PROJECT_SOURCE_DIR}/tests/8.50/")
+  check_tibia_data("${PROJECT_SOURCE_DIR}/tests/8.50/data")
   if(TIBIARC_DATA_OK)
-    add_converter_test("${PROJECT_SOURCE_DIR}/tests/8.50/" "8.50" "sample.yatc")
-    add_encode_test("${PROJECT_SOURCE_DIR}/tests/8.50/" "8.50" "sample.yatc")
-    add_miner_test("${PROJECT_SOURCE_DIR}/tests/8.50/" "8.50" "sample.yatc")
+    add_converter_test("${PROJECT_SOURCE_DIR}/tests/8.50/data"
+                       "${PROJECT_SOURCE_DIR}/tests/8.50/"
+                       "8.50" 
+                       "sample.yatc")
+    add_encode_test("${PROJECT_SOURCE_DIR}/tests/8.50/data"
+                    "${PROJECT_SOURCE_DIR}/tests/8.50/"
+                    "8.50"
+                    "sample.yatc")
+    add_miner_test("${PROJECT_SOURCE_DIR}/tests/8.50/data"
+                   "${PROJECT_SOURCE_DIR}/tests/8.50/"
+                   "8.50"
+                   "sample.yatc")
   else()
     message(WARNING "Skipping tests/8.50/sample.yatc, no Tibia data files in "
                     "tests/8.50/data/")

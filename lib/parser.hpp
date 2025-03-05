@@ -53,8 +53,7 @@ private:
 
     std::unordered_set<uint32_t> KnownCreatures_;
     trc::Position Position_;
-    uint32_t PlayerId_;
-    bool Repair_;
+    [[maybe_unused]] bool Repair_;
 
     struct Repair {};
 

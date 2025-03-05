@@ -23,8 +23,8 @@
 
 #include "datareader.hpp"
 
+#include <filesystem>
 #include <cstdint>
-#include <cstdlib>
 #include <string>
 
 #if defined(_WIN32)
@@ -49,7 +49,7 @@ public:
         return DataReader(Size, View);
     }
 
-    MemoryFile(const std::string &path);
+    MemoryFile(const std::filesystem::path &path);
     ~MemoryFile();
 };
 } // namespace trc

@@ -28,12 +28,6 @@
 #include "playback.hpp"
 #include "rendering.hpp"
 
-#ifdef _WIN32
-#    define DIR_SEP "\\"
-#else
-#    define DIR_SEP "/"
-#endif
-
 using namespace trc;
 
 static std::unique_ptr<Playback> playback;
@@ -158,23 +152,25 @@ int main(int argc, char *argv[]) {
     int major = 0, minor = 0, preview = 0;
 
     if (argc < 3 || argc > 4) {
-        fprintf(stderr, "usage: %s DATA_FOLDER RECORDING [VERSION]\n", argv[0]);
+        std::cout << "usage: " << argv[0] << " DATA_FOLDER RECORDING [VERSION]"
+                  << std::endl;
         return 1;
     }
 
     if (argc == 4) {
         if (sscanf(argv[3], "%u.%u.%u", &major, &minor, &preview) < 2) {
-            fprintf(stderr,
-                    "version must be in the format 'X.Y', e.g. '8.55'\n");
+            std::cerr << "version must be in the format 'X.Y', e.g. '8.55'"
+                      << std::endl;
             return 1;
         }
     }
 
     try {
-        const std::string dataFolder = argv[1], recordingName = argv[2];
-        const MemoryFile pictures(dataFolder + DIR_SEP "Tibia.pic");
-        const MemoryFile sprites(dataFolder + DIR_SEP "Tibia.spr");
-        const MemoryFile types(dataFolder + DIR_SEP "Tibia.dat");
+        const std::filesystem::path dataFolder = argv[1],
+                                    recordingName = argv[2];
+        const MemoryFile pictures(dataFolder / "Tibia.pic");
+        const MemoryFile sprites(dataFolder / "Tibia.spr");
+        const MemoryFile types(dataFolder / "Tibia.dat");
         const MemoryFile recording(recordingName);
 
         playback = std::make_unique<Playback>(recording.Reader(),

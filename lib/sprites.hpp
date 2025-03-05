@@ -30,7 +30,7 @@
 namespace trc {
 
 /* Forward-declare Canvas to break a circular dependency. */
-struct Canvas;
+class Canvas;
 
 struct Sprite {
     int Width;

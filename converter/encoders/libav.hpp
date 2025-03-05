@@ -25,6 +25,7 @@
 
 #    include "encoding.hpp"
 
+#    include <filesystem>
 #    include <functional>
 #    include <memory>
 #    include <string>
@@ -67,7 +68,7 @@ public:
           int width,
           int height,
           int frameRate,
-          const std::string &path);
+          const std::filesystem::path &path);
     ~LibAV();
 
     virtual void WriteFrame(const Canvas &frame);

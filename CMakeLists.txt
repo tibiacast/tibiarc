@@ -42,6 +42,58 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
 
 # ########################################################################### #
+## Optional dependency handling
+# ########################################################################### #
+
+option(TIBIARC_NO_LIBAV "Explicitly disable ffmpeg" OFF)
+if(NOT TIBIARC_NO_LIBAV)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBAV IMPORTED_TARGET
+    libavcodec
+    libavformat
+    libswscale
+    libavutil
+  )
+  if(NOT LIBAV_FOUND)
+    message(WARNING "ffmpeg libraries were not found, converter will be built without ffmpeg encoder")
+  endif()
+endif()
+
+option(TIBIARC_NO_OPENMP "Explicitly disable OpenMP support" OFF)
+if(NOT TIBIARC_NO_OPENMP)
+  find_package(OpenMP QUIET)
+endif()
+
+option(TIBIARC_NO_TBB "Explicitly disable TBB support" OFF)
+if(NOT TIBIARC_NO_TBB)
+  find_package(TBB REQUIRED)
+endif()
+
+option(TIBIARC_NO_OPENSSL "Explicitly disable crypto support" OFF)
+if(NOT TIBIARC_NO_OPENSSL)
+  find_package(OpenSSL QUIET)
+  if (NOT OPENSSL_FOUND)
+    message(WARNING "libcrypto was not found, tibiarc will be built without crypto support")
+  endif()
+endif()
+
+option(TIBIARC_NO_SDL2 "Explicitly disable SDL2" OFF)
+if(NOT TIBIARC_NO_SDL2)
+  find_package(SDL2 QUIET)
+  if (NOT SDL2_FOUND)
+    message(WARNING "SDL2 was not found, converter will be built without SDL2 encoder")
+  endif()
+endif()
+
+option(TIBIARC_NO_ZLIB "Explicitly disable zlib support" OFF)
+if(NOT TIBIARC_NO_ZLIB)
+  find_package(ZLIB QUIET)
+  if (NOT ZLIB_FOUND)
+    message(WARNING "zlib was not found, tibiarc will be built without zlib support")
+  endif()
+endif()
+
+# ########################################################################### #
 ## `tibiarc` library
 # ########################################################################### #
 
@@ -71,6 +123,8 @@ add_library(tibiarc
   "lib/deps/7z/Compiler.h"
   "lib/deps/7z/LzmaDec.c"
   "lib/deps/7z/LzmaDec.h"
+  "lib/deps/7z/Lzma2Dec.c"
+  "lib/deps/7z/Lzma2Dec.h"
   "lib/deps/7z/Precomp.h"
   "lib/effect.hpp"
   "lib/events.cpp"
@@ -128,13 +182,13 @@ else()
   target_compile_options(tibiarc PRIVATE -Wall -Wextra)
 endif()
 
-option(TIBIARC_SANITIZE "Enables address/UB sanitizers" OFF)
+option(TIBIARC_SANITIZE "Whether to enable address & UB sanitizers" OFF)
 if(TIBIARC_SANITIZE)
   target_compile_options(tibiarc PUBLIC -fsanitize=address,undefined -fsanitize-trap=all)
   target_link_options(tibiarc PUBLIC -fsanitize=address,undefined)
 endif()
 
-option(TIBIARC_COVERAGE "Whether to enable code coverage" ON)
+option(TIBIARC_COVERAGE "Whether to enable code coverage" OFF)
 if(TIBIARC_COVERAGE)
   target_compile_options(tibiarc PUBLIC -coverage)
   target_link_options(tibiarc PUBLIC -coverage)
@@ -146,18 +200,12 @@ option(TIBIARC_DUMP_PIC "Dumps .pic files as bitmaps when loaded" OFF)
 if(TIBIARC_DUMP_PIC)
   target_compile_definitions(tibiarc PRIVATE DUMP_PIC)
 endif()
+
 option(TIBIARC_DUMP_ITEMS "Dumps item sprites (with properties) as bitmaps when loaded" OFF)
 if(TIBIARC_DUMP_ITEMS)
   target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
 endif()
 
-option(TIBIARC_NO_ZLIB "Explicitly disable zlib support" OFF)
-if(NOT TIBIARC_NO_ZLIB)
-  find_package(ZLIB QUIET)
-  if (NOT ZLIB_FOUND)
-    message(WARNING "zlib was not found, tibiarc will be built without zlib support")
-  endif()
-endif()
 if(ZLIB_FOUND)
   target_include_directories(tibiarc PRIVATE ${ZLIB_INCLUDE_DIRS})
   target_link_libraries(tibiarc PRIVATE ${ZLIB_LIBRARIES})
@@ -165,13 +213,6 @@ else()
   target_compile_definitions(tibiarc PRIVATE DISABLE_ZLIB)
 endif()
 
-option(TIBIARC_NO_OPENSSL "Explicitly disable crypto support" OFF)
-if(NOT TIBIARC_NO_OPENSSL)
-  find_package(OpenSSL QUIET)
-  if (NOT OPENSSL_FOUND)
-    message(WARNING "libcrypto was not found, tibiarc will be built without crypto support")
-  endif()
-endif()
 if(OPENSSL_FOUND)
   target_include_directories(tibiarc PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(tibiarc PRIVATE OpenSSL::Crypto)
@@ -193,6 +234,7 @@ add_executable(converter
   "converter/encoding.hpp"
   "converter/exporter.cpp"
   "converter/exporter.hpp"
+  "utils/cli.hpp"
   "utils/memoryfile.cpp"
   "utils/memoryfile.hpp"
 )
@@ -200,35 +242,6 @@ add_executable(converter
 target_include_directories(converter PRIVATE "converter" "utils")
 target_link_libraries(converter PRIVATE tibiarc)
 
-# SDL2
-option(TIBIARC_NO_SDL2 "Explicitly disable SDL2" OFF)
-if(NOT TIBIARC_NO_SDL2)
-  find_package(SDL2 QUIET)
-  if (NOT SDL2_FOUND)
-    message(WARNING "SDL2 was not found, converter will be built without SDL2 encoder")
-  endif()
-endif()
-if(SDL2_FOUND)
-  target_include_directories(converter PRIVATE ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(converter PRIVATE SDL2::SDL2)
-else()
-  target_compile_definitions(converter PRIVATE DISABLE_SDL2)
-endif()
-
-# ffmpeg
-option(TIBIARC_NO_LIBAV "Explicitly disable ffmpeg" OFF)
-if(NOT TIBIARC_NO_LIBAV)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(LIBAV IMPORTED_TARGET
-    libavcodec
-    libavformat
-    libswscale
-    libavutil
-  )
-  if(NOT LIBAV_FOUND)
-    message(WARNING "ffmpeg libraries were not found, converter will be built without ffmpeg encoder")
-  endif()
-endif()
 if(LIBAV_FOUND)
   target_include_directories(converter PRIVATE ${LIBAV_INCLUDE_DIRS})
   target_link_libraries(converter PRIVATE PkgConfig::LIBAV)
@@ -236,11 +249,6 @@ else()
   target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
 endif()
 
-# OpenMP support
-option(TIBIARC_NO_OPENMP "Explicitly disable OpenMP support" OFF)
-if(NOT TIBIARC_NO_OPENMP)
-  find_package(OpenMP QUIET)
-endif()
 if(OpenMP_C_FOUND)
   target_include_directories(converter PRIVATE ${OpenMP_C_INCLUDE_DIRS})
   target_compile_options(converter PRIVATE ${OpenMP_C_FLAGS})
@@ -256,11 +264,35 @@ add_executable(miner
   "miner/miner.cpp"
   "miner/serializer.cpp"
   "miner/serializer.hpp"
+  "utils/cli.hpp"
   "utils/memoryfile.cpp"
   "utils/memoryfile.hpp"
 )
 target_include_directories(miner PRIVATE "utils")
 target_link_libraries(miner PRIVATE tibiarc)
+
+# ########################################################################### #
+## Collator
+# ########################################################################### #
+
+if(OPENSSL_FOUND)
+  add_executable(collator
+    "collator/collator.cpp"
+    "utils/memoryfile.cpp"
+    "utils/memoryfile.hpp"
+    "utils/cli.hpp"
+  )
+  target_include_directories(collator PRIVATE "utils")
+  target_link_libraries(collator PRIVATE tibiarc)
+
+  target_include_directories(collator PRIVATE ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(collator PRIVATE OpenSSL::Crypto)
+
+  # Required for `std::execution::par` to work properly with gcc/clang
+  if(TBB_FOUND)
+    target_link_libraries(collator PRIVATE TBB::tbb)
+  endif()
+endif()
 
 # ########################################################################### #
 ## player
@@ -317,6 +349,7 @@ if(NOT TIBIARC_NO_LTO)
     if(ipo_supported)
       set_target_properties(tibiarc converter
                               PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+      set_target_properties(collator PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
       set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
       set_target_properties(miner PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()

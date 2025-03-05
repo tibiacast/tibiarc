@@ -2031,7 +2031,8 @@ void DrawStatusBars(Gamestate &gamestate,
                 icons.EmptyStatusBar.Width,
                 icons.EmptyStatusBar.Height);
 
-    if (gamestate.Player.Stats.MaxHealth > 0) {
+    if (gamestate.Player.Stats.MaxHealth > 0 &&
+        gamestate.Player.Stats.Health <= gamestate.Player.Stats.MaxHealth) {
         canvas.Draw(icons.HealthBar,
                     statusBarX + 2,
                     statusBarY + 2,
@@ -2040,7 +2041,8 @@ void DrawStatusBars(Gamestate &gamestate,
                     11);
     }
 
-    if (gamestate.Player.Stats.MaxMana > 0) {
+    if (gamestate.Player.Stats.MaxMana > 0 &&
+        gamestate.Player.Stats.Mana <= gamestate.Player.Stats.MaxMana) {
         canvas.Draw(icons.ManaBar,
                     statusBarX + 2,
                     statusBarY + 15,

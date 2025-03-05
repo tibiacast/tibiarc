@@ -21,16 +21,20 @@
 #ifndef PLAYER_PLAYBACK_H
 #define PLAYER_PLAYBACK_H
 
-#include <cstdint>
-
 #include "memoryfile.hpp"
 #include "datareader.hpp"
 #include "versions.hpp"
 #include "recordings.hpp"
 #include "gamestate.hpp"
 
+#include <cstdint>
+#include <filesystem>
+
 namespace trc {
-struct Playback {
+class Playback {
+    void Stabilize();
+
+public:
     std::unique_ptr<const trc::Version> Version;
     std::unique_ptr<trc::Gamestate> Gamestate;
     std::unique_ptr<Recordings::Recording> Recording;
@@ -41,7 +45,7 @@ struct Playback {
     float Scale;
 
     Playback(const DataReader &file,
-             const std::string &name,
+             const std::filesystem::path &name,
              const DataReader &pic,
              const DataReader &spr,
              const DataReader &dat,

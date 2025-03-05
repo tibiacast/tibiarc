@@ -401,10 +401,11 @@ void VersionBase::InitProtocol() {
     }
 
     if (AtLeast(8, 41)) {
-        /* FIXME: VERIFY THIS, it used to be marked as 8.40 but perhaps this
-         * was incorrect. */
-        Protocol.TextEditObject = true;
         Protocol.AddObjectStackPosition = true;
+    }
+
+    if (AtLeast(8, 42)) {
+        Protocol.TextEditObject = true;
     }
 
     if (AtLeast(8, 53)) {

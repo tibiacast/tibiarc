@@ -25,6 +25,8 @@
 #include "renderer.hpp"
 #include "recordings.hpp"
 
+#include <filesystem>
+
 namespace trc {
 namespace Exporter {
 struct Settings {
@@ -50,9 +52,9 @@ struct Settings {
 };
 
 void Export(const Settings &settings,
-            const std::string &dataFolder,
-            const std::string &inputPath,
-            const std::string &outputPath);
+            const std::filesystem::path &dataFolder,
+            const std::filesystem::path &inputPath,
+            const std::filesystem::path &outputPath);
 } // namespace Exporter
 } // namespace trc
 

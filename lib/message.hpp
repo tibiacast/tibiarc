@@ -122,21 +122,18 @@ struct Message {
             const trc::Position &position,
             const std::string &author,
             const std::string &text,
-            uint32_t start,
-            uint32_t end)
+            uint32_t endTick)
         : Type(type),
           Position(position),
           Author(author),
           Text(text),
-          StartTick(start),
-          EndTick(end) {
+          EndTick(endTick) {
     }
 
     Message() {
     }
 
 private:
-    uint32_t StartTick;
     uint32_t EndTick;
 };
 

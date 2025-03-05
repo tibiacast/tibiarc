@@ -22,6 +22,7 @@
 #define __TRC_ENCODING_HPP__
 
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 
 #include "canvas.hpp"
@@ -44,7 +45,7 @@ std::unique_ptr<Encoder> Open(Backend backend,
                               int width,
                               int height,
                               int frameRate,
-                              const std::string &path);
+                              const std::filesystem::path &path);
 
 }; // namespace Encoding
 } // namespace trc

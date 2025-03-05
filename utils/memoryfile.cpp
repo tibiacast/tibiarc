@@ -33,11 +33,11 @@
 #define MEMORYFILE_MAX_SIZE (1u << 30)
 
 namespace trc {
-MemoryFile::MemoryFile(const std::string &path) {
+MemoryFile::MemoryFile(const std::filesystem::path &path) {
 #if defined(_WIN32)
     LARGE_INTEGER size;
 
-    Handle = CreateFileA(path.c_str(),
+    Handle = CreateFileA(path.string().c_str(),
                          GENERIC_READ,
                          FILE_SHARE_READ,
                          NULL,
@@ -75,7 +75,7 @@ MemoryFile::MemoryFile(const std::string &path) {
         throw IOError();
     }
 #else
-    Fd = open(path.c_str(), O_RDONLY);
+    Fd = open(path.string().c_str(), O_RDONLY);
     if (Fd == -1) {
         throw IOError();
     } else {
@@ -109,6 +109,7 @@ MemoryFile::~MemoryFile() {
     AbortUnless(CloseHandle(Mapping));
     AbortUnless(CloseHandle(Handle));
 #else
+    AbortUnless(munmap((void *)View, Size) == 0);
     AbortUnless(close(Fd) == 0);
 #endif
 }

@@ -1,20 +1,20 @@
 # tibiarc
 
-`tibiarc` is a library that can render Tibia packet captures independently of a
-Tibia client. Its core was originally a part of Tibiacast, where it was used to
-render "thumbnails" server-side and implement the client's convert-to-video
-feature, but has now been broken out and released as open source to aid the
-preservation of old Tibia recordings.
+`tibiarc` is a library that can render and interpret Tibia packet captures
+independently of a Tibia client. Its core was originally a part of Tibiacast,
+where it was used to render "thumbnails" server-side and implement the client's
+convert-to-video feature, but has now been broken out and released as open
+source to aid the preservation of old Tibia recordings.
 
-As it does not require a Tibia client and renders at its own pace, it's well-
-suited for unattended conversions, and a demo application for that is included
-in this repository.
+As it does not require a Tibia client and renders at its own pace, it's
+well-suited for unattended conversions and analysis, and demo applications for
+that are included in this repository.
 
 The state of the code is largely the same as when Tibiacast shuttered, but
-I've tried to clean things up a bit to make it useful as a library. I've also
-added a basic translation layer that lets it support arbitrary Tibia versions
-as long as the appropriate `.dat`/`.spr`/`.pic` files are present. If you
-cannot find a `.pic` file, you can safely use one from a later Tibia version.
+I've cleaned things to make it more generally useful. I've also added a basic
+translation layer that lets it support arbitrary Tibia versions as long as the
+appropriate `.dat`/`.spr`/`.pic` files are present. If you cannot find a `.pic`
+file, you can safely use one from a later Tibia version.
 
 There's currently good support for all Tibia versions between 7.11 and 8.62,
 but others may be hit or miss as I haven't had enough files to test with.
@@ -158,7 +158,7 @@ given point in time by using the `image2` output format in `update` mode:
                 --output-format image2 \
                 --output-encoding bmp \
                 --output-flags "update=1" \
-                --resolution 1440x1056 \
+                --resolution 1440 1056 \
                 --start-time 1234 \
                 --end-time 1234 \
                 --frame-rate 1 \
@@ -176,7 +176,7 @@ of the given recording:
     ./converter --input-format tmv2 \
                 --output-format image2 \
                 --output-encoding bmp \
-                --resolution 480x352 \
+                --resolution 480 352 \
                 --frame-rate 1 \
                 --frame-skip 3 \
                 data/folder \
@@ -190,7 +190,7 @@ that cause clutter and look awful when scaled down to the size of a thumbnail:
                 --output-format image2 \
                 --output-encoding bmp \
                 --output-flags "update=1" \
-                --resolution 128x96 \
+                --resolution 128 96 \
                 --start-time 1234 \
                 --end-time 1234 \
                 --frame-rate 1 \
@@ -228,6 +228,24 @@ of all the events that occurred in the recording.
 Options like `--skip-terrain` or `--skip-effects` can be used to filter out
 noisy events you're not interested in. For a full list of options, run
 `./miner --help`.
+
+### Maintaining the `recordings/` collection
+
+The `collator` utility can be used to add recordings to the collection. Note
+that it requires the data files to be present in the appropriate folders under
+`data/`.
+
+```
+./collator --deny-list tibiarc_repository/recordings/DENYLIST \
+           tibiarc_repository/recordings
+           folder_to_search
+```
+
+Compatible recordings will be copied to their respective folders under
+`videos/`, and recordings that it could not make sense of will be copied to the
+`graveyard` folder for later analysis.
+
+For a full list of options, run `./collator --help`.
 
 ## Testing
 
@@ -270,7 +288,7 @@ $ git submodule update --remote --progress
 
 This will download about 10GB into the `recordings/` folder, so it's probably
 best not to do it on a metered connection. To run these tests, you will need to
-place the appropriate data files in the `recordings/$VERSION/data` folders, as
+place the appropriate data files in the `recordings/data/$VERSION` folders, as
 well as invoke `cmake` once more to help it find the files.
 
 If you don't already have the required data files, you can find them in

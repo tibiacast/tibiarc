@@ -558,6 +558,9 @@ void Parser::ParseFullMapDescription(DataReader &reader, EventList &events) {
 void Parser::ParseInitialization(DataReader &reader, EventList &events) {
     auto &event = AddEvent<WorldInitialized>(events);
 
+    /* Known creatures must be cleared in case we've relogged. */
+    KnownCreatures_.clear();
+
     event.PlayerId = reader.ReadU32();
     event.BeatDuration = reader.ReadU16();
 
@@ -1063,6 +1066,11 @@ void Parser::ParsePlayerDataBasic(DataReader &reader, EventList &events) {
 void Parser::ParsePlayerDataCurrent(DataReader &reader, EventList &events) {
     auto &event = AddEvent<PlayerDataUpdated>(events);
 
+    /* We do not verify that these values look okay; many .cam recordings have
+     * weird-looking initialization data because the recorder grabs the initial
+     * state from memory, resulting in torn values that are fixed soon after.
+     *
+     * The official client is OK with this, so we need to match that. */
     event.Health = reader.ReadS16();
     event.MaxHealth = reader.ReadS16();
 
@@ -1098,10 +1106,6 @@ void Parser::ParsePlayerDataCurrent(DataReader &reader, EventList &events) {
 
     event.Mana = reader.ReadS16();
     event.MaxMana = reader.ReadS16();
-
-    /* Mana can be negative for de-leveled mages. */
-    ParseAssert(CheckRange(event.Mana, 0, event.MaxMana) ||
-                (event.MaxMana < 0 && event.Mana == 0));
 
     event.MagicLevel = reader.ReadU8();
 
@@ -1897,13 +1901,14 @@ void Parser::ParseMarketBrowse(DataReader &reader,
 
 void Parser::ParseDeathDialog(DataReader &reader,
                               [[maybe_unused]] EventList &events) {
+    auto &event = AddEvent<PlayerDied>(events);
+
     if (Version_.Protocol.ExtendedDeathDialog) {
-        uint8_t dialogType = reader.ReadU8();
+        event.Type = reader.ReadU8();
 
         if (Version_.Protocol.UnfairFightReduction) {
-            if (dialogType == 0) {
-                /* Reduction in percent? */
-                reader.SkipU8();
+            if (event.Type == 0) {
+                event.Reduction = reader.ReadU8();
             }
         }
     }

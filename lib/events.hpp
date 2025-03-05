@@ -56,6 +56,7 @@ enum class Type {
     PlayerMoved,
     PlayerInventoryUpdated,
     PlayerBlessingsUpdated,
+    PlayerDied,
     PlayerHotkeyPresetUpdated,
     PlayerDataBasicUpdated,
     PlayerDataUpdated,
@@ -367,6 +368,16 @@ struct PlayerBlessingsUpdated : public Base {
     virtual void Update(Gamestate &gamestate);
     virtual Events::Type Kind() const {
         return Events::Type::PlayerBlessingsUpdated;
+    }
+};
+
+struct PlayerDied : public Base {
+    uint8_t Type = 0;
+    uint8_t Reduction = 0;
+
+    virtual void Update(Gamestate &gamestate);
+    virtual Events::Type Kind() const {
+        return Events::Type::PlayerDied;
     }
 };
 
