@@ -231,7 +231,6 @@ static void ConvertVideo(
     endTime = std::min(endTime, recording->Runtime + 1000);
 
     auto currentFrame = recording->Frames.cbegin();
-    uint32_t nextTimestamp = 0;
 
     /* Fast-forward until the game state is sufficiently initialized. */
     while (!gamestate.Creatures.contains(gamestate.Player.Id) &&
@@ -242,22 +241,14 @@ static void ConvertVideo(
         currentFrame = std::next(currentFrame);
     }
 
-    if (currentFrame != recording->Frames.cend()) {
-        nextTimestamp = currentFrame->Timestamp;
-    }
-
     while (frameTimestamp <= endTime) {
-        while (nextTimestamp <= frameTimestamp &&
-               currentFrame != recording->Frames.cend()) {
+        while (currentFrame != recording->Frames.cend() &&
+               currentFrame->Timestamp <= frameTimestamp) {
             for (const auto &event : currentFrame->Events) {
                 event->Update(gamestate);
             }
 
             currentFrame = std::next(currentFrame);
-        }
-
-        if (currentFrame != recording->Frames.cend()) {
-            nextTimestamp = currentFrame->Timestamp;
         }
 
         do {
@@ -307,7 +298,10 @@ static void ConvertVideo(
                 std::cout << "progress: " << frameTimestamp << " / "
                           << startTime << " / " << endTime << std::endl;
             }
-        } while (frameTimestamp <= std::min(nextTimestamp, endTime));
+        } while (frameTimestamp <=
+                 (currentFrame != recording->Frames.cend()
+                          ? std::min(currentFrame->Timestamp, endTime)
+                          : endTime));
     }
 
     encoder.Flush();
