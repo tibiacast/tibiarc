@@ -81,7 +81,7 @@ option(TIBIARC_NO_SDL2 "Explicitly disable SDL2" OFF)
 if(NOT TIBIARC_NO_SDL2)
   find_package(SDL2 QUIET)
   if (NOT SDL2_FOUND)
-    message(WARNING "SDL2 was not found, converter will be built without SDL2 encoder")
+    message(WARNING "SDL2 was not found, player will not be built")
   endif()
 endif()
 
@@ -173,12 +173,12 @@ add_library(tibiarc
   "lib/versions.hpp"
 )
 target_include_directories(tibiarc PUBLIC "lib")
-target_link_libraries(tibiarc PRIVATE m)
 target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACHE_LINESIZE}")
 
 if(MSVC)
   target_compile_options(tibiarc PRIVATE /W4 /WX)
 else()
+  target_link_libraries(tibiarc PRIVATE m)
   target_compile_options(tibiarc PRIVATE -Wall -Wextra)
 endif()
 
@@ -206,6 +206,13 @@ if(TIBIARC_DUMP_ITEMS)
   target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
 endif()
 
+if(OPENSSL_FOUND)
+  target_include_directories(tibiarc PRIVATE ${OPENSSL_INCLUDE_DIR})
+  target_link_libraries(tibiarc PRIVATE OpenSSL::Crypto)
+else()
+  target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
+endif()
+
 if(ZLIB_FOUND)
   target_include_directories(tibiarc PRIVATE ${ZLIB_INCLUDE_DIRS})
   target_link_libraries(tibiarc PRIVATE ${ZLIB_LIBRARIES})
@@ -213,11 +220,8 @@ else()
   target_compile_definitions(tibiarc PRIVATE DISABLE_ZLIB)
 endif()
 
-if(OPENSSL_FOUND)
-  target_include_directories(tibiarc PRIVATE ${OPENSSL_INCLUDE_DIR})
-  target_link_libraries(tibiarc PRIVATE OpenSSL::Crypto)
-else()
-  target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_link_libraries(tibiarc PRIVATE crypt32 ws2_32)
 endif()
 
 # ########################################################################### #
@@ -268,7 +272,7 @@ add_executable(miner
   "utils/memoryfile.cpp"
   "utils/memoryfile.hpp"
 )
-target_include_directories(miner PRIVATE "utils")
+target_include_directories(miner PRIVATE "miner" "utils")
 target_link_libraries(miner PRIVATE tibiarc)
 
 # ########################################################################### #
@@ -282,7 +286,7 @@ if(OPENSSL_FOUND)
     "utils/memoryfile.hpp"
     "utils/cli.hpp"
   )
-  target_include_directories(collator PRIVATE "utils")
+  target_include_directories(collator PRIVATE "collator" "utils")
   target_link_libraries(collator PRIVATE tibiarc)
 
   target_include_directories(collator PRIVATE ${OPENSSL_INCLUDE_DIR})
@@ -307,7 +311,7 @@ add_executable(player
   "utils/memoryfile.cpp"
   "utils/memoryfile.hpp"
 )
-target_include_directories(player PRIVATE "converter" "utils")
+target_include_directories(player PRIVATE "player" "utils")
 target_link_libraries(player PRIVATE tibiarc)
 
 if(NOT EMSCRIPTEN)

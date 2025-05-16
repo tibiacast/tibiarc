@@ -60,7 +60,7 @@ static void *AlignedAllocate(size_t alignment, size_t size) {
 #if defined(_WIN32)
     uintptr_t base, actual;
 
-    base = (uintptr_t)std::malloc(1, size + sizeof(ptrdiff_t) + alignment);
+    base = (uintptr_t)std::malloc(size + sizeof(ptrdiff_t) + alignment);
     AbortUnless(base);
 
     actual = (base + sizeof(ptrdiff_t) + (alignment - 1)) & ~(alignment - 1);

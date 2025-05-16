@@ -106,7 +106,7 @@ LibAV::LibAV(const std::string &format,
                                                 nullptr,
                                                 format.empty() ? nullptr
                                                                : format.c_str(),
-                                                path.c_str());
+                                                path.string().c_str());
         if (result < 0) {
             throw NotSupportedError();
         }
@@ -198,7 +198,7 @@ LibAV::LibAV(const std::string &format,
             sws_freeContext);
 
     if (!((Format->oformat)->flags & AVFMT_NOFILE)) {
-        result = avio_open(&Format->pb, path.c_str(), AVIO_FLAG_WRITE);
+        result = avio_open(&Format->pb, path.string().c_str(), AVIO_FLAG_WRITE);
 
         if (result < 0) {
             throw IOError();
@@ -212,7 +212,7 @@ LibAV::LibAV(const std::string &format,
     }
 
 #    ifndef NDEBUG
-    av_dump_format(Format.get(), 0, path.c_str(), 1);
+    av_dump_format(Format.get(), 0, path.string().c_str(), 1);
 #    endif
 }
 
