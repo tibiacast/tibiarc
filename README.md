@@ -106,7 +106,14 @@ set up the required packages:
 ```
 $ git clone https://github.com/mxe/mxe.git
 $ cd mxe
-$ make -j8 ffmpeg openssl sdl2 x264 x265 zlib MXE_TARGETS='x86_64-w64-mingw32.static'
+$ make -j MXE_TARGETS='x86_64-w64-mingw32.static' \
+       ffmpeg \
+       openssl \
+       sdl2 \
+       x264 \
+       x265 \
+       zlib \
+       intel-tbb
 ```
 
 Then build `tibiarc` with the MXE toolchain:
@@ -115,14 +122,13 @@ Then build `tibiarc` with the MXE toolchain:
 $ export PATH=$MXE_DIRECTORY/usr/bin:$PATH
 $ mkdir build
 $ cd build
-$ x86_64-w64-mingw32.static-cmake -DTIBIARC_CROSSCOMPILING=On ..
+$ x86_64-w64-mingw32.static-cmake -DTIBIARC_CROSSCOMPILING=On \
+                                  -DTIBIARC_NO_TBB=On ..
 $ make
 ```
 
-Assuming this worked, you should now have a `converter.exe` in the build folder
-with all dependencies statically linked. The command line interface is a bit
-broken however, due to the `argp` library being missing in `MXE`. I'll fix that
-when I find the time.
+Assuming this worked, you should now have a bunch of executables (`player.exe`
+and so on) in the build folder with all dependencies statically linked.
 
 ## Usage
 

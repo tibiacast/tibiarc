@@ -28,7 +28,10 @@
 #include <chrono>
 #include <compare>
 #include <cstdlib>
-#include <execution>
+#ifndef _WIN32
+/* N.B: This fails under MXE cross-compilation. */
+#    include <execution>
+#endif
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -232,7 +235,9 @@ std::vector<File> GatherRecordings(const std::filesystem::path &recordingsRoot,
 
     std::vector<std::optional<File>> unfiltered(paths.size());
     std::transform(
+#ifndef _WIN32
             std::execution::par_unseq,
+#endif
             paths.begin(),
             paths.end(),
             unfiltered.begin(),
@@ -446,21 +451,25 @@ std::vector<std::pair<File, std::filesystem::path>> ProcessRecordings(
     std::vector<std::pair<File, std::filesystem::path>> result(
             recordings.size());
 
-    std::transform(std::execution::par_unseq,
-                   recordings.begin(),
-                   recordings.end(),
-                   result.begin(),
-                   [&versions](const File &in) {
-                       return ProcessRecording(in, versions);
-                   });
+    std::transform(
+#ifndef _WIN32
+            std::execution::par_unseq,
+#endif
+            recordings.begin(),
+            recordings.end(),
+            result.begin(),
+            [&versions](const File &in) {
+                return ProcessRecording(in, versions);
+            });
 
     return result;
 }
 
 std::filesystem::path MangleDestination(const File &file,
                                         const std::filesystem::path &root,
-                                        const std::string folder) {
-    std::string filename = file.Path.filename();
+                                        const std::filesystem::path folder) {
+    std::basic_string<std::filesystem::path::value_type> filename =
+            file.Path.filename();
 
     /* Replace characters that are incompatible with CMake so that we can test
      * the recording collection with CTest */
@@ -477,7 +486,7 @@ void TransferFile(TransferAction action,
                   bool verbose,
                   const File &file,
                   const std::filesystem::path &root,
-                  const std::string folder) {
+                  const std::filesystem::path &folder) {
     auto destination = MangleDestination(file, root, folder);
 
     if (std::filesystem::exists(destination)) {

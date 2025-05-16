@@ -67,9 +67,8 @@ MemoryFile::MemoryFile(const std::filesystem::path &path) {
         throw IOError();
     }
 
-    file->View = (const uint8_t *)
-            MapViewOfFile(file->Mapping, FILE_MAP_READ, 0, 0, 0);
-    if (file->View == NULL) {
+    View = (const uint8_t *)MapViewOfFile(Mapping, FILE_MAP_READ, 0, 0, 0);
+    if (View == NULL) {
         CloseHandle(Mapping);
         CloseHandle(Handle);
         throw IOError();

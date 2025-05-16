@@ -176,7 +176,8 @@ static json ToJSON(const Version &version, const std::vector<T> &objects) {
     return json{result};
 }
 
-static json ToJSON(const Version &version, const Position &position) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const Position &position) {
     return json{{"X", position.X}, {"Y", position.Y}, {"Z", position.Z}};
 }
 
@@ -289,11 +290,13 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
          {Type::StatusMessageReceivedInChannel,
           "StatusMessageReceivedInChannel"}});
 
-static json ToJSON(const Version &version, const WorldInitialized &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const WorldInitialized &event) {
     return json{{"PlayerId", event.PlayerId}};
 }
 
-static json ToJSON(const Version &version, const AmbientLightChanged &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const AmbientLightChanged &event) {
     return json{{"Color", event.Color}, {"Intensity", event.Intensity}};
 }
 
@@ -326,7 +329,8 @@ static json ToJSON(const Version &version, const CreatureMoved &event) {
                 {"To", ToJSON(version, event.To)}};
 }
 
-static json ToJSON(const Version &version, const CreatureRemoved &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureRemoved &event) {
     return json{{"CreatureId", event.CreatureId}};
 }
 
@@ -368,16 +372,18 @@ static json ToJSON(const Version &version, const CreatureSeen &event) {
     return result;
 }
 
-static json ToJSON(const Version &version, const CreatureHealthUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureHealthUpdated &event) {
     return json{{"CreatureId", event.CreatureId}, {"Health", event.Health}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const CreatureHeadingUpdated &event) {
     return json{{"CreatureId", event.CreatureId}, {"Heading", event.Heading}};
 }
 
-static json ToJSON(const Version &version, const CreatureLightUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureLightUpdated &event) {
     return json{{"Id", event.CreatureId},
                 {"Color", event.Color},
                 {"Intensity", event.Intensity}};
@@ -388,42 +394,46 @@ static json ToJSON(const Version &version, const CreatureOutfitUpdated &event) {
                 {"Outfit", ToJSON(version, event.Outfit)}};
 }
 
-static json ToJSON(const Version &version, const CreatureSpeedUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureSpeedUpdated &event) {
     return json{{"CreatureId", event.CreatureId}, {"Speed", event.Speed}};
 }
 
-static json ToJSON(const Version &version, const CreatureSkullUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureSkullUpdated &event) {
     return json{{"CreatureId", event.CreatureId}, {"Skull", event.Skull}};
 }
 
-static json ToJSON(const Version &version, const CreatureShieldUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureShieldUpdated &event) {
     return json{{"CreatureId", event.CreatureId}, {"Shield", event.Shield}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const CreatureImpassableUpdated &event) {
     return json{{"CreatureId", event.CreatureId},
                 {"Impassable", event.Impassable}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const CreaturePvPHelpersUpdated &event) {
     return json{{"CreatureId", event.CreatureId},
                 {"Mark", event.Mark},
                 {"MarkIsPermanent", event.MarkIsPermanent}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const CreatureGuildMembersUpdated &event) {
     return json{{"CreatureId", event.CreatureId},
                 {"GuildMembersOnline", event.GuildMembersOnline}};
 }
 
-static json ToJSON(const Version &version, const CreatureTypeUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const CreatureTypeUpdated &event) {
     return json{{"CreatureId", event.CreatureId}, {"Type", event.Type}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const CreatureNPCCategoryUpdated &event) {
     return json{{"CreatureId", event.CreatureId},
                 {"NPCCategory", event.Category}};
@@ -438,7 +448,7 @@ static json ToJSON(const Version &version,
     return json{{"Slot", event.Slot}, {"Item", ToJSON(version, event.Item)}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const PlayerBlessingsUpdated &event) {
     return json{{"Blessings", event.Blessings}};
 }
@@ -457,7 +467,7 @@ static json ToJSON(const Version &version, const PlayerDied &event) {
     return j;
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const PlayerHotkeyPresetUpdated &event) {
     return json{{"CreatureId", event.CreatureId},
                 {"HotkeyPreset", event.HotkeyPreset}};
@@ -557,18 +567,21 @@ static json ToJSON(const Version &version, const PlayerSkillsUpdated &event) {
     return result;
 }
 
-static json ToJSON(const Version &version, const PlayerIconsUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const PlayerIconsUpdated &event) {
     return json{{"Icons", event.Icons}};
 }
 
-static json ToJSON(const Version &version, const PlayerTacticsUpdated &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const PlayerTacticsUpdated &event) {
     return json{{"AttackMode", event.AttackMode},
                 {"ChaseMode", event.ChaseMode},
                 {"PvPMode", event.PvPMode},
                 {"SecureMode", event.SecureMode}};
 }
 
-static json ToJSON(const Version &version, const PvPSituationsChanged &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const PvPSituationsChanged &event) {
     return json{{"OpenSituations", event.OpenSituations}};
 }
 
@@ -695,12 +708,13 @@ static json ToJSON(const Version &version, const MissileFired &event) {
                 {"Id", event.Id}};
 }
 
-static json ToJSON(const Version &version, const StatusMessageReceived &event) {
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const StatusMessageReceived &event) {
     return json{{"Message", CharacterSet::ToUtf8(event.Message)},
                 {"Mode", event.Mode}};
 }
 
-static json ToJSON(const Version &version,
+static json ToJSON([[maybe_unused]] const Version &version,
                    const StatusMessageReceivedInChannel &event) {
     return json{{"Message", CharacterSet::ToUtf8(event.Message)},
                 {"Mode", event.Mode},
@@ -979,10 +993,12 @@ void Serialize(const Settings &settings,
     auto frames = std::vector<json>();
 
     for (const auto &frame : recording->Frames) {
+        Assert(settings.StartTime > 0 && settings.EndTime > 0);
+
         /* Clip to given bounds. */
-        if (frame.Timestamp < settings.StartTime) {
+        if (frame.Timestamp < static_cast<uint64_t>(settings.StartTime)) {
             continue;
-        } else if (frame.Timestamp > settings.EndTime) {
+        } else if (frame.Timestamp > static_cast<uint64_t>(settings.EndTime)) {
             break;
         }
 
