@@ -69,11 +69,30 @@ if(NOT TIBIARC_NO_TBB)
   find_package(TBB REQUIRED)
 endif()
 
-option(TIBIARC_NO_OPENSSL "Explicitly disable crypto support" OFF)
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  option(TIBIARC_NO_BCRYPT "Explicitly disable bcrypt support" OFF)
+
+  if(NOT TIBIARC_NO_BCRYPT)
+    include(CheckCXXSourceCompiles)
+
+    check_cxx_source_compiles("extern \"C\" {
+                                 #include <windows.h>
+                                 #include <ntstatus.h>
+                                 #include <bcrypt.h>
+                               }
+                               int main() {return 0;}"
+                              BCRYPT_FOUND)
+    if (NOT BCRYPT_FOUND)
+      message(WARNING "bcrypt was not found")
+    endif()
+  endif()
+endif()
+
+option(TIBIARC_NO_OPENSSL "Explicitly disable libcrypto support" OFF)
 if(NOT TIBIARC_NO_OPENSSL)
   find_package(OpenSSL QUIET)
   if (NOT OPENSSL_FOUND)
-    message(WARNING "libcrypto was not found, tibiarc will be built without crypto support")
+    message(WARNING "libcrypto (OpenSSL) was not found")
   endif()
 endif()
 
@@ -115,6 +134,8 @@ add_library(tibiarc
   "lib/characterset.hpp"
   "lib/container.hpp"
   "lib/creature.hpp"
+  "lib/crypto.cpp"
+  "lib/crypto.hpp"
   "lib/datareader.hpp"
   "lib/demuxer.hpp"
   "lib/deps/7z/7zTypes.h"
@@ -206,10 +227,30 @@ if(TIBIARC_DUMP_ITEMS)
   target_compile_definitions(tibiarc PRIVATE DUMP_ITEMS)
 endif()
 
-if(OPENSSL_FOUND)
-  target_include_directories(tibiarc PRIVATE ${OPENSSL_INCLUDE_DIR})
-  target_link_libraries(tibiarc PRIVATE OpenSSL::Crypto)
+set(TIBIARC_HAVE_CRYPTO FALSE)
+
+if(BCRYPT_FOUND)
+target_link_libraries(tibiarc PRIVATE bcrypt)
+
+  target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
+  set(TIBIARC_HAVE_CRYPTO TRUE)
 else()
+  if(OPENSSL_FOUND)
+    target_include_directories(tibiarc PRIVATE ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(tibiarc PRIVATE OpenSSL::Crypto)
+  
+    if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      target_link_libraries(tibiarc PRIVATE crypt32 ws2_32)
+    endif()
+
+    target_compile_definitions(tibiarc PRIVATE DISABLE_BCRYPT_CRYPTO)
+    set(TIBIARC_HAVE_CRYPTO TRUE)
+  endif()
+endif()
+
+if(NOT TIBIARC_HAVE_CRYPTO)
+  message(WARNING "No supported crypto library found, tibiarc will be built without .rec support")
+  target_compile_definitions(tibiarc PRIVATE DISABLE_BCRYPT_CRYPTO)
   target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
 endif()
 
@@ -218,10 +259,6 @@ if(ZLIB_FOUND)
   target_link_libraries(tibiarc PRIVATE ${ZLIB_LIBRARIES})
 else()
   target_compile_definitions(tibiarc PRIVATE DISABLE_ZLIB)
-endif()
-
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  target_link_libraries(tibiarc PRIVATE crypt32 ws2_32)
 endif()
 
 # ########################################################################### #
@@ -279,7 +316,7 @@ target_link_libraries(miner PRIVATE tibiarc)
 ## Collator
 # ########################################################################### #
 
-if(OPENSSL_FOUND)
+if(TIBIARC_HAVE_CRYPTO)
   add_executable(collator
     "collator/collator.cpp"
     "utils/memoryfile.cpp"
@@ -289,8 +326,10 @@ if(OPENSSL_FOUND)
   target_include_directories(collator PRIVATE "collator" "utils")
   target_link_libraries(collator PRIVATE tibiarc)
 
-  target_include_directories(collator PRIVATE ${OPENSSL_INCLUDE_DIR})
-  target_link_libraries(collator PRIVATE OpenSSL::Crypto)
+  if(OPENSSL_FOUND)
+    target_include_directories(collator PRIVATE ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(collator PRIVATE OpenSSL::Crypto)
+  endif()
 
   # Required for `std::execution::par` to work properly with gcc/clang
   if(TBB_FOUND)
@@ -320,6 +359,15 @@ if(NOT EMSCRIPTEN)
   endif()
   target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
   target_link_libraries(player PRIVATE ${SDL2_LIBRARIES})
+
+  # Ensure that SDL2 does not swallow console output on Windows. This is only
+  # useful for debugging and may cause crashes on its own as SDL2 assumes
+  # -mwindows
+  if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+      target_link_options(player PRIVATE -mconsole)
+    endif()
+  endif()
 else()
   set_target_properties(converter PROPERTIES EXCLUDE_FROM_ALL 1)
   set_target_properties(player PROPERTIES SUFFIX ".html")
