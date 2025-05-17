@@ -20,6 +20,7 @@
 #include "cli.hpp"
 
 #include "events.hpp"
+#include "crypto.hpp"
 #include "memoryfile.hpp"
 #include "recordings.hpp"
 #include "utils.hpp"
@@ -245,17 +246,11 @@ std::vector<File> GatherRecordings(const std::filesystem::path &recordingsRoot,
                     const std::filesystem::path &path) -> std::optional<File> {
                 const MemoryFile file(path);
                 const auto &reader = file.Reader();
-                auto context = EVP_MD_CTX_new();
+                auto context = Crypto::SHA1::Create();
                 unsigned int size;
                 Checksum checksum;
 
-                AbortUnless(EVP_DigestInit_ex(context, EVP_sha1(), NULL));
-                AbortUnless(
-                        EVP_DigestUpdate(context, reader.Data, reader.Length));
-                AbortUnless(
-                        EVP_DigestFinal_ex(context, checksum.data(), &size));
-                AbortUnless(size == SHA1Size);
-                EVP_MD_CTX_free(context);
+                context->Hash(reader.Data, reader.Length, checksum.data());
 
                 if (denyList.contains(checksum)) {
                     return std::nullopt;

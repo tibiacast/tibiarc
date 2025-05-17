@@ -37,7 +37,7 @@ MemoryFile::MemoryFile(const std::filesystem::path &path) {
 #if defined(_WIN32)
     LARGE_INTEGER size;
 
-    Handle = CreateFileA(path.string().c_str(),
+    Handle = CreateFileW(path.c_str(),
                          GENERIC_READ,
                          FILE_SHARE_READ,
                          NULL,

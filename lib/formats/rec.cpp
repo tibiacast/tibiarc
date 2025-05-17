@@ -23,27 +23,19 @@
 
 #include "demuxer.hpp"
 #include "parser.hpp"
+#include "crypto.hpp"
 
 #include "utils.hpp"
 
 #include <algorithm>
 
-#ifndef DISABLE_OPENSSL_CRYPTO
-extern "C" {
-#    include <openssl/evp.h>
-}
-#endif
-
 namespace trc {
 namespace Recordings {
 namespace Rec {
-
-#ifndef DISABLE_OPENSSL_CRYPTO
 static const uint8_t AESKey[32] = {
         0x54, 0x68, 0x79, 0x20, 0x6B, 0x65, 0x79, 0x20, 0x69, 0x73, 0x20,
         0x6D, 0x69, 0x6E, 0x65, 0x20, 0xA9, 0x20, 0x32, 0x30, 0x30, 0x36,
         0x20, 0x47, 0x42, 0x20, 0x4D, 0x6F, 0x6E, 0x61, 0x63, 0x6F};
-#endif
 
 /* Early .REC versions have 32-bit frame lengths, but I haven't observed any
  * recordings with an actual frame length larger than 64K. */
@@ -60,13 +52,11 @@ struct State {
     } Fragment;
 
     struct {
-#ifndef DISABLE_OPENSSL_CRYPTO
-        EVP_CIPHER_CTX *AES;
-#endif
+        std::unique_ptr<Crypto::AES_ECB_256> AES;
 
-        bool Checksum;
-        bool Encrypted;
-        int32_t Twirl;
+        bool Checksum = false;
+        bool Encrypted = false;
+        int32_t Twirl = 0;
     } Obfuscation;
 
     uint32_t FragmentCount;
@@ -106,23 +96,10 @@ struct State {
         }
 
         if (Obfuscation.Encrypted) {
-#ifndef DISABLE_OPENSSL_CRYPTO
-            Obfuscation.AES = EVP_CIPHER_CTX_new();
-            EVP_CIPHER_CTX_init(Obfuscation.AES);
-
-            if (!EVP_DecryptInit(Obfuscation.AES,
-                                 EVP_aes_256_ecb(),
-                                 AESKey,
-                                 NULL)) {
-                EVP_CIPHER_CTX_free(Obfuscation.AES);
-                throw NotSupportedError();
-            }
+            Obfuscation.AES = Crypto::AES_ECB_256::Create(AESKey);
 
             Fragment.PlainData = new uint8_t[MaxFrameSize * 2];
             Fragment.CipherData = &Fragment.PlainData[MaxFrameSize];
-#else
-            throw NotSupportedError();
-#endif
         } else {
             Fragment.PlainData = new uint8_t[MaxFrameSize * 1];
             Fragment.CipherData = Fragment.PlainData;
@@ -130,12 +107,6 @@ struct State {
     }
 
     ~State() {
-#ifndef DISABLE_OPENSSL_CRYPTO
-        if (Obfuscation.AES != nullptr) {
-            EVP_CIPHER_CTX_free(Obfuscation.AES);
-        }
-#endif
-
         delete[] Fragment.PlainData;
     }
 
@@ -162,43 +133,12 @@ struct State {
         Assert(Obfuscation.Encrypted ^
                (Fragment.CipherData == Fragment.PlainData));
 
-#ifndef DISABLE_OPENSSL_CRYPTO
         if (Obfuscation.Encrypted) {
-            int plainLength, outLength;
-
-            if (Fragment.Length % 16) {
-                throw InvalidDataError();
-            }
-
-            AbortUnless(EVP_DecryptInit_ex(Obfuscation.AES,
-                                           NULL,
-                                           NULL,
-                                           NULL,
-                                           NULL));
-
-            plainLength = MaxFrameSize;
-            if (!EVP_DecryptUpdate(Obfuscation.AES,
-                                   Fragment.PlainData,
-                                   &plainLength,
-                                   Fragment.CipherData,
-                                   Fragment.Length)) {
-                throw InvalidDataError();
-            }
-
-            Assert(plainLength < MaxFrameSize);
-            outLength = MaxFrameSize - plainLength;
-
-            if (!EVP_DecryptFinal_ex(Obfuscation.AES,
-                                     &Fragment.PlainData[plainLength],
-                                     &outLength)) {
-                throw InvalidDataError();
-            }
-
-            Assert(outLength < 16);
-
-            Fragment.Length = plainLength + outLength;
+            Fragment.Length = Obfuscation.AES->Decrypt(Fragment.CipherData,
+                                                       Fragment.Length,
+                                                       Fragment.PlainData,
+                                                       MaxFrameSize);
         }
-#endif
     }
 };
 
@@ -280,12 +220,12 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     auto containerVersion = reader.ReadU16();
     auto fragmentCount = reader.ReadS32();
 
-    struct State state(containerVersion, fragmentCount);
     auto recording = std::make_unique<Recording>();
     bool partialReturn = false;
 
     try {
         RecParser parser(version, recovery == Recovery::Repair);
+        State state(containerVersion, fragmentCount);
         Demuxer demuxer(2);
 
         for (uint32_t i = 0; i < state.FragmentCount; i++) {
