@@ -392,22 +392,6 @@ endif()
 ## Misc flags that must be set at the very end
 # ########################################################################### #
 
-# Enable IPO if supported
-option(TIBIARC_NO_LTO "Explicitly disable link-time optimization" OFF)
-if(NOT TIBIARC_NO_LTO)
-  if(NOT EMSCRIPTEN)
-    include(CheckIPOSupported)
-    check_ipo_supported(RESULT ipo_supported)
-    if(ipo_supported)
-      set_target_properties(tibiarc converter
-                              PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-      set_target_properties(collator PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-      set_target_properties(player PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-      set_target_properties(miner PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-  endif()
-endif()
-
 # Include extra CMakeLists.txt if available
 include(CMakeLists.user.txt OPTIONAL)
 
