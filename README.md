@@ -73,18 +73,18 @@ The following optional dependencies are required for certain formats and utiliti
 * `libswscale` [^1]
 * `libsdl2` [^2]
 * `zlib` [^3]
-* `openssl` [^4]
+* `openssl` (except for Windows which uses `bcrypt`) [^4]
 
 [^1]: Used in the recording converter example.
 [^2]: Used in the recording player example.
 [^3]: Required to open Tibiacast and TibiaMovie recordings
-[^4]: Required to open `.rec` files for Tibia versions 7.71 and later.
+[^4]: Required to open `.rec` files for Tibia versions 7.71 and later, as well as the `collator` utility.
 
 The following should install everything on Debian and derived distros like
 Ubuntu:
 
 ```
-$ sudo apt install binutils clang cmake libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev libssl-dev libswscale-dev make pkg-config zlib1g-dev
+$ sudo apt install binutils clang cmake libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev libssl-dev libswscale-dev make pkg-config zlib1g-dev libtbb-dev
 ```
 
 Then jump into the project folder and run the following commands, if all goes
@@ -298,8 +298,10 @@ place the appropriate data files in the `recordings/data/$VERSION` folders, as
 well as invoke `cmake` once more to help it find the files.
 
 If you don't already have the required data files, you can find them in
-[gesior's `.dat/.spr` collection]. Further files to test with are much
-appreciated, feel to open an issue and share the ones you have.
+[gesior's `.dat/.spr` collection].
+
+Further recordings to test with are much appreciated, feel to open an issue
+and share the ones you have.
 
 [gesior's `.dat/.spr` collection]: https://downloads.ots.me/?dir=data/tibia-clients/dat_and_spr_collections
 

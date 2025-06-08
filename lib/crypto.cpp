@@ -19,8 +19,6 @@
 
 #include "crypto.hpp"
 
-#include <limits>
-
 #if defined(_WIN32) && !defined(DISABLE_BCRYPT_CRYPTO)
 extern "C" {
 #    include <windows.h>
