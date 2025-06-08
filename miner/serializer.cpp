@@ -993,7 +993,7 @@ void Serialize(const Settings &settings,
     auto frames = std::vector<json>();
 
     for (const auto &frame : recording->Frames) {
-        Assert(settings.StartTime > 0 && settings.EndTime > 0);
+        Assert(settings.StartTime >= 0 && settings.EndTime >= 0);
 
         /* Clip to given bounds. */
         if (frame.Timestamp < static_cast<uint64_t>(settings.StartTime)) {

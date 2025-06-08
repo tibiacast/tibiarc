@@ -60,6 +60,9 @@ struct Gamestate {
 
     Gamestate(const trc::Version &version);
 
+    Creature *FindCreature(uint32_t id);
+    const Creature *FindCreature(uint32_t id) const;
+
     Creature &GetCreature(uint32_t id);
     const Creature &GetCreature(uint32_t id) const;
 

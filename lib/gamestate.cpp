@@ -56,6 +56,26 @@ void Gamestate::Reset() {
 Gamestate::Gamestate(const trc::Version &version) : Version(version) {
 }
 
+Creature *Gamestate::FindCreature(uint32_t id) {
+    auto it = Creatures.find(id);
+
+    if (it != Creatures.end()) {
+        return &it->second;
+    }
+
+    return nullptr;
+}
+
+const Creature *Gamestate::FindCreature(uint32_t id) const {
+    auto it = Creatures.find(id);
+
+    if (it != Creatures.end()) {
+        return &it->second;
+    }
+
+    return nullptr;
+}
+
 Creature &Gamestate::GetCreature(uint32_t id) {
     auto it = Creatures.find(id);
 
