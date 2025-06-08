@@ -703,23 +703,29 @@ static void DrawMovingCreatures(Gamestate &gamestate,
             for (int objectIdx = 0; objectIdx < neighborTile.ObjectCount;
                  objectIdx++) {
                 const auto &object = neighborTile.Objects[objectIdx];
-                if (object.IsCreature()) {
-                    auto &creature = gamestate.GetCreature(object.CreatureId);
+
+                if (!object.IsCreature()) {
+                    continue;
+                }
+
+                /* Strangely, the official client is okay with non-existent
+                 * creatures here, simply skipping them. */
+                if (auto creature = gamestate.FindCreature(object.CreatureId)) {
                     int offsetRelativeThisX, offsetRelativeThisY;
 
-                    UpdateWalkOffset(gamestate, creature);
+                    UpdateWalkOffset(gamestate, *creature);
 
-                    if (creature.MovementInformation.WalkEndTick <= tick) {
+                    if (creature->MovementInformation.WalkEndTick <= tick) {
                         continue;
                     }
 
                     /* Walk offset is relative to the owning tile, translate to
                      * make it relative this tile */
                     offsetRelativeThisX =
-                            creature.MovementInformation.WalkOffsetX +
+                            creature->MovementInformation.WalkOffsetX +
                             xIdx * 32;
                     offsetRelativeThisY =
-                            creature.MovementInformation.WalkOffsetY +
+                            creature->MovementInformation.WalkOffsetY +
                             yIdx * 32;
 
                     if ((offsetRelativeThisX <= 0) &&
@@ -727,7 +733,7 @@ static void DrawMovingCreatures(Gamestate &gamestate,
                         (offsetRelativeThisX >= -31) &&
                         (offsetRelativeThisY >= -31)) {
                         DrawCreature(gamestate.Version,
-                                     creature,
+                                     *creature,
                                      rightX - heightDisplacement +
                                              offsetRelativeThisX,
                                      bottomY - heightDisplacement +
@@ -930,19 +936,24 @@ static void DrawTile(const Options &options,
         /* Draw creatures that are standing on this tile. */
         for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
             const auto &object = tile.Objects[objectIdx];
-            if (object.IsCreature()) {
-                auto &creature = gamestate.GetCreature(object.CreatureId);
 
-                UpdateWalkOffset(gamestate, creature);
+            if (!object.IsCreature()) {
+                continue;
+            }
 
-                if (creature.MovementInformation.WalkEndTick <= tick) {
+            /* Strangely, the official client is okay with non-existent
+             * creatures here, simply skipping them. */
+            if (auto creature = gamestate.FindCreature(object.CreatureId)) {
+                UpdateWalkOffset(gamestate, *creature);
+
+                if (creature->MovementInformation.WalkEndTick <= tick) {
                     DrawCreature(
                             gamestate.Version,
-                            creature,
+                            *creature,
                             rightX - heightDisplacement +
-                                    creature.MovementInformation.WalkOffsetX,
+                                    creature->MovementInformation.WalkOffsetX,
                             bottomY - heightDisplacement +
-                                    creature.MovementInformation.WalkOffsetY,
+                                    creature->MovementInformation.WalkOffsetY,
                             tick,
                             canvas);
                 }
@@ -1433,19 +1444,21 @@ static bool DrawTileOverlay(const Options &options,
             continue;
         }
 
-        auto &creature = gamestate.GetCreature(object.CreatureId);
-
-        if (creature.Health > 0) {
-            DrawCreatureOverlay(options,
-                                gamestate,
-                                canvas,
-                                isObscured,
-                                heightDisplacement,
-                                rightX,
-                                bottomY,
-                                scaleX,
-                                scaleY,
-                                creature);
+        /* Strangely, the official client is okay with non-existent
+         * creatures here, simply skipping them. */
+        if (auto creature = gamestate.FindCreature(object.CreatureId)) {
+            if (creature->Health > 0) {
+                DrawCreatureOverlay(options,
+                                    gamestate,
+                                    canvas,
+                                    isObscured,
+                                    heightDisplacement,
+                                    rightX,
+                                    bottomY,
+                                    scaleX,
+                                    scaleY,
+                                    *creature);
+            }
         }
     }
 
