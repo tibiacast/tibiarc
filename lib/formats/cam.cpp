@@ -21,6 +21,10 @@
 #include "recordings.hpp"
 #include "versions.hpp"
 
+#ifdef _WIN32
+#    define NOMINMAX
+#endif
+
 extern "C" {
 #include "deps/7z/Precomp.h"
 #include "deps/7z/Alloc.h"

@@ -62,7 +62,7 @@ static inline void DrawRightAlignedString(const Font &font,
            color,
            X,
            Y,
-           ~0,
+           ~(size_t)0,
            text,
            canvas);
 }
@@ -79,7 +79,7 @@ static inline void DrawCenteredString(const Font &font,
            color,
            X,
            Y,
-           ~0,
+           ~(size_t)0,
            text,
            canvas);
 }
@@ -96,7 +96,7 @@ static inline void DrawCenteredProperCaseString(const Font &font,
            color,
            X,
            Y,
-           ~0,
+           ~(size_t)0,
            text,
            canvas);
 }
@@ -113,7 +113,7 @@ static inline void DrawProperCaseString(const Font &font,
            color,
            X,
            Y,
-           ~0,
+           ~(size_t)0,
            text,
            canvas);
 }
@@ -130,7 +130,7 @@ static inline void DrawString(const Font &font,
            color,
            X,
            Y,
-           ~0,
+           ~(size_t)0,
            text,
            canvas);
 }

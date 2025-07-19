@@ -31,16 +31,16 @@ namespace trc {
 
 static std::tuple<size_t, size_t, size_t, size_t> MeasureSpriteBounds(
         const Canvas &canvas,
-        ssize_t x,
-        ssize_t y,
-        ssize_t width,
-        ssize_t height,
+        ptrdiff_t x,
+        ptrdiff_t y,
+        ptrdiff_t width,
+        ptrdiff_t height,
         Sprite::Trim trim) {
     if (!(CheckRange((x + width), 0, canvas.Width - 1) &&
           CheckRange((y + height), 0, canvas.Height - 1))) {
         return std::make_tuple(0, 0, 0, 0);
     } else if (trim != Sprite::Trim::None) {
-        ssize_t leftX, rightX, bottomY, topY;
+        ptrdiff_t leftX, rightX, bottomY, topY;
 
         leftX = x;
         topY = y;
@@ -51,8 +51,8 @@ static std::tuple<size_t, size_t, size_t, size_t> MeasureSpriteBounds(
             rightX = leftX;
         }
 
-        for (ssize_t yIdx = y; yIdx < (y + height); yIdx++) {
-            for (ssize_t xIdx = x; xIdx < (x + width); xIdx++) {
+        for (ptrdiff_t yIdx = y; yIdx < (y + height); yIdx++) {
+            for (ptrdiff_t xIdx = x; xIdx < (x + width); xIdx++) {
                 if (!canvas.GetPixel(xIdx, yIdx).IsTransparent()) {
                     leftX = std::min(leftX, xIdx);
                     topY = std::min(topY, yIdx);
@@ -72,10 +72,10 @@ static std::tuple<size_t, size_t, size_t, size_t> MeasureSpriteBounds(
 }
 
 static size_t ExtractSprite(const Canvas &canvas,
-                            ssize_t leftX,
-                            ssize_t topY,
-                            ssize_t rightX,
-                            ssize_t bottomY,
+                            ptrdiff_t leftX,
+                            ptrdiff_t topY,
+                            ptrdiff_t rightX,
+                            ptrdiff_t bottomY,
                             uint8_t *buffer) {
     if (!(CheckRange(rightX, 0, canvas.Width) &&
           CheckRange(bottomY, 0, canvas.Height))) {
@@ -103,8 +103,8 @@ static size_t ExtractSprite(const Canvas &canvas,
         bufferIdx += 2;
     }
 
-    for (ssize_t y = topY; y < bottomY; y++) {
-        for (ssize_t x = leftX; x < rightX; x++) {
+    for (ptrdiff_t y = topY; y < bottomY; y++) {
+        for (ptrdiff_t x = leftX; x < rightX; x++) {
             const Pixel &currentPixel = canvas.GetPixel(x, y);
 
             if (!currentPixel.IsTransparent()) {

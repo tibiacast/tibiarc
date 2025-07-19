@@ -42,10 +42,10 @@ template <typename T, size_t Limit = 64> class TranslationTable {
 
     static_assert(Limit > 0);
 
-    ssize_t Max;
+    ptrdiff_t Max;
     int8_t Map[Limit];
 
-    void Insert(ssize_t index, U value, U expected) {
+    void Insert(ptrdiff_t index, U value, U expected) {
         AbortUnless(CheckRange(Max, -1, Limit - 1));
         AbortUnless(CheckRange(index, 0, Limit - 1));
 
@@ -61,13 +61,13 @@ template <typename T, size_t Limit = 64> class TranslationTable {
         Map[index] = value;
     }
 
-    void Replace(ssize_t index, U value, U expected) {
+    void Replace(ptrdiff_t index, U value, U expected) {
         AbortUnless(index <= Max);
         AbortUnless(Map[index] == expected);
         Map[index] = value;
     }
 
-    void Remove(ssize_t index, U expected) {
+    void Remove(ptrdiff_t index, U expected) {
         AbortUnless(Map[index] == expected);
 
         if (index < Max) {
