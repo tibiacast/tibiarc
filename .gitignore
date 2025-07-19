@@ -11,3 +11,4 @@ tibiarc.exe
 # Visual Studio
 CMakeSettings.json
 vcpkg-configuration-json
+out
