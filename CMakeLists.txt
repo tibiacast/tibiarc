@@ -39,7 +39,6 @@ endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_EXTENSIONS OFF)
 
 # ########################################################################### #
 ## Optional dependency handling
@@ -47,13 +46,15 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 option(TIBIARC_NO_LIBAV "Explicitly disable ffmpeg" OFF)
 if(NOT TIBIARC_NO_LIBAV)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(LIBAV IMPORTED_TARGET
-    libavcodec
-    libavformat
-    libswscale
-    libavutil
-  )
+  find_package(PkgConfig QUIET)
+  if(PKG_CONFIG_FOUND)
+    pkg_check_modules(LIBAV IMPORTED_TARGET
+      libavcodec
+      libavformat
+      libswscale
+      libavutil
+    )
+  endif()
   if(NOT LIBAV_FOUND)
     message(WARNING "ffmpeg libraries were not found, converter will be built without ffmpeg encoder")
   endif()
@@ -66,7 +67,7 @@ endif()
 
 option(TIBIARC_NO_TBB "Explicitly disable TBB support" OFF)
 if(NOT TIBIARC_NO_TBB)
-  find_package(TBB REQUIRED)
+  find_package(TBB QUIET)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -99,8 +100,8 @@ endif()
 option(TIBIARC_NO_SDL2 "Explicitly disable SDL2" OFF)
 if(NOT TIBIARC_NO_SDL2)
   find_package(SDL2 QUIET)
-  if(NOT SDL2_FOUND)
-    message(WARNING "SDL2 was not found, player will not be built")
+  if(NOT (SDL2_FOUND OR EMSCRIPTEN))
+    message(WARNING "Neither SDL2 nor emscripten was found, player will not be built")
   endif()
 endif()
 
@@ -197,7 +198,7 @@ target_include_directories(tibiarc PUBLIC "lib")
 target_compile_definitions(tibiarc PUBLIC "LEVEL1_DCACHE_LINESIZE=${LEVEL1_DCACHE_LINESIZE}")
 
 if(MSVC)
-  target_compile_options(tibiarc PRIVATE /W4 /WX)
+  target_compile_options(tibiarc PRIVATE /W1)
 else()
   target_link_libraries(tibiarc PRIVATE m)
   target_compile_options(tibiarc PRIVATE -Wall -Wextra)
@@ -341,51 +342,50 @@ endif()
 ## player
 # ########################################################################### #
 
-add_executable(player
-  "player/player.cpp"
-  "player/playback.cpp"
-  "player/playback.hpp"
-  "player/rendering.cpp"
-  "player/rendering.hpp"
-  "utils/memoryfile.cpp"
-  "utils/memoryfile.hpp"
-)
-target_include_directories(player PRIVATE "player" "utils")
-target_link_libraries(player PRIVATE tibiarc)
+if(EMSCRIPTEN OR SDL2_FOUND)
+  add_executable(player
+    "player/player.cpp"
+    "player/playback.cpp"
+    "player/playback.hpp"
+    "player/rendering.cpp"
+    "player/rendering.hpp"
+    "utils/memoryfile.cpp"
+    "utils/memoryfile.hpp"
+  )
+  target_include_directories(player PRIVATE "player" "utils")
+  target_link_libraries(player PRIVATE tibiarc)
 
-if(NOT EMSCRIPTEN)
-  if(NOT SDL2_FOUND)
-    message(FATAL_ERROR "player without EMSCRIPTEN requires SDL2")
-  endif()
-  target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(player PRIVATE ${SDL2_LIBRARIES})
+  if(NOT EMSCRIPTEN)
+    target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
+    target_link_libraries(player PRIVATE ${SDL2_LIBRARIES})
 
-  # Ensure that SDL2 does not swallow console output on Windows. This is only
-  # useful for debugging and may cause crashes on its own as SDL2 assumes
-  # -mwindows
-  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-      target_link_options(player PRIVATE -mconsole)
+    # Ensure that SDL2 does not swallow console output on Windows. This is only
+    # useful for debugging and may cause crashes on its own as SDL2 assumes
+    # -mwindows
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_options(player PRIVATE -mconsole)
+      endif()
     endif()
-  endif()
-else()
-  set_target_properties(converter PROPERTIES EXCLUDE_FROM_ALL 1)
-  set_target_properties(player PROPERTIES SUFFIX ".html")
-  target_compile_options(player PRIVATE -sUSE_SDL=2)
-  target_link_options(player PRIVATE
-                        -sUSE_SDL=2
-                        -sALLOW_MEMORY_GROWTH=1
-                        -sEXPORTED_FUNCTIONS=_main,_load_files,_malloc
-                        -sEXPORTED_RUNTIME_METHODS=ccall)
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  else()
+    set_target_properties(converter PROPERTIES EXCLUDE_FROM_ALL 1)
+    set_target_properties(player PROPERTIES SUFFIX ".html")
+    target_compile_options(player PRIVATE -sUSE_SDL=2)
     target_link_options(player PRIVATE
-                          -sEXCEPTION_DEBUG=1
-                          -sASSERTIONS=1
-                          -sSAFE_HEAP=1
-                          -sDEMANGLE_SUPPORT=1)
+                          -sUSE_SDL=2
+                          -sALLOW_MEMORY_GROWTH=1
+                          -sEXPORTED_FUNCTIONS=_main,_load_files,_malloc
+                          -sEXPORTED_RUNTIME_METHODS=ccall)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+      target_link_options(player PRIVATE
+                            -sEXCEPTION_DEBUG=1
+                            -sASSERTIONS=1
+                            -sSAFE_HEAP=1
+                            -sDEMANGLE_SUPPORT=1)
+    endif()
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/player/index.html"
+                     "${CMAKE_BINARY_DIR}/index.html" COPYONLY)
   endif()
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/player/index.html"
-                   "${CMAKE_BINARY_DIR}/index.html" COPYONLY)
 endif()
 
 # ########################################################################### #

@@ -52,10 +52,7 @@ not have happened without you.
 
 ## Building
 
-This project was originally developed on and for Windows, but as I've abandoned
-that platform altogether I've been unable to test there, so this only works out
-of the box on Unix-like systems at the moment. It should work fine under WSL
-however, and it's possible to cross-compile it with MXE or similar.
+### Linux
 
 First, make sure that you have all dependencies:
 
@@ -98,7 +95,7 @@ $ cmake ..
 $ make
 ```
 
-### Cross-compilation to Windows
+#### Cross-compilation to Windows
 
 First, build the MXE cross-compilation environment if you haven't already, and
 set up the required packages:
@@ -129,6 +126,18 @@ $ make
 
 Assuming this worked, you should now have a bunch of executables (`player.exe`
 and so on) in the build folder with all dependencies statically linked.
+
+### Windows
+
+Assuming that you have `Visual Studio 2022` or later with `vcpkg` and `CMake`
+integration installed, run the following shell command in the repository:
+
+```
+vcpkg integrate install
+```
+
+Then open the repository as a folder and build the project as usual. You may
+need to update `CMakeSettings.json` with the configurations you want.
 
 ## Usage
 

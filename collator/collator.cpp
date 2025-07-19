@@ -44,10 +44,6 @@
 #include <system_error>
 #include <vector>
 
-extern "C" {
-#include <openssl/evp.h>
-}
-
 using namespace trc;
 
 constexpr size_t SHA1Size = 20;

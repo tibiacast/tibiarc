@@ -21,6 +21,7 @@
 
 #if defined(_WIN32) && !defined(DISABLE_BCRYPT_CRYPTO)
 extern "C" {
+#    define NOMINMAX
 #    include <windows.h>
 #    include <ntstatus.h>
 #    include <bcrypt.h>
