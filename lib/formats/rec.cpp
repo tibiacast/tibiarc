@@ -28,6 +28,7 @@
 #include "utils.hpp"
 
 #include <algorithm>
+#include <chrono>
 
 namespace trc {
 namespace Recordings {
@@ -43,7 +44,7 @@ static constexpr int MaxFrameSize = (64 << 10);
 
 struct State {
     struct {
-        uint32_t Timestamp;
+        std::chrono::milliseconds Timestamp;
         uint32_t Length;
         uint32_t Checksum;
 
@@ -113,7 +114,7 @@ struct State {
     void Deobfuscate() {
         if (Obfuscation.Twirl > 0) {
             const uint32_t key =
-                    (Fragment.Length + Fragment.Timestamp + 2) & 0xFF;
+                    (Fragment.Length + Fragment.Timestamp.count() + 2) & 0xFF;
 
             for (uint32_t i = 0; i < Fragment.Length; i++) {
                 int32_t alpha, beta;
@@ -241,7 +242,8 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                 state.Fragment.Length = reader.ReadU32<0, MaxFrameSize>();
             }
 
-            state.Fragment.Timestamp = reader.ReadU32();
+            state.Fragment.Timestamp =
+                    std::chrono::milliseconds(reader.ReadU32());
             reader.Copy(state.Fragment.Length, state.Fragment.CipherData);
 
             state.Deobfuscate();
@@ -250,7 +252,7 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                 state.Fragment.PlainData);
             demuxer.Submit(state.Fragment.Timestamp,
                            fragment,
-                           [&](DataReader packetReader, uint32_t timestamp) {
+                           [&](DataReader packetReader, auto timestamp) {
                                recording->Frames.emplace_back(
                                        timestamp,
                                        parser.Parse(packetReader));

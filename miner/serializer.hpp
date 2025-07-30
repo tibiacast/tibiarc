@@ -37,8 +37,8 @@ struct Settings {
 
     std::unordered_set<Events::Type> SkippedEvents;
 
-    int StartTime;
-    int EndTime;
+    std::chrono::milliseconds StartTime;
+    std::chrono::milliseconds EndTime;
 
     VersionTriplet DesiredTibiaVersion;
     bool DryRun;

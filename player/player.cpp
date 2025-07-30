@@ -86,7 +86,7 @@ void handle_input() {
     }
 
     if (skip_by != 0) {
-        playback->Skip(skip_by);
+        playback->Skip(std::chrono::milliseconds(skip_by));
     }
 }
 

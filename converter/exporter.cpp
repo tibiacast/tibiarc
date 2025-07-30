@@ -28,6 +28,7 @@
 #include "versions.hpp"
 
 #include <algorithm>
+#include <format>
 #include <iostream>
 
 #include "utils.hpp"
@@ -193,11 +194,12 @@ static void ConvertVideo(
         Canvas &mapCanvas,
         Canvas &outputCanvas,
         uint32_t frameRate,
-        uint32_t startTime,
-        uint32_t endTime) {
+        std::chrono::milliseconds startTime,
+        std::chrono::milliseconds endTime) {
     const Renderer::Options &renderOptions = settings.RenderOptions;
     int viewLeftX, viewTopY, viewRightX, viewBottomY;
-    uint32_t frameNumber = 0, frameTimestamp = 0;
+    std::chrono::milliseconds frameTimestamp(0);
+    uint32_t frameNumber = 0;
 
     {
         /* Determine the bounds of the viewport, maintaning the aspect ratio
@@ -228,7 +230,7 @@ static void ConvertVideo(
     /* Clip start/end to recording bounds, allowing another second in case of
      * an abrupt end to the recording. */
     startTime = std::min(startTime, recording->Runtime);
-    endTime = std::min(endTime, recording->Runtime + 1000);
+    endTime = std::min(endTime, recording->Runtime + std::chrono::seconds(1));
 
     auto currentFrame = recording->Frames.cbegin();
 
@@ -254,8 +256,9 @@ static void ConvertVideo(
         do {
             frameNumber++;
 
-            frameTimestamp = (frameNumber * 1000) / frameRate;
-            gamestate.CurrentTick = frameTimestamp;
+            frameTimestamp =
+                    std::chrono::milliseconds((frameNumber * 1000) / frameRate);
+            gamestate.CurrentTick = frameTimestamp.count();
 
             if ((frameTimestamp < startTime) ||
                 (frameNumber % settings.FrameSkip)) {
@@ -294,9 +297,13 @@ static void ConvertVideo(
 
             encoder.WriteFrame(outputCanvas);
 
-            if ((frameTimestamp % 500) == 0) {
-                std::cout << "progress: " << frameTimestamp << " / "
-                          << startTime << " / " << endTime << std::endl;
+            if ((frameTimestamp.count() % 500) == 0) {
+                std::cout << std::format("progress: {:%H:%M:%S} / {:%H:%M:%S} "
+                                         "/ {:%H:%M:%S}",
+                                         frameTimestamp,
+                                         startTime,
+                                         endTime)
+                          << std::endl;
             }
         } while (frameTimestamp <=
                  (currentFrame != recording->Frames.cend()

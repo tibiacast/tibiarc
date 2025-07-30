@@ -181,9 +181,10 @@ static bool ParsePacket(DataReader &reader,
                         const Version &version,
                         Parser &parser,
                         Recording &recording) {
-    uint32_t packetLength, timestamp;
+    std::chrono::milliseconds timestamp;
+    uint32_t packetLength;
 
-    timestamp = reader.ReadU32();
+    timestamp = std::chrono::milliseconds(reader.ReadU32());
 
     if (version.AtLeast(9, 54)) {
         packetLength = reader.ReadU32();
@@ -410,7 +411,7 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     reader.SkipU8();
 
     if (version.AtLeast(9, 54)) {
-        recording->Runtime = reader.ReadU32();
+        recording->Runtime = std::chrono::milliseconds(reader.ReadU32());
     }
 
     if (version.AtLeast(9, 80)) {

@@ -151,26 +151,25 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     auto recording = std::make_unique<Recording>();
     bool partialReturn = false;
 
-    recording->Runtime = reader.ReadU32();
+    recording->Runtime = std::chrono::milliseconds(reader.ReadU32());
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
         Demuxer demuxer(2);
-        uint32_t frameTime = 0;
 
+        std::chrono::milliseconds frameTime(0);
         while (reader.Remaining() > 0) {
             if (reader.ReadU8<0, 1>() == 0) {
-                auto frameDelay = reader.ReadU32();
+                auto frameDelay = std::chrono::milliseconds(reader.ReadU32());
 
                 DataReader frameReader = reader.Slice(reader.ReadU16());
-                demuxer.Submit(
-                        frameTime,
-                        frameReader,
-                        [&](DataReader packetReader, uint32_t timestamp) {
-                            recording->Frames.emplace_back(
-                                    timestamp,
-                                    parser.Parse(packetReader));
-                        });
+                demuxer.Submit(frameTime,
+                               frameReader,
+                               [&](DataReader packetReader, auto timestamp) {
+                                   recording->Frames.emplace_back(
+                                           timestamp,
+                                           parser.Parse(packetReader));
+                               });
 
                 frameTime += frameDelay;
             }

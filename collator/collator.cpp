@@ -153,7 +153,7 @@ std::optional<std::string> GuessVersion(
     for (const auto &frame : frames) {
         /* Don't bother looking too for into a recording; we'll either see the
          * login message almost immediately or not at all. */
-        if (frame.Timestamp > 2000) {
+        if (frame.Timestamp > std::chrono::seconds(2)) {
             break;
         }
 

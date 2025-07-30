@@ -24,12 +24,13 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <chrono>
 
 namespace trc {
 class Demuxer {
     enum class State { Header, Payload } State;
     uint8_t HeaderSize;
-    uint32_t Timestamp;
+    std::chrono::milliseconds Timestamp;
 
     size_t Remaining;
     size_t Used;
@@ -37,7 +38,9 @@ class Demuxer {
 
 public:
     template <typename Lambda>
-    void Submit(uint32_t timestamp, DataReader &reader, Lambda process) {
+    void Submit(std::chrono::milliseconds timestamp,
+                DataReader &reader,
+                Lambda process) {
 
         while (reader.Remaining() > 0) {
             if (Remaining == 0) {

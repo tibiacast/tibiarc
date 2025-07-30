@@ -40,8 +40,8 @@ public:
     std::unique_ptr<Recordings::Recording> Recording;
 
     std::list<Recordings::Recording::Frame>::const_iterator Needle;
-    uint32_t BaseTick;
-    uint32_t ScaleTick;
+    std::chrono::milliseconds BaseTick;
+    std::chrono::milliseconds ScaleTick;
     float Scale;
 
     Playback(const DataReader &file,
@@ -53,11 +53,11 @@ public:
              int minor = 0,
              int preview = 0);
 
-    uint32_t GetPlaybackTick();
+    std::chrono::milliseconds GetPlaybackTick();
     void ProcessPackets();
     void Toggle();
     void SetSpeed(float speed);
-    void Skip(int32_t by);
+    void Skip(std::chrono::milliseconds by);
 };
 }; // namespace trc
 

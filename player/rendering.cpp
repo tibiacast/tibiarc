@@ -251,7 +251,7 @@ void Rendering::Render(Playback &playback) {
 
         textLength = formatTime(text,
                                 sizeof(text) / sizeof(text[0]),
-                                playback.GetPlaybackTick());
+                                playback.GetPlaybackTick().count());
         TextRenderer::Render(playback.Gamestate->Version.Fonts.Game,
                              TextAlignment::Left,
                              TextTransform::None,
@@ -264,7 +264,7 @@ void Rendering::Render(Playback &playback) {
 
         textLength = formatTime(text,
                                 sizeof(text) / sizeof(text[0]),
-                                playback.Recording->Runtime);
+                                playback.Recording->Runtime.count());
         TextRenderer::Render(playback.Gamestate->Version.Fonts.Game,
                              TextAlignment::Left,
                              TextTransform::None,

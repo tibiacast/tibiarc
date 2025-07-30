@@ -73,18 +73,17 @@ void Playback::Stabilize() {
     }
 }
 
-uint32_t Playback::GetPlaybackTick() {
-    return std::min(static_cast<uint32_t>(BaseTick +
-                                          (SDL_GetTicks() - ScaleTick) * Scale),
-                    Recording->Runtime);
+std::chrono::milliseconds Playback::GetPlaybackTick() {
+    auto scaledTick =
+            BaseTick + std::chrono::milliseconds(static_cast<int64_t>(
+                               (SDL_GetTicks() - ScaleTick.count()) * Scale));
+    return std::min(scaledTick, Recording->Runtime);
 }
-
 void Playback::ProcessPackets() {
     /* Process packets until we have caught up */
-    uint32_t playback_tick = GetPlaybackTick();
+    auto tick = GetPlaybackTick();
 
-    while (Needle != Recording->Frames.cend() &&
-           Needle->Timestamp <= playback_tick) {
+    while (Needle != Recording->Frames.cend() && Needle->Timestamp <= tick) {
         for (auto &event : Needle->Events) {
             event->Update(*Gamestate);
         }
@@ -93,7 +92,7 @@ void Playback::ProcessPackets() {
     }
 
     /* Advance the gamestate */
-    Gamestate->CurrentTick = playback_tick;
+    Gamestate->CurrentTick = tick.count();
 }
 
 void Playback::Toggle() {
@@ -106,18 +105,18 @@ void Playback::Toggle() {
 }
 
 void Playback::SetSpeed(float speed) {
+    ScaleTick = std::chrono::milliseconds(SDL_GetTicks());
     BaseTick = GetPlaybackTick();
-    ScaleTick = SDL_GetTicks();
     Scale = speed;
 
     std::cout << "Speed changed to " << speed << std::endl;
 }
 
-void Playback::Skip(int32_t by) {
+void Playback::Skip(std::chrono::milliseconds by) {
+    ScaleTick = std::chrono::milliseconds(SDL_GetTicks());
     BaseTick = GetPlaybackTick();
-    ScaleTick = SDL_GetTicks();
 
-    if (by < 0) {
+    if (by < std::chrono::milliseconds::zero()) {
         Needle = Recording->Frames.cbegin();
         Gamestate->Reset();
         Gamestate->CurrentTick = 0;
@@ -125,7 +124,7 @@ void Playback::Skip(int32_t by) {
         Stabilize();
 
         if (BaseTick < -by) {
-            BaseTick = 0;
+            BaseTick = std::chrono::milliseconds::zero();
         } else {
             BaseTick += by;
         }

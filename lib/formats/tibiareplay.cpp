@@ -66,14 +66,14 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     auto recording = std::make_unique<Recording>();
     bool partialReturn = false;
 
-    recording->Runtime = reader.ReadU32();
+    recording->Runtime = std::chrono::milliseconds(reader.ReadU32());
     auto frames = reader.ReadU32();
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
 
         while (frames--) {
-            auto timestamp = reader.ReadU32();
+            auto timestamp = std::chrono::milliseconds(reader.ReadU32());
             auto packetReader = reader.Slice(reader.ReadU16());
 
             recording->Frames.emplace_back(timestamp,

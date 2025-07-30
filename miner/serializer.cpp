@@ -31,6 +31,22 @@
 
 using json = nlohmann::json;
 
+namespace nlohmann {
+template <> struct adl_serializer<std::chrono::milliseconds> {
+    static void from_json(const json &j, std::chrono::milliseconds &d) {
+        int64_t time;
+
+        nlohmann::from_json(j, time);
+
+        d = std::chrono::milliseconds(time);
+    }
+
+    static void to_json(json &j, const std::chrono::milliseconds &d) {
+        nlohmann::to_json(j, d.count());
+    }
+};
+} // namespace nlohmann
+
 namespace trc {
 NLOHMANN_JSON_SERIALIZE_ENUM(
         MessageMode,
@@ -988,12 +1004,13 @@ void Serialize(const Settings &settings,
     auto frames = std::vector<json>();
 
     for (const auto &frame : recording->Frames) {
-        Assert(settings.StartTime >= 0 && settings.EndTime >= 0);
+        Assert(settings.StartTime >= std::chrono::milliseconds::zero() &&
+               settings.EndTime >= std::chrono::milliseconds::zero());
 
         /* Clip to given bounds. */
-        if (frame.Timestamp < static_cast<uint64_t>(settings.StartTime)) {
+        if (frame.Timestamp < settings.StartTime) {
             continue;
-        } else if (frame.Timestamp > static_cast<uint64_t>(settings.EndTime)) {
+        } else if (frame.Timestamp > settings.EndTime) {
             break;
         }
 

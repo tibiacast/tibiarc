@@ -136,13 +136,13 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
         Demuxer demuxer(2);
 
         for (int32_t i = 0; i < frameCount; i++) {
-            uint16_t fragmentLength = reader.ReadU16();
-            uint32_t fragmentTimestamp = reader.ReadU32();
+            auto fragmentLength = reader.ReadU16();
+            auto timestamp = std::chrono::milliseconds(reader.ReadU32());
 
             auto fragment = reader.Slice(fragmentLength);
-            demuxer.Submit(fragmentTimestamp,
+            demuxer.Submit(timestamp,
                            fragment,
-                           [&](DataReader packetReader, uint32_t timestamp) {
+                           [&](DataReader packetReader, auto timestamp) {
                                recording->Frames.emplace_back(
                                        timestamp,
                                        parser.Parse(packetReader));

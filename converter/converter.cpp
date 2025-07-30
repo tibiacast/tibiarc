@@ -38,11 +38,11 @@ int main(int argc, char **argv) {
 
             .EncodeBackend = Encoding::Backend::LibAV,
 
-            .FrameRate = 25,
-            .FrameSkip = 1,
+            .StartTime = std::chrono::milliseconds::zero(),
+            .EndTime = std::chrono::milliseconds::max(),
 
-            .StartTime = 0,
-            .EndTime = std::numeric_limits<int>::max()};
+            .FrameRate = 25,
+            .FrameSkip = 1};
 
     auto paths = CLI::Process(
             argc,
@@ -57,24 +57,26 @@ int main(int argc, char **argv) {
                       "start",
                       {"end_ms"},
                       [&](const CLI::Range &args) {
-                          if (sscanf(args[0].c_str(),
-                                     "%i",
-                                     &settings.EndTime) != 1 ||
-                              settings.EndTime < 0) {
+                          uint32_t time;
+                          if (sscanf(args[0].c_str(), "%i", &time) != 1 ||
+                              time < 0) {
                               throw "end-time must be a time in milliseconds";
                           }
+
+                          settings.EndTime = std::chrono::milliseconds(time);
                       }}},
                     {"start-time",
                      {"when to stop encoding, in milliseconds relative to "
                       "start",
                       {"start_ms"},
                       [&](const CLI::Range &args) {
-                          if (sscanf(args[0].c_str(),
-                                     "%i",
-                                     &settings.StartTime) != 1 ||
-                              settings.StartTime < 0) {
+                          uint32_t time;
+                          if (sscanf(args[0].c_str(), "%i", &time) != 1 ||
+                              time < 0) {
                               throw "start-time must be a time in milliseconds";
                           }
+
+                          settings.StartTime = std::chrono::milliseconds(time);
                       }}},
 
                     {"frame-rate",

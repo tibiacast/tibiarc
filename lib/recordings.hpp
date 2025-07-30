@@ -57,11 +57,11 @@ enum class Recovery { None, Repair };
 
 struct Recording {
     struct Frame {
-        uint32_t Timestamp;
+        std::chrono::milliseconds Timestamp;
         std::list<std::unique_ptr<Events::Base>> Events;
     };
 
-    uint32_t Runtime;
+    std::chrono::milliseconds Runtime;
     std::list<Frame> Frames;
 };
 

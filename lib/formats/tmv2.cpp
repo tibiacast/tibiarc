@@ -61,7 +61,7 @@ void ReadNextFrame(DataReader &reader, Parser &parser, Recording &recording) {
 
     DataReader packetReader = reader.Slice(innerLength);
     auto &frame = recording.Frames.emplace_back();
-    frame.Timestamp = timestamp;
+    frame.Timestamp = std::chrono::milliseconds(timestamp);
 
     while (packetReader.Remaining() > 0) {
         frame.Events.splice(frame.Events.end(), parser.Parse(packetReader));

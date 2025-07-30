@@ -48,7 +48,7 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
             auto timestamp = reader.ReadU32();
             auto packetReader = reader.Slice(reader.ReadU16());
 
-            recording->Frames.emplace_back(timestamp,
+            recording->Frames.emplace_back(std::chrono::milliseconds(timestamp),
                                            parser.Parse(packetReader));
         }
 
