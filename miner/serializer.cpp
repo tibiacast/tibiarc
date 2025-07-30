@@ -23,7 +23,7 @@
 #include "memoryfile.hpp"
 #include "versions.hpp"
 
-#include "deps/json.hpp"
+#include "json.hpp"
 
 #include <algorithm>
 #include <filesystem>

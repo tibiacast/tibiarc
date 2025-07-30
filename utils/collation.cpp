@@ -26,10 +26,6 @@
 #include <chrono>
 #include <compare>
 #include <cstdlib>
-#ifndef _WIN32
-/* N.B: This fails under MXE cross-compilation. */
-#    include <execution>
-#endif
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -181,20 +177,8 @@ void GatherRecordingFiles(const std::filesystem::path &root,
 
     GatherRecordingPaths(root, paths);
 
-    std::vector<std::optional<RecordingFile>> unfiltered(paths.size());
-    std::transform(
-#ifndef _WIN32
-            std::execution::par_unseq,
-#endif
-            paths.begin(),
-            paths.end(),
-            unfiltered.begin(),
-            [](const std::filesystem::path &path) {
-                return GatherRecordingFile(path);
-            });
-
-    for (const auto &file : unfiltered) {
-        if (file) {
+    for (const auto &path : paths) {
+        if (auto file = GatherRecordingFile(path)) {
             result.push_back(*file);
         }
     }
@@ -250,9 +234,7 @@ void GatherDataFiles(const std::filesystem::path &root,
     GatherDataPaths(root, paths);
 
     for (const auto &path : paths) {
-        auto file = GatherDataFile(path);
-
-        if (file) {
+        if (auto file = GatherDataFile(path)) {
             result.push_back(*file);
         }
     }

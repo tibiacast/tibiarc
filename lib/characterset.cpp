@@ -69,6 +69,20 @@ static const std::string Windows1252ToUtf8[128] = {
         {{-61, -69}, 2},        {{-61, -68}, 2},        {{-61, -67}, 2},
         {{-61, -66}, 2},        {{-61, -65}, 2}};
 
+std::string ToPrintableUtf8(const std::string &text) {
+    std::stringstream result;
+
+    for (auto character : text) {
+        if (character & 0x80) {
+            result << Windows1252ToUtf8[ToPrintable(character) & 0x7F];
+        } else {
+            result << ToPrintable(character);
+        }
+    }
+
+    return result.str();
+}
+
 std::string ToUtf8(const std::string &text) {
     std::stringstream result;
 

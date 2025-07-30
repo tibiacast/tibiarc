@@ -29,7 +29,6 @@
 
 namespace trc {
 struct Container {
-    uint32_t Id;
     std::string Name;
 
     uint16_t ItemId;

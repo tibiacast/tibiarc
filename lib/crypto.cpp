@@ -30,6 +30,8 @@ extern "C" {
 extern "C" {
 #    include <openssl/evp.h>
 }
+#elif !defined(DISABLE_QT_CRYPTO)
+#    include <QCryptographicHash>
 #endif
 
 namespace trc {
@@ -244,6 +246,35 @@ public:
 
     ~SHA1__() {
         EVP_MD_CTX_free(Context);
+    }
+};
+
+std::unique_ptr<SHA1> SHA1::Create() {
+    return std::make_unique<SHA1__>();
+}
+#elif !defined(DISABLE_QT_CRYPTO)
+class SHA1__ : public SHA1 {
+    QCryptographicHash Context;
+
+public:
+    SHA1__() : SHA1(), Context(QCryptographicHash::Algorithm::Sha1) {
+    }
+
+    virtual void Hash(const uint8_t *input,
+                      size_t length,
+                      uint8_t output[Size]) {
+        QByteArray data(reinterpret_cast<const char *>(input), length);
+
+        Context.reset();
+        Context.addData(data);
+
+        auto view = Context.resultView();
+        Assert(view.size() == Size);
+
+        std::copy(view.begin(), view.end(), output);
+    }
+
+    ~SHA1__() {
     }
 };
 

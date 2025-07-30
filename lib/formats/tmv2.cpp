@@ -103,6 +103,7 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
 
         if (compressed) {
 #ifdef DISABLE_ZLIB
+            (void)decompressedSize;
             throw NotSupportedError();
 #else
             uLongf actualSize;

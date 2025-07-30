@@ -29,10 +29,6 @@
 #include <chrono>
 #include <compare>
 #include <cstdlib>
-#ifndef _WIN32
-/* N.B: This fails under MXE cross-compilation. */
-#    include <execution>
-#endif
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -269,16 +265,12 @@ ProcessRecordings(const std::vector<Collation::RecordingFile> &recordings,
     std::vector<std::pair<Collation::RecordingFile, std::filesystem::path>>
             result(recordings.size());
 
-    std::transform(
-#ifndef _WIN32
-            std::execution::par_unseq,
-#endif
-            recordings.begin(),
-            recordings.end(),
-            result.begin(),
-            [&versions](const Collation::RecordingFile &in) {
-                return ProcessRecording(in, versions);
-            });
+    std::transform(recordings.begin(),
+                   recordings.end(),
+                   result.begin(),
+                   [&versions](const Collation::RecordingFile &in) {
+                       return ProcessRecording(in, versions);
+                   });
 
     return result;
 }

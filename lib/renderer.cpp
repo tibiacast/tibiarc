@@ -1526,56 +1526,6 @@ static bool DrawMapOverlay(const Options &options,
     return true;
 }
 
-static int MessageColor(MessageMode mode) {
-    switch (mode) {
-    case MessageMode::Say:
-    case MessageMode::Spell:
-    case MessageMode::Whisper:
-    case MessageMode::Yell:
-        return 210;
-    case MessageMode::MonsterSay:
-#ifdef DEBUG
-        /* Helps distinguish between monster say/yell when figuring out speak
-         * types. */
-        return 10;
-#endif
-    case MessageMode::MonsterYell:
-        return 192;
-    case MessageMode::NPCStart:
-        /* Light-blue, above creature */
-        return 35;
-    case MessageMode::Game:
-        /* White, center screen */
-        return 215;
-    case MessageMode::PrivateIn:
-        /* Light-blue, top-center screen */
-        return 35;
-    case MessageMode::Warning:
-        /* Red, center screen */
-        return 194;
-    case MessageMode::Hotkey:
-#ifdef DEBUG
-        /* Helps distinguish between hotkey/look when figuring out speak
-         * types. */
-        return 10;
-#endif
-    case MessageMode::NPCTrade:
-    case MessageMode::Guild:
-    case MessageMode::Loot:
-    case MessageMode::Look:
-        /* Green, center screen */
-        return 30;
-    case MessageMode::Failure:
-    case MessageMode::Status:
-    case MessageMode::Login:
-        /* White, bottom-center screen */
-        return 215;
-    default:
-        /* Return something fugly so it gets reported. */
-        return 10;
-    }
-}
-
 static bool DrawMessages(const Options &options,
                          Gamestate &gamestate,
                          Canvas &canvas,
@@ -1698,7 +1648,7 @@ static bool DrawMessages(const Options &options,
                 continue;
             }
         } else {
-            messageColor = Pixel::TextColor(MessageColor(message->Type));
+            messageColor = Message::TextColor(message->Type);
 
             switch (message->Type) {
             case MessageMode::NPCStart:
@@ -1873,6 +1823,12 @@ void DrawOverlay(const Options &options,
     }
 }
 
+int MeasureIconBarHeight(Gamestate &gamestate) noexcept {
+    const Icons &icons = gamestate.Version.Icons;
+
+    return 2 + icons.IconBarBackground.Height;
+}
+
 void DrawIconBar(Gamestate &gamestate,
                  Canvas &canvas,
                  int &offsetX,
@@ -1999,6 +1955,12 @@ static void DrawIconArea(Gamestate &gamestate,
      * icon area. */
 }
 
+int MeasureStatusBarsHeight(Gamestate &gamestate) noexcept {
+    const Icons &icons = gamestate.Version.Icons;
+
+    return 18 + icons.EmptyStatusBar.Height;
+}
+
 void DrawStatusBars(Gamestate &gamestate,
                     Canvas &canvas,
                     int &offsetX,
@@ -2079,6 +2041,12 @@ void DrawStatusBars(Gamestate &gamestate,
     baseY += 18 + icons.EmptyStatusBar.Height;
 
     offsetY = baseY;
+}
+
+int MeasureInventoryAreaHeight(Gamestate &gamestate) noexcept {
+    const Icons &icons = gamestate.Version.Icons;
+
+    return 124 + icons.SecondaryStatBackground.Height + 3;
 }
 
 void DrawInventoryArea(Gamestate &gamestate,
@@ -2162,6 +2130,27 @@ void DrawInventoryArea(Gamestate &gamestate,
     offsetY = baseY + icons.SecondaryStatBackground.Height + 3;
 }
 
+int MeasureContainerHeight(Gamestate &gamestate,
+                           Container &container,
+                           bool collapsed,
+                           int width) {
+    const Version &version = gamestate.Version;
+    int height = version.Fonts.InterfaceLarge.Height;
+
+    if (!collapsed) {
+        const int slotSize = (32 + 4);
+        const int slotsPerRow = width / slotSize;
+
+        /* Round up to avoid having the next container overdraw this one, in
+         * case the container size wasn't a clean multiple of the slot
+         * modulus. */
+        height += ((container.SlotsPerPage + (slotsPerRow - 1) / slotsPerRow)) *
+                  slotSize;
+    }
+
+    return height;
+}
+
 void DrawContainer(Gamestate &gamestate,
                    Canvas &canvas,
                    Container &container,
@@ -2223,6 +2212,67 @@ void DrawContainer(Gamestate &gamestate,
          * modulus. */
         baseY += ((itemIdx + slotsPerRow - 1) / slotsPerRow) * slotSize;
     }
+
+    offsetY = baseY;
+}
+
+int MeasureSkillsHeight(Gamestate &gamestate) noexcept {
+    const Version &version = gamestate.Version;
+    return version.Fonts.InterfaceLarge.Height * 13;
+}
+
+void DrawSkills(Gamestate &gamestate,
+                Canvas &canvas,
+                int rightX,
+                int &offsetX,
+                int &offsetY) noexcept {
+    const Version &version = gamestate.Version;
+
+    int baseX = offsetX, baseY = offsetY;
+
+    TextRenderer::DrawProperCaseString(version.Fonts.InterfaceLarge,
+                                       Pixel(0xBF, 0xBF, 0xBF),
+                                       baseX,
+                                       baseY + 2,
+                                       "Skills",
+                                       canvas);
+
+    baseY += version.Fonts.InterfaceLarge.Height;
+    baseX += 8;
+
+    auto drawStat = [&](const char *name, int64_t value) {
+        TextRenderer::DrawProperCaseString(version.Fonts.InterfaceLarge,
+                                           Pixel(0xBF, 0xBF, 0xBF),
+                                           baseX,
+                                           baseY + 2,
+                                           name,
+                                           canvas);
+        TextRenderer::DrawRightAlignedString(version.Fonts.InterfaceLarge,
+                                             Pixel(0xBF, 0xBF, 0xBF),
+                                             rightX,
+                                             baseY + 2,
+                                             std::format("{}", value),
+                                             canvas);
+        baseY += version.Fonts.InterfaceLarge.Height;
+    };
+
+    drawStat("Experience", gamestate.Player.Stats.Experience);
+    drawStat("Level", gamestate.Player.Stats.Level);
+    drawStat("Hitpoints", gamestate.Player.Stats.Health);
+    drawStat("Mana", gamestate.Player.Stats.Mana);
+
+    uint32_t capacity =
+            gamestate.Player.Stats.Capacity / version.Features.CapacityDivisor;
+    drawStat("Capacity", capacity);
+    drawStat("Magic level", gamestate.Player.Stats.MagicLevel);
+
+    drawStat("Fist fighting", gamestate.Player.Skills[0].Effective);
+    drawStat("Club fighting", gamestate.Player.Skills[1].Effective);
+    drawStat("Sword fighting", gamestate.Player.Skills[2].Effective);
+    drawStat("Axe fighting", gamestate.Player.Skills[3].Effective);
+    drawStat("Distance fighting", gamestate.Player.Skills[4].Effective);
+    drawStat("Shielding", gamestate.Player.Skills[5].Effective);
+    drawStat("Fishing", gamestate.Player.Skills[6].Effective);
 
     offsetY = baseY;
 }

@@ -68,21 +68,24 @@ The following optional dependencies are required for certain formats and utiliti
 * `libavformat` [^1]
 * `libavutil` [^1]
 * `libswscale` [^1]
-* `libsdl2` [^2]
-* `zlib` [^3]
-* `openssl` (except for Windows which uses `bcrypt`) [^4]
+* `zlib` [^2]
+* `openssl` (except for Windows which uses `bcrypt`) [^3]
+* `qt6` (6.9 or newer) [^4]
 
 [^1]: Used in the recording converter example.
-[^2]: Used in the recording player example.
-[^3]: Required to open Tibiacast and TibiaMovie recordings
-[^4]: Required to open `.rec` files for Tibia versions 7.71 and later, as well as the `collator` utility.
+[^2]: Required to open Tibiacast and TibiaMovie recordings
+[^3]: Required to open `.rec` files for Tibia versions 7.71 and later, as well as the `collator` utility.
+[^4]: Required for the `gui` utility.
 
-The following should install everything on Debian and derived distros like
-Ubuntu:
+The following should install everything except `qt6` on Debian and derived
+distros like Ubuntu:
 
 ```
 $ sudo apt install binutils clang cmake libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev libssl-dev libswscale-dev make pkg-config zlib1g-dev libtbb-dev
 ```
+
+`qt6` must be installed through the `Qt` installer to work reliably, as the
+version provided by package managers is generally older than the required 6.9.
 
 Then jump into the project folder and run the following commands, if all goes
 well, it'll create the `libtibiarc.a` library and demo `converter` program in
@@ -224,14 +227,14 @@ that cause clutter and look awful when scaled down to the size of a thumbnail:
 I've used `bmp` in these examples but largely any format supported by your
 `ffmpeg` install will work (`.jpg` and `.webp` are often included).
 
-### Player mode
+### Player/GUI mode
 
-A rudimentary player is included, supporting basic features like control over
-playback speed, skipping ahead, and rewinding. It can either be used as a
-basic desktop application, or if the project is built under `emscripten`, from
-a web browser.
+The `gui` utility provides a video player with support for checking chat
+channels, basic playback controls, and managing your collection of recordings.
+It can either be used as a basic desktop application, or if the project is
+built under `emscripten`, from a web browser.
 
-    ./player data/folder tests/8.40/sample.tmv2
+    ./gui
 
 ### JSON export
 

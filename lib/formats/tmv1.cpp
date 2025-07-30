@@ -132,9 +132,10 @@ static std::unique_ptr<uint8_t[]> Uncompress(const DataReader &reader,
 }
 #endif
 
-std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
-                                                 const Version &version,
-                                                 Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(
+        [[maybe_unused]] const DataReader &file,
+        [[maybe_unused]] const Version &version,
+        [[maybe_unused]] Recovery recovery) {
 #ifdef DISABLE_ZLIB
     throw NotSupportedError();
 #else
