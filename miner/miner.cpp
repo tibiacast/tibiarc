@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
                           settings.SkippedEvents.insert(
                                   trc::Events::Type::PlayerSkillsUpdated);
                       }}},
-                    {"skip-player-terrain",
+                    {"skip-terrain",
                      {"skips terrain events",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
