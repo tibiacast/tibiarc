@@ -31,9 +31,9 @@
 #include "textrenderer.hpp"
 #include "types.hpp"
 
-#include <math.h>
+#include <cmath>
 #include <cstdlib>
-
+#include <format>
 #include <initializer_list>
 #include <tuple>
 
@@ -44,13 +44,6 @@ namespace trc {
 #define MAX_HEIGHT_DISPLACEMENT 24
 
 namespace Renderer {
-
-template <typename... Args>
-static std::string FormatString(const char *format, Args... args) {
-    char textBuffer[256];
-    auto textLength = snprintf(textBuffer, sizeof(textBuffer), format, args...);
-    return std::string(textBuffer, textLength);
-}
 
 static Pixel Convert8BitColor(uint8_t color) {
     return Pixel(((color / 36) * 51),
@@ -1050,7 +1043,7 @@ static void DrawInventoryItem(Gamestate &gamestate,
                     Pixel(0xBF, 0xBF, 0xBF),
                     X + 32,
                     Y + 22,
-                    FormatString("%hhu", item.ExtraByte),
+                    std::format("{}", item.ExtraByte),
                     canvas);
         }
     }
@@ -1224,7 +1217,7 @@ static void DrawNumericalEffects(Gamestate &gamestate,
                                              Convert8BitColor(effect.Color),
                                              textCenterX,
                                              textCenterY,
-                                             FormatString("%u", effect.Value),
+                                             std::format("{}", effect.Value),
                                              canvas);
         }
     } while (effectIdx != tile.NumericalIndex);
@@ -1834,9 +1827,7 @@ static bool DrawMessages(const Options &options,
                         messageColor,
                         centerX,
                         bottomY,
-                        FormatString("%s %s:",
-                                     message->Author.c_str(),
-                                     messagePrefix),
+                        std::format("{} {}:", message->Author, messagePrefix),
                         canvas);
             }
         }
@@ -2069,9 +2060,9 @@ void DrawStatusBars(Gamestate &gamestate,
             Pixel(0xFF, 0xFF, 0xFF),
             statusBarX + 2 + icons.HealthBar.Width / 2,
             statusBarY + 2,
-            FormatString("%hi / %hi",
-                         gamestate.Player.Stats.Health,
-                         gamestate.Player.Stats.MaxHealth),
+            std::format("{} / {}",
+                        gamestate.Player.Stats.Health,
+                        gamestate.Player.Stats.MaxHealth),
             canvas);
 
     TextRenderer::DrawCenteredString(
@@ -2079,9 +2070,9 @@ void DrawStatusBars(Gamestate &gamestate,
             Pixel(0xFF, 0xFF, 0xFF),
             statusBarX + 2 + icons.ManaBar.Width / 2,
             statusBarY + 15,
-            FormatString("%hi / %hi",
-                         gamestate.Player.Stats.Mana,
-                         gamestate.Player.Stats.MaxMana),
+            std::format("{} / {}",
+                        gamestate.Player.Stats.Mana,
+                        gamestate.Player.Stats.MaxMana),
             canvas);
 
     /* Update the render position */
@@ -2142,7 +2133,7 @@ void DrawInventoryArea(Gamestate &gamestate,
                 Pixel(0xAF, 0xAF, 0xAF),
                 16 + baseX + 17,
                 baseY + 10,
-                FormatString("%hhu", gamestate.Player.Stats.SoulPoints),
+                std::format("{}", gamestate.Player.Stats.SoulPoints),
                 canvas);
     }
 
@@ -2164,7 +2155,7 @@ void DrawInventoryArea(Gamestate &gamestate,
                                      Pixel(0xAF, 0xAF, 0xAF),
                                      16 + baseX + 90,
                                      baseY + 10,
-                                     FormatString("%u", capacity),
+                                     std::format("{}", capacity),
                                      canvas);
 
     /* Update the render position */
