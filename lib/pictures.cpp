@@ -61,8 +61,8 @@ void PictureFile::ReadPicture(DataReader &reader, const PictureIndex index) {
     }
 }
 
-PictureFile::PictureFile(const VersionBase &version, DataReader data) {
-    Signature = data.ReadU32();
+PictureFile::PictureFile(const VersionBase &version, DataReader data)
+    : Signature(data.ReadU32()) {
 
     /* Picture count, must be kept in sync with the code below. */
     data.SkipU16<8, 9>();

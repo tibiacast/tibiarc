@@ -194,13 +194,15 @@ public:
 };
 
 class TypeFile {
-    uint32_t Signature;
+public:
+    const uint32_t Signature;
 
-    uint16_t ItemMaxId;
-    uint16_t OutfitMaxId;
-    uint16_t EffectMaxId;
-    uint16_t MissileMaxId;
+    const uint16_t ItemMaxId;
+    const uint16_t OutfitMaxId;
+    const uint16_t EffectMaxId;
+    const uint16_t MissileMaxId;
 
+private:
     struct TypeCategory {
         std::unordered_map<uint32_t, EntityType> Entities;
 

@@ -291,10 +291,10 @@ Sprite::~Sprite() {
     }
 }
 
-SpriteFile::SpriteFile(const VersionBase &version, DataReader data) {
-    Signature = data.ReadU32();
-
+SpriteFile::SpriteFile(const VersionBase &version, DataReader data)
+    : Signature(data.ReadU32()) {
     uint32_t count;
+
     if (version.Features.SpriteIndexU32) {
         /* To avoid running out of memory on version mismatches, we'll set a
          * reasonably-high upper bound to error out quicker. */

@@ -320,9 +320,11 @@ target_link_libraries(miner PRIVATE tibiarc)
 if(TIBIARC_HAVE_CRYPTO)
   add_executable(collator
     "collator/collator.cpp"
+    "utils/cli.hpp"
+    "utils/collation.cpp"
+    "utils/collation.hpp"
     "utils/memoryfile.cpp"
     "utils/memoryfile.hpp"
-    "utils/cli.hpp"
   )
   target_include_directories(collator PRIVATE "collator" "utils")
   target_link_libraries(collator PRIVATE tibiarc)
