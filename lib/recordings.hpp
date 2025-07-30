@@ -45,6 +45,14 @@ enum class Format {
     Unknown
 };
 
+struct FormatNames {
+    const std::string Long;
+    const std::string Short;
+    const std::filesystem::path Extension;
+
+    static const FormatNames &Get(Format format);
+};
+
 enum class Recovery { None, Repair };
 
 struct Recording {
@@ -58,7 +66,6 @@ struct Recording {
 };
 
 Format GuessFormat(const std::filesystem::path &path, const DataReader &file);
-std::string FormatName(Format format);
 
 bool QueryTibiaVersion(Format format,
                        const DataReader &file,

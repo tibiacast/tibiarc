@@ -937,7 +937,8 @@ static auto Open(const Settings &settings,
     if (inputFormat == Recordings::Format::Unknown) {
         inputFormat = Recordings::GuessFormat(path, reader);
         std::cerr << "warning: Unknown recording format, guessing "
-                  << Recordings::FormatName(inputFormat) << std::endl;
+                  << Recordings::FormatNames::Get(inputFormat).Short
+                  << std::endl;
     }
 
     desiredVersion = settings.DesiredTibiaVersion;
