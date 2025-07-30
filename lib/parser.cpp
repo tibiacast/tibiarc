@@ -533,6 +533,7 @@ void Parser::ParseTileMoveCreature(DataReader &reader, EventList &events) {
         ParseAssert(KnownCreatures_.contains(creatureId));
 
         event.StackPosition = Tile::StackPositionTop;
+        event.CreatureId = creatureId;
 
         event.From.X = 0xFFFF;
         event.From.Y = 0xFFFF;
