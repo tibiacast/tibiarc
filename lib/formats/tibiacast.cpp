@@ -223,10 +223,7 @@ static bool ParsePacket(DataReader &reader,
     return false;
 }
 
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     trc::DataReader reader = file;
 
     auto containerMajor = reader.ReadU8();
@@ -234,87 +231,87 @@ bool QueryTibiaVersion(const DataReader &file,
 
     if (containerMajor == 3) {
         if (containerMinor < 5) {
-            major = 8;
-            minor = 55;
+            triplet.Major = 8;
+            triplet.Minor = 55;
         } else if (containerMinor < 6) {
-            major = 8;
-            minor = 60;
+            triplet.Major = 8;
+            triplet.Minor = 60;
         } else if (containerMinor < 8) {
-            major = 8;
-            minor = 61;
+            triplet.Major = 8;
+            triplet.Minor = 61;
         } else if (containerMinor < 11) {
-            major = 8;
-            minor = 62;
+            triplet.Major = 8;
+            triplet.Minor = 62;
         } else if (containerMinor < 15) {
-            major = 8;
-            minor = 71;
+            triplet.Major = 8;
+            triplet.Minor = 71;
         } else if (containerMinor < 22) {
-            major = 9;
-            minor = 31;
+            triplet.Major = 9;
+            triplet.Minor = 31;
         } else if (containerMinor < 26) {
-            major = 9;
-            minor = 40;
+            triplet.Major = 9;
+            triplet.Minor = 40;
         } else if (containerMinor < 28) {
-            major = 9;
-            minor = 53;
+            triplet.Major = 9;
+            triplet.Minor = 53;
         }
     } else if (containerMajor == 4) {
         if (containerMinor < 3) {
-            major = 9;
-            minor = 54;
+            triplet.Major = 9;
+            triplet.Minor = 54;
         } else if (containerMinor < 5) {
-            major = 9;
-            minor = 61;
+            triplet.Major = 9;
+            triplet.Minor = 61;
         } else if (containerMinor < 6) {
-            major = 9;
-            minor = 71;
+            triplet.Major = 9;
+            triplet.Minor = 71;
         } else if (containerMinor < 9) {
-            major = 9;
-            minor = 80;
+            triplet.Major = 9;
+            triplet.Minor = 80;
         } else if (containerMinor < 12) {
             /* TODO: When minor is < 10, this is supposed to be "9.83 old,"
              * and we'll need a way to differentiate them. */
-            major = 9;
-            minor = 83;
+            triplet.Major = 9;
+            triplet.Minor = 83;
         } else if (containerMinor < 13) {
-            major = 9;
-            minor = 86;
+            triplet.Major = 9;
+            triplet.Minor = 86;
         } else if (containerMinor < 17) {
-            major = 10;
-            minor = 0;
+            triplet.Major = 10;
+            triplet.Minor = 0;
         } else if (containerMinor < 20) {
-            major = 10;
-            minor = 34;
+            triplet.Major = 10;
+            triplet.Minor = 34;
         } else if (containerMinor < 21) {
-            major = 10;
-            minor = 35;
+            triplet.Major = 10;
+            triplet.Minor = 35;
         } else if (containerMinor < 22) {
-            major = 10;
-            minor = 37;
+            triplet.Major = 10;
+            triplet.Minor = 37;
         } else if (containerMinor < 24) {
-            major = 10;
-            minor = 51;
+            triplet.Major = 10;
+            triplet.Minor = 51;
         } else if (containerMinor < 25) {
-            major = 10;
-            minor = 52;
+            triplet.Major = 10;
+            triplet.Minor = 52;
         } else if (containerMinor < 26) {
-            major = 10;
-            minor = 53;
+            triplet.Major = 10;
+            triplet.Minor = 53;
         } else if (containerMinor < 27) {
-            major = 10;
-            minor = 54;
+            triplet.Major = 10;
+            triplet.Minor = 54;
         } else if (containerMinor < 28) {
-            major = 10;
-            minor = 57;
+            triplet.Major = 10;
+            triplet.Minor = 57;
         } else if (containerMinor < 29) {
-            major = 10;
-            minor = 58;
+            triplet.Major = 10;
+            triplet.Minor = 58;
         } else if (containerMinor < 30) {
-            major = 10;
-            minor = 64;
+            triplet.Major = 10;
+            triplet.Minor = 64;
         } else if (containerMinor < 31) {
-            major = 10;
-            minor = 94;
+            triplet.Major = 10;
+            triplet.Minor = 94;
         }
     }
 
@@ -322,13 +319,13 @@ bool QueryTibiaVersion(const DataReader &file,
         reader.SkipU32();
     }
 
-    preview = 0;
+    triplet.Preview = 0;
     if ((containerMajor > 4) || (containerMajor == 4 && containerMinor >= 6)) {
-        preview = reader.ReadU8();
+        triplet.Preview = reader.ReadU8();
     }
 
     if (containerMajor == 4 && containerMinor < 10) {
-        preview = 0;
+        triplet.Preview = 0;
     }
 
     return true;

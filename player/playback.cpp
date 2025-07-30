@@ -38,23 +38,15 @@ Playback::Playback(const DataReader &file,
                    int preview)
     : Scale(1.0), ScaleTick(SDL_GetTicks()), BaseTick(0) {
     auto format = Recordings::GuessFormat(name, file);
+    VersionTriplet desiredVersion(major, minor, preview);
 
-    if ((major | minor | preview) == 0) {
-        if (!Recordings::QueryTibiaVersion(format,
-                                           file,
-                                           major,
-                                           minor,
-                                           preview)) {
+    if (desiredVersion == VersionTriplet()) {
+        if (!Recordings::QueryTibiaVersion(format, file, desiredVersion)) {
             throw InvalidDataError();
         }
     }
 
-    Version = std::make_unique<trc::Version>(major,
-                                             minor,
-                                             preview,
-                                             pic,
-                                             spr,
-                                             dat);
+    Version = std::make_unique<trc::Version>(desiredVersion, pic, spr, dat);
 
     auto [recording, partial] = Recordings::Read(format, file, *Version);
 

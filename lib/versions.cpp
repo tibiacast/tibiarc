@@ -31,10 +31,10 @@
 #include "versions.hpp"
 #include "utils.hpp"
 
-#include <stddef.h>
-#include <cstdlib>
-
 #include <bit>
+#include <cstddef>
+#include <cstdlib>
+#include <format>
 
 namespace trc {
 
@@ -650,9 +650,16 @@ void Version::DumpItems() {
 }
 #endif
 
-VersionBase::VersionBase(int major, int minor, int preview)
-    : Major(major), Minor(minor), Preview(preview), Protocol({}), Features({}) {
+VersionTriplet::operator std::string() const {
+    return std::format(
+            "{}.{}{}",
+            Major,
+            Minor,
+            (Preview > 0 ? std::format(".{}", Preview) : std::string()));
+}
 
+VersionBase::VersionBase(const VersionTriplet &triplet)
+    : Triplet(triplet), Protocol({}), Features({}) {
     InitTypeProperties();
     InitMessageTypes();
     InitSpeakTypes();
@@ -660,13 +667,11 @@ VersionBase::VersionBase(int major, int minor, int preview)
     InitProtocol();
 }
 
-Version::Version(int major,
-                 int minor,
-                 int preview,
+Version::Version(const VersionTriplet &triplet,
                  const trc::DataReader &pictureData,
                  const trc::DataReader &spriteData,
                  const trc::DataReader &typeData)
-    : VersionBase(major, minor, preview),
+    : VersionBase(triplet),
       Pictures(static_cast<VersionBase &>(*this), pictureData),
       Sprites(static_cast<VersionBase &>(*this), spriteData),
       Types(*this, typeData),

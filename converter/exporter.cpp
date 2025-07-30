@@ -312,7 +312,7 @@ static auto Open(const Settings &settings,
                  const std::filesystem::path &path,
                  const DataReader &reader) {
     auto inputFormat = settings.InputFormat;
-    int major, minor, preview;
+    VersionTriplet desiredVersion;
 
     if (inputFormat == Recordings::Format::Unknown) {
         inputFormat = Recordings::GuessFormat(path, reader);
@@ -320,31 +320,25 @@ static auto Open(const Settings &settings,
                   << Recordings::FormatName(inputFormat) << std::endl;
     }
 
-    major = settings.DesiredTibiaVersion.Major;
-    minor = settings.DesiredTibiaVersion.Minor;
-    preview = settings.DesiredTibiaVersion.Preview;
+    desiredVersion = settings.DesiredTibiaVersion;
 
     /* Ask the file for the version if none was provided. */
-    if ((major | minor | preview) == 0) {
+    if (desiredVersion == VersionTriplet()) {
         if (!Recordings::QueryTibiaVersion(inputFormat,
                                            reader,
-                                           major,
-                                           minor,
-                                           preview)) {
+                                           desiredVersion)) {
             throw InvalidDataError();
         }
 
-        std::cerr << "warning: Unknown recording version, guessing " << major
-                  << "." << minor << "(" << preview << ")" << std::endl;
+        std::cerr << "warning: Unknown recording version, guessing "
+                  << static_cast<std::string>(desiredVersion) << std::endl;
     }
 
     const MemoryFile pictures(dataFolder / "Tibia.pic");
     const MemoryFile sprites(dataFolder / "Tibia.spr");
     const MemoryFile types(dataFolder / "Tibia.dat");
 
-    auto version = std::make_unique<Version>(major,
-                                             minor,
-                                             preview,
+    auto version = std::make_unique<Version>(desiredVersion,
                                              pictures.Reader(),
                                              sprites.Reader(),
                                              types.Reader());

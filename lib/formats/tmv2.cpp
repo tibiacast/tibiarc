@@ -34,10 +34,7 @@ extern "C" {
 namespace trc {
 namespace Recordings {
 namespace TibiaMovie2 {
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     DataReader reader = file;
 
     /* Header prologue. */
@@ -46,11 +43,11 @@ bool QueryTibiaVersion(const DataReader &file,
     uint8_t tibiaVersion[3];
     reader.Copy(3, tibiaVersion);
 
-    major = tibiaVersion[0];
-    minor = tibiaVersion[1] * 10 + tibiaVersion[2];
-    preview = 0;
+    triplet.Major = tibiaVersion[0];
+    triplet.Minor = tibiaVersion[1] * 10 + tibiaVersion[2];
+    triplet.Preview = 0;
 
-    return major >= 7 && major <= 12 && minor < 99;
+    return triplet.Major >= 7 && triplet.Major <= 12 && triplet.Minor <= 99;
 }
 
 void ReadNextFrame(DataReader &reader, Parser &parser, Recording &recording) {

@@ -36,9 +36,7 @@ namespace trc {
 namespace Recordings {
 namespace TibiaMovie1 {
 bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
-                       [[maybe_unused]] int &major,
-                       [[maybe_unused]] int &minor,
-                       [[maybe_unused]] int &preview) {
+                       [[maybe_unused]] VersionTriplet &triplet) {
 #ifndef DISABLE_ZLIB
     uint8_t buffer[4];
     uLongf bufferSize;
@@ -57,11 +55,11 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
         reader.ReadU16<2, 2>();
         auto tibiaVersion = reader.ReadU16();
 
-        major = tibiaVersion / 100;
-        minor = tibiaVersion % 100;
-        preview = 0;
+        triplet.Major = tibiaVersion / 100;
+        triplet.Minor = tibiaVersion % 100;
+        triplet.Preview = 0;
 
-        return major >= 7 && major <= 12 && minor < 99;
+        return triplet.Major >= 7 && triplet.Major <= 12 && triplet.Minor <= 99;
     }
 #endif
 

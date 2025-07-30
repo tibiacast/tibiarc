@@ -39,21 +39,18 @@ extern "C" {
 namespace trc {
 namespace Recordings {
 namespace Cam {
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     trc::DataReader reader = file;
     uint8_t version[4];
 
     reader.Skip(32);
     reader.Copy(4, version);
 
-    major = version[0];
-    minor = version[1] * 10 + version[2];
-    preview = 0;
+    triplet.Major = version[0];
+    triplet.Minor = version[1] * 10 + version[2];
+    triplet.Preview = 0;
 
-    return CheckRange(major, 7, 12) && CheckRange(minor, 0, 99);
+    return CheckRange(triplet.Major, 7, 12) && CheckRange(triplet.Minor, 0, 99);
 }
 
 static void Decompress(uint8_t lzmaProperties[5],

@@ -22,6 +22,7 @@
 
 #include "recordings.hpp"
 #include "events.hpp"
+#include "versions.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -39,10 +40,7 @@ struct Settings {
     int StartTime;
     int EndTime;
 
-    struct {
-        int Major, Minor, Preview;
-    } DesiredTibiaVersion;
-
+    VersionTriplet DesiredTibiaVersion;
     bool DryRun;
 };
 

@@ -28,17 +28,14 @@
 namespace trc {
 namespace Recordings {
 namespace TibiaTimeMachine {
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     auto tibiaVersion = file.Peek<uint16_t>();
 
-    major = tibiaVersion / 100;
-    minor = tibiaVersion % 100;
-    preview = 0;
+    triplet.Major = tibiaVersion / 100;
+    triplet.Minor = tibiaVersion % 100;
+    triplet.Preview = 0;
 
-    if (major < 7 || major > 12) {
+    if (triplet.Major < 7 || triplet.Major > 12) {
         throw InvalidDataError();
     }
 

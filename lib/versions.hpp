@@ -129,10 +129,27 @@ public:
     }
 };
 
+struct VersionTriplet {
+    int Major, Minor, Preview;
+
+    VersionTriplet(int major, int minor, int preview)
+        : Major(major), Minor(minor), Preview(preview) {
+    }
+
+    VersionTriplet(const VersionTriplet &other)
+        : VersionTriplet(other.Major, other.Minor, other.Preview) {
+    }
+
+    VersionTriplet() : VersionTriplet(0, 0, 0) {
+    }
+
+    std::strong_ordering operator<=>(const VersionTriplet &other) const =
+            default;
+    operator std::string() const;
+};
+
 struct VersionBase {
-    int Major;
-    int Minor;
-    int Preview;
+    VersionTriplet Triplet;
 
     struct {
         bool AddObjectStackPosition : 1;
@@ -220,8 +237,7 @@ struct VersionBase {
     void InitProtocol();
 
     bool AtLeast(int major, int minor, int preview = 0) const {
-        return Major > major ||
-               (Major == major && Minor >= minor && Preview >= preview);
+        return Triplet >= VersionTriplet(major, minor, preview);
     }
 
     TypeProperty TranslateTypeProperty(uint8_t index) const;
@@ -229,7 +245,7 @@ struct VersionBase {
     MessageMode TranslateMessageMode(uint8_t index) const;
     uint8_t TranslateFluidColor(uint8_t color) const;
 
-    VersionBase(int major, int minor, int preview);
+    VersionBase(const VersionTriplet &triplet);
 
 protected:
     TranslationTable<MessageMode> SpeakModes;
@@ -249,9 +265,7 @@ struct Version : public VersionBase {
 #endif
 
 public:
-    Version(int major,
-            int minor,
-            int preview,
+    Version(const VersionTriplet &triplet,
             const trc::DataReader &pictureData,
             const trc::DataReader &spriteData,
             const trc::DataReader &typeData);

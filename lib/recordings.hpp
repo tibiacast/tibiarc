@@ -62,9 +62,7 @@ std::string FormatName(Format format);
 
 bool QueryTibiaVersion(Format format,
                        const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview);
+                       VersionTriplet &triplet);
 std::pair<std::unique_ptr<Recording>, bool> Read(
         Format format,
         const DataReader &file,

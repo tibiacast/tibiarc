@@ -24,6 +24,7 @@
 #include "encoding.hpp"
 #include "renderer.hpp"
 #include "recordings.hpp"
+#include "versions.hpp"
 
 #include <filesystem>
 
@@ -46,9 +47,7 @@ struct Settings {
     int StartTime;
     int EndTime;
 
-    struct {
-        int Major, Minor, Preview;
-    } DesiredTibiaVersion;
+    VersionTriplet DesiredTibiaVersion;
 };
 
 void Export(const Settings &settings,

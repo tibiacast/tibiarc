@@ -71,23 +71,20 @@ std::list<std::unique_ptr<Version>> GetVersions(
                 const MemoryFile spr(sprPath);
                 const MemoryFile dat(datPath);
 
-                result.push_back(std::make_unique<Version>(major,
-                                                           minor,
-                                                           0,
-                                                           pic.Reader(),
-                                                           spr.Reader(),
-                                                           dat.Reader()));
+                result.push_back(std::make_unique<Version>(
+                        VersionTriplet(major, minor, 0),
+                        pic.Reader(),
+                        spr.Reader(),
+                        dat.Reader()));
             }
         }
     }
 
     result.sort([](const std::unique_ptr<Version> &lhs,
                    const std::unique_ptr<Version> &rhs) {
-        if (lhs->Major == rhs->Major && lhs->Minor < rhs->Minor) {
-            return true;
-        }
-
-        return lhs->Major < rhs->Major;
+        auto order = lhs->Triplet <=> rhs->Triplet;
+        return (order == std::strong_ordering::equal) ||
+               (order == std::strong_ordering::less);
     });
 
     if (result.empty()) {
@@ -95,9 +92,11 @@ std::list<std::unique_ptr<Version>> GetVersions(
         std::exit(1);
     } else {
         std::cout << "Found versions:" << std::endl;
+
         for (const auto &version : result) {
-            std::cout << " " << version->Major << "." << version->Minor;
+            std::cout << static_cast<std::string>(version->Triplet) << " ";
         }
+
         std::cout << std::endl;
     }
 
@@ -229,8 +228,7 @@ std::pair<Collation::RecordingFile, std::filesystem::path> ProcessRecording(
 
                     if (state.Creatures.contains(state.Player.Id)) {
                         std::filesystem::path folder =
-                                std::to_string(version->Major) + "." +
-                                std::to_string(version->Minor);
+                                static_cast<std::string>(version->Triplet);
                         return std::make_pair(source, folder);
                     }
                 } catch ([[maybe_unused]] const InvalidDataError &e) {
@@ -255,10 +253,9 @@ std::pair<Collation::RecordingFile, std::filesystem::path> ProcessRecording(
      * recordings in the earliest version for which they finish gracefully,
      * regardless of advertised version, and using the container-provided
      * version would interfere with that. */
-    int major, minor, preview;
-    if (Recordings::QueryTibiaVersion(format, reader, major, minor, preview)) {
-        guessedVersion = std::make_optional(std::to_string(major) + "." +
-                                            std::to_string(minor));
+    VersionTriplet triplet;
+    if (Recordings::QueryTibiaVersion(format, reader, triplet)) {
+        guessedVersion = std::make_optional(static_cast<std::string>(triplet));
     } else if (!guessedVersion) {
         guessedVersion = std::make_optional("unversioned");
     }
