@@ -261,7 +261,7 @@ struct Version : public VersionBase {
     trc::Fonts Fonts;
 
 #ifdef DUMP_ITEMS
-    void Version::DumpItems();
+    void DumpItems();
 #endif
 
 public:

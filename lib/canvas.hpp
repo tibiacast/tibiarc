@@ -22,6 +22,7 @@
 #define __TRC_CANVAS_HPP__
 
 #include <cstdint>
+#include <filesystem>
 
 #include "pixel.hpp"
 #include "sprites.hpp"
@@ -57,7 +58,7 @@ public:
     void Wipe();
 
     /* Debug function for dumping a canvas as a 24-bit BMP file. */
-    void Dump(const char *path) const;
+    void Dump(const std::filesystem::path &path) const;
 
     Pixel &GetPixel(int x, int y) {
         int offset = x * sizeof(Pixel);

@@ -495,12 +495,12 @@ void Canvas::Wipe() {
     DrawRectangle(Pixel(0, 0, 0, 0), 0, 0, Width, Height);
 }
 
-void Canvas::Dump(const char *path) const {
+void Canvas::Dump(const std::filesystem::path &path) const {
     const int FILE_HEADER_SIZE = 10, INFO_HEADER_SIZE = 40;
     uint32_t u32;
     uint16_t u16;
 
-    FILE *bmp = fopen(path, "wb");
+    FILE *bmp = fopen(path.c_str(), "wb");
 
     /* File header. */
     fwrite("BM", 2, 1, bmp);
