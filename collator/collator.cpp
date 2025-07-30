@@ -399,10 +399,12 @@ std::pair<File, std::filesystem::path> ProcessRecording(
                         }
                     }
 
-                    std::filesystem::path folder =
-                            std::to_string(version->Major) + "." +
-                            std::to_string(version->Minor);
-                    return std::make_pair(source, folder);
+                    if (state.Creatures.contains(state.Player.Id)) {
+                        std::filesystem::path folder =
+                                std::to_string(version->Major) + "." +
+                                std::to_string(version->Minor);
+                        return std::make_pair(source, folder);
+                    }
                 } catch ([[maybe_unused]] const InvalidDataError &e) {
                     /* There's something wrong with the underlying data, but
                      * we may still be able to guess the version. */
