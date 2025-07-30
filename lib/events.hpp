@@ -25,10 +25,6 @@
 #include <vector>
 
 namespace trc {
-
-/* Forward-declare gamestate? */
-struct Gamestate;
-
 namespace Events {
 
 enum class Type {
