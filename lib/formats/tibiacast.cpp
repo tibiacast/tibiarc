@@ -78,13 +78,13 @@ static Parser::EventList ParseCreatureList(DataReader &reader,
         event.CreatureId = reader.ReadU32();
 
         if (version.Protocol.CreatureTypes) {
-            event.Type = reader.Read<trc::CreatureType>();
+            event.Type = reader.Read<CreatureType>();
         }
 
         event.Name = reader.ReadString();
         event.Health = reader.ReadU8<0, 100>();
 
-        event.Heading = reader.Read<trc::Creature::Direction>();
+        event.Heading = reader.Read<Creature::Direction>();
         event.Outfit.Id = reader.ReadU16();
 
         if (event.Outfit.Id == 0) {
@@ -104,16 +104,16 @@ static Parser::EventList ParseCreatureList(DataReader &reader,
         event.LightIntensity = reader.ReadU8();
         event.LightColor = reader.ReadU8();
         event.Speed = reader.ReadU16();
-        event.Skull = reader.Read<trc::CharacterSkull>();
-        event.Shield = reader.Read<trc::PartyShield>();
+        event.Skull = reader.Read<CharacterSkull>();
+        event.Shield = reader.Read<PartyShield>();
 
         if (version.Protocol.WarIcon) {
-            event.War = reader.Read<trc::WarIcon>();
+            event.War = reader.Read<WarIcon>();
         }
 
         if (version.Protocol.CreatureMarks) {
             if (version.Protocol.NPCCategory) {
-                event.NPCCategory = reader.Read<trc::NPCCategory>();
+                event.NPCCategory = reader.Read<NPCCategory>();
             }
 
             event.Mark = reader.ReadU8();
@@ -225,7 +225,7 @@ static bool ParsePacket(DataReader &reader,
 }
 
 bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
-    trc::DataReader reader = file;
+    DataReader reader = file;
 
     auto containerMajor = reader.ReadU8();
     auto containerMinor = reader.ReadU8();
@@ -332,8 +332,9 @@ bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     return true;
 }
 
-static std::unique_ptr<uint8_t[]> Uncompress(const trc::DataReader &reader,
-                                             size_t &size) {
+static std::unique_ptr<uint8_t[]> Uncompress(
+        [[maybe_unused]] const DataReader &reader,
+        [[maybe_unused]] size_t &size) {
 #ifdef DISABLE_ZLIB
     throw NotSupportedError();
 #else

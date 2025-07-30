@@ -61,7 +61,7 @@ struct Map {
     }
 
     trc::Tile &Tile(int X, int Y, int Z) {
-        trc::Assert(X >= 0 && Y >= 0 && Z >= 0);
+        Assert(X >= 0 && Y >= 0 && Z >= 0);
 
         X %= TileBufferWidth;
         Y %= TileBufferHeight;
@@ -72,8 +72,8 @@ struct Map {
 
     uint8_t GetRenderHeight(int rX, int bY) const {
         if (rX > 0 && bY > 0) {
-            trc::Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
-                        RenderHeightMapSize);
+            Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
+                   RenderHeightMapSize);
 
             return RenderHeightMap[(rX / 32) + ((bY / 32) * TileBufferWidth)];
         }
@@ -83,8 +83,8 @@ struct Map {
 
     void UpdateRenderHeight(int rX, int bY, uint8_t Z) {
         if (rX > 0 && bY > 0) {
-            trc::Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
-                        RenderHeightMapSize);
+            Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
+                   RenderHeightMapSize);
 
             RenderHeightMap[(rX / 32) + ((bY / 32) * TileBufferWidth)] = Z;
         }

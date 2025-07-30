@@ -113,7 +113,7 @@ std::pair<bool, bool> MessageList::QueryNext(MessageList::Iterator current) {
 }
 
 void MessageList::AddMessage(MessageMode type,
-                             const trc::Position &position,
+                             const Position &position,
                              const std::string &author,
                              const std::string &text,
                              uint32_t tick) {

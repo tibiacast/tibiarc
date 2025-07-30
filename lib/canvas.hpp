@@ -70,20 +70,16 @@ public:
         return *(const Pixel *)&Buffer[offset + (y * Stride)];
     }
 
-    void DrawRectangle(const trc::Pixel &color,
-                       int x,
-                       int y,
-                       int width,
-                       int height);
+    void DrawRectangle(const Pixel &color, int x, int y, int width, int height);
 
-    void DrawCharacter(const trc::Sprite &sprite,
-                       const trc::Pixel &fontColor,
+    void DrawCharacter(const Sprite &sprite,
+                       const Pixel &fontColor,
                        int x,
                        int y);
 
-    void Draw(const trc::Sprite &sprite, int x, int y, int width, int height);
+    void Draw(const Sprite &sprite, int x, int y, int width, int height);
 
-    void Tint(const trc::Sprite &sprite,
+    void Tint(const Sprite &sprite,
               int x,
               int y,
               int width,

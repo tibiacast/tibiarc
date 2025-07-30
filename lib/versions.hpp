@@ -266,9 +266,9 @@ struct Version : public VersionBase {
 
 public:
     Version(const VersionTriplet &triplet,
-            const trc::DataReader &pictureData,
-            const trc::DataReader &spriteData,
-            const trc::DataReader &typeData);
+            const DataReader &pictureData,
+            const DataReader &spriteData,
+            const DataReader &typeData);
 
     const EntityType &GetItem(uint16_t id) const {
         return Types.GetItem(id);

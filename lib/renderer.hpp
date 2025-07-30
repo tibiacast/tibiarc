@@ -110,7 +110,7 @@ void DrawOverlay(const Options &options,
                  Gamestate &gamestate,
                  Canvas &canvas) noexcept;
 
-void DumpItem(trc::Version &version, uint16_t item, Canvas &canvas) noexcept;
+void DumpItem(Version &version, uint16_t item, Canvas &canvas) noexcept;
 } // namespace Renderer
 } // namespace trc
 

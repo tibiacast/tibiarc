@@ -67,7 +67,7 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
 }
 
 #ifndef DISABLE_ZLIB
-static std::unique_ptr<uint8_t[]> Uncompress(const trc::DataReader &reader,
+static std::unique_ptr<uint8_t[]> Uncompress(const DataReader &reader,
                                              size_t &size) {
     z_stream stream;
     int error;

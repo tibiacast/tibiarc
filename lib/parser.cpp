@@ -39,7 +39,7 @@
 
 namespace trc {
 
-using namespace trc::Events;
+using namespace Events;
 
 template <typename T> static T &AddEvent(Parser::EventList &events) {
     return static_cast<T &>(*events.emplace_back(std::make_unique<T>()));
@@ -54,7 +54,7 @@ Position Parser::ParsePosition(DataReader &reader) {
                                     Map::TileBufferHeight>();
     auto z = reader.ReadU8<0, 15>();
 
-    return trc::Position(x, y, z);
+    return Position(x, y, z);
 }
 
 Appearance Parser::ParseAppearance(DataReader &reader) {
@@ -396,13 +396,13 @@ uint16_t Parser::ParseFloorDescription(DataReader &reader,
             if (tileSkip == 0) {
                 auto &event = AddEvent<TileUpdated>(events);
 
-                event.Position = trc::Position(xIdx, yIdx, Z);
+                event.Position = Position(xIdx, yIdx, Z);
 
                 tileSkip = ParseTileDescription(reader, events, event);
             } else {
                 auto &event = AddEvent<TileUpdated>(events);
 
-                event.Position = trc::Position(xIdx, yIdx, Z);
+                event.Position = Position(xIdx, yIdx, Z);
 
                 tileSkip--;
             }

@@ -186,16 +186,14 @@ int main(int argc, char **argv) {
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           if (args[0] == "libav") {
 #ifndef DISABLE_LIBAV
-                              settings.EncodeBackend =
-                                      trc::Encoding::Backend::LibAV;
+                              settings.EncodeBackend = Encoding::Backend::LibAV;
 #else
                               throw "'libav' backend has been explicitly "
                                     "disabled";
 #endif
                               return;
                           } else if (args[0] == "inert") {
-                              settings.EncodeBackend =
-                                      trc::Encoding::Backend::Inert;
+                              settings.EncodeBackend = Encoding::Backend::Inert;
                               return;
                           }
 
@@ -361,8 +359,8 @@ int main(int argc, char **argv) {
             });
 
     try {
-        trc::Exporter::Export(settings, paths[0], paths[1], paths[2]);
-    } catch (const trc::ErrorBase &error) {
+        Exporter::Export(settings, paths[0], paths[1], paths[2]);
+    } catch (const ErrorBase &error) {
         std::cerr << "Unrecoverable error (" << error.Description() << ")"
                   << std::endl;
         return 1;

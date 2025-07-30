@@ -121,14 +121,13 @@ static size_t ExtractSprite(const Canvas &canvas,
                     runLength = 0;
                 }
 
-                static_assert(sizeof(trc::Pixel) == 4 &&
-                                      alignof(trc::Pixel) == 1,
+                static_assert(sizeof(Pixel) == 4 && alignof(Pixel) == 1,
                               "Pixel struct must be byte-aligned");
                 if (buffer) {
-                    *(trc::Pixel *)&buffer[bufferIdx] = currentPixel;
+                    *(Pixel *)&buffer[bufferIdx] = currentPixel;
                 }
 
-                bufferIdx += sizeof(trc::Pixel);
+                bufferIdx += sizeof(Pixel);
                 runLength++;
             } else {
                 if (!transparent) {

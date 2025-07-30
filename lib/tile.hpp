@@ -49,14 +49,14 @@ struct Tile {
                             uint32_t value,
                             uint32_t currentTick);
 
-    void InsertObject(const trc::Version &version,
+    void InsertObject(const Version &version,
                       const Object &object,
                       uint8_t stackPosition);
-    Object &GetObject(const trc::Version &version, uint8_t stackPosition);
-    void SetObject(const trc::Version &version,
+    Object &GetObject(const Version &version, uint8_t stackPosition);
+    void SetObject(const Version &version,
                    const Object &object,
                    uint8_t stackPosition);
-    void RemoveObject(const trc::Version &version, uint8_t stackPosition);
+    void RemoveObject(const Version &version, uint8_t stackPosition);
 
     void Clear();
 };

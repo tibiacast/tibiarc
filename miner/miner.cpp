@@ -128,120 +128,117 @@ int main(int argc, char **argv) {
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureSeen);
+                                  Events::Type::CreatureSeen);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureRemoved);
+                                  Events::Type::CreatureRemoved);
                       }}},
                     {"skip-creature-updates",
                      {"skips creature update events (e.g. movement, health)",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::
-                                          CreatureGuildMembersUpdated);
+                                  Events::Type::CreatureGuildMembersUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureHeadingUpdated);
+                                  Events::Type::CreatureHeadingUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureHealthUpdated);
+                                  Events::Type::CreatureHealthUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureImpassableUpdated);
+                                  Events::Type::CreatureImpassableUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureLightUpdated);
+                                  Events::Type::CreatureLightUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureMoved);
+                                  Events::Type::CreatureMoved);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::
-                                          CreatureNPCCategoryUpdated);
+                                  Events::Type::CreatureNPCCategoryUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureOutfitUpdated);
+                                  Events::Type::CreatureOutfitUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreaturePvPHelpersUpdated);
+                                  Events::Type::CreaturePvPHelpersUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureShieldUpdated);
+                                  Events::Type::CreatureShieldUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureSkullUpdated);
+                                  Events::Type::CreatureSkullUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureSpeedUpdated);
+                                  Events::Type::CreatureSpeedUpdated);
                       }}},
                     {"skip-effects",
                      {"skips effect events (e.g. missiles, poofs)",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::GraphicalEffectPopped);
+                                  Events::Type::GraphicalEffectPopped);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::NumberEffectPopped);
+                                  Events::Type::NumberEffectPopped);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::MissileFired);
+                                  Events::Type::MissileFired);
                       }}},
                     {"skip-inventory",
                      {"skips inventory events (e.g. containers)",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ContainerAddedItem);
+                                  Events::Type::ContainerAddedItem);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ContainerClosed);
+                                  Events::Type::ContainerClosed);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ContainerOpened);
+                                  Events::Type::ContainerOpened);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ContainerRemovedItem);
+                                  Events::Type::ContainerRemovedItem);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ContainerTransformedItem);
+                                  Events::Type::ContainerTransformedItem);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerInventoryUpdated);
+                                  Events::Type::PlayerInventoryUpdated);
                       }}},
                     {"skip-messages",
                      {"skips message events",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ChannelClosed);
+                                  Events::Type::ChannelClosed);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ChannelListUpdated);
+                                  Events::Type::ChannelListUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::ChannelOpened);
+                                  Events::Type::ChannelOpened);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureSpoke);
+                                  Events::Type::CreatureSpoke);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureSpokeInChannel);
+                                  Events::Type::CreatureSpokeInChannel);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::CreatureSpokeOnMap);
+                                  Events::Type::CreatureSpokeOnMap);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::StatusMessageReceived);
+                                  Events::Type::StatusMessageReceived);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::
-                                          StatusMessageReceivedInChannel);
+                                  Events::Type::StatusMessageReceivedInChannel);
                       }}},
                     {"skip-player-updates",
                      {"skips player update events (e.g. movement, skills)",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerBlessingsUpdated);
+                                  Events::Type::PlayerBlessingsUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerDataBasicUpdated);
+                                  Events::Type::PlayerDataBasicUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerDataUpdated);
+                                  Events::Type::PlayerDataUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerHotkeyPresetUpdated);
+                                  Events::Type::PlayerHotkeyPresetUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerMoved);
+                                  Events::Type::PlayerMoved);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::PlayerSkillsUpdated);
+                                  Events::Type::PlayerSkillsUpdated);
                       }}},
                     {"skip-terrain",
                      {"skips terrain events",
                       {},
                       [&]([[maybe_unused]] const CLI::Range &args) {
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::TileUpdated);
+                                  Events::Type::TileUpdated);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::TileObjectAdded);
+                                  Events::Type::TileObjectAdded);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::TileObjectRemoved);
+                                  Events::Type::TileObjectRemoved);
                           settings.SkippedEvents.insert(
-                                  trc::Events::Type::TileObjectTransformed);
+                                  Events::Type::TileObjectTransformed);
                       }}},
                     {"dry-run",
                      {"suppress output while still generating it. This is only"
@@ -253,8 +250,8 @@ int main(int argc, char **argv) {
             });
 
     try {
-        trc::Serializer::Serialize(settings, paths[0], paths[1], std::cout);
-    } catch (const trc::ErrorBase &error) {
+        Serializer::Serialize(settings, paths[0], paths[1], std::cout);
+    } catch (const ErrorBase &error) {
         std::cerr << "Unrecoverable error (" << error.Description() << ")"
                   << std::endl;
         return 1;

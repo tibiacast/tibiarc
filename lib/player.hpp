@@ -34,8 +34,8 @@
 namespace trc {
 class PlayerData {
     std::array<Object,
-               std::to_underlying(trc::InventorySlot::Last) -
-                       std::to_underlying(trc::InventorySlot::First) + 1>
+               std::to_underlying(InventorySlot::Last) -
+                       std::to_underlying(InventorySlot::First) + 1>
             Inventory_;
 
 public:

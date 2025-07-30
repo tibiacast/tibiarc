@@ -375,14 +375,14 @@ void Export(const Settings &settings,
     Canvas outputCanvas(settings.RenderOptions.Width,
                         settings.RenderOptions.Height);
 
-    auto encoder = trc::Encoding::Open(settings.EncodeBackend,
-                                       settings.OutputFormat,
-                                       settings.OutputEncoding,
-                                       settings.EncoderFlags,
-                                       outputCanvas.Width,
-                                       outputCanvas.Height,
-                                       settings.FrameRate,
-                                       outputPath);
+    auto encoder = Encoding::Open(settings.EncodeBackend,
+                                  settings.OutputFormat,
+                                  settings.OutputEncoding,
+                                  settings.EncoderFlags,
+                                  outputCanvas.Width,
+                                  outputCanvas.Height,
+                                  settings.FrameRate,
+                                  outputPath);
     ConvertVideo(settings,
                  recording,
                  Gamestate(*version),

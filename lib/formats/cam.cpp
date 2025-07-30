@@ -40,7 +40,7 @@ namespace trc {
 namespace Recordings {
 namespace Cam {
 bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
-    trc::DataReader reader = file;
+    DataReader reader = file;
     uint8_t version[4];
 
     reader.Skip(32);

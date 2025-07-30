@@ -33,9 +33,9 @@ namespace trc {
 
 class Parser {
 public:
-    using EventList = std::list<std::unique_ptr<trc::Events::Base>>;
+    using EventList = std::list<std::unique_ptr<Events::Base>>;
 
-    Parser(const trc::Version &version, bool repair)
+    Parser(const Version &version, bool repair)
         : Version_(version), Repair_(repair) {
     }
 
@@ -49,17 +49,17 @@ public:
     }
 
 private:
-    const trc::Version &Version_;
+    const Version &Version_;
 
     std::unordered_set<uint32_t> KnownCreatures_;
-    trc::Position Position_;
+    Position Position_;
     [[maybe_unused]] bool Repair_;
 
     struct Repair {};
 
     void ParseNext(DataReader &reader, Repair &repair, EventList &events);
 
-    trc::Position ParsePosition(DataReader &reader);
+    Position ParsePosition(DataReader &reader);
     Appearance ParseAppearance(DataReader &reader);
     void ParseItem(DataReader &reader, Object &object);
     void ParseCreatureSeen(DataReader &reader,
@@ -74,7 +74,7 @@ private:
     void ParseObject(DataReader &reader, EventList &events, Object &object);
     uint16_t ParseTileDescription(DataReader &reader,
                                   EventList &events,
-                                  trc::Events::TileUpdated &event);
+                                  Events::TileUpdated &event);
     uint16_t ParseFloorDescription(DataReader &reader,
                                    EventList &events,
                                    int X,

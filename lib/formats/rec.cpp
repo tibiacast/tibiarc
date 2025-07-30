@@ -155,8 +155,7 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
  * Apparently, the Tibia client doesn't choke on this, so neither should we. */
 class RecParser : public Parser {
 public:
-    RecParser(const trc::Version &version, bool repair)
-        : Parser(version, repair) {
+    RecParser(const Version &version, bool repair) : Parser(version, repair) {
     }
 
     Parser::EventList ParseLogin(DataReader &reader) {

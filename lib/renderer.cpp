@@ -51,7 +51,7 @@ static Pixel Convert8BitColor(uint8_t color) {
                  ((color % 6) * 51));
 }
 
-static void UpdateWalkOffset(Gamestate &gamestate, trc::Creature &creature) {
+static void UpdateWalkOffset(Gamestate &gamestate, Creature &creature) {
     if (creature.MovementInformation.LastUpdateTick < gamestate.CurrentTick) {
         uint32_t startTick, endTick;
 
@@ -99,7 +99,7 @@ static Pixel GetCreatureInfoColor(int healthPercentage, int isObscured) {
     return Pixel(0, 192, 0);
 }
 
-static bool GetTileUnlookable(const trc::Version &version, const Tile &tile) {
+static bool GetTileUnlookable(const Version &version, const Tile &tile) {
     for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
         const auto &object = tile.Objects[objectIdx];
 
@@ -115,7 +115,7 @@ static bool GetTileUnlookable(const trc::Version &version, const Tile &tile) {
     return false;
 }
 
-static bool GetTileUpdateRenderHeight(const trc::Version &version,
+static bool GetTileUpdateRenderHeight(const Version &version,
                                       const Tile &tile) {
     for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
         const auto &object = tile.Objects[objectIdx];
@@ -132,7 +132,7 @@ static bool GetTileUpdateRenderHeight(const trc::Version &version,
     return false;
 }
 
-static bool GetTileBlocksPlayerVision(const trc::Version &version,
+static bool GetTileBlocksPlayerVision(const Version &version,
                                       const Tile &tile) {
     for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
         const auto &object = tile.Objects[objectIdx];
@@ -325,7 +325,7 @@ static void TintType(const EntityType::FrameGroup &frameGroup,
     }
 }
 
-static void DrawGraphicalEffect(const trc::Version &version,
+static void DrawGraphicalEffect(const Version &version,
                                 const GraphicalEffect &effect,
                                 const Position &position,
                                 int rightX,
@@ -395,7 +395,7 @@ static void DrawMissile(const Missile &missile,
     }
 }
 
-static bool DrawOutfit(const trc::Creature &creature,
+static bool DrawOutfit(const Creature &creature,
                        const EntityType &type,
                        int isMounted,
                        int rightX,
@@ -493,7 +493,7 @@ static bool DrawOutfit(const trc::Creature &creature,
 }
 
 /* FIXME: Phase ticks should NOT modify the item! */
-static void DrawItem(const trc::Version &version,
+static void DrawItem(const Version &version,
                      Object &item,
                      const EntityType &type,
                      int rightX,
@@ -612,8 +612,8 @@ static void DrawItem(const trc::Version &version,
     }
 }
 
-static void DrawCreature(const trc::Version &version,
-                         const trc::Creature &creature,
+static void DrawCreature(const Version &version,
+                         const Creature &creature,
                          int rightX,
                          int bottomY,
                          uint32_t tick,
@@ -1232,7 +1232,7 @@ static void DrawCreatureOverlay(const Options &options,
                                 int bottomY,
                                 float scaleX,
                                 float scaleY,
-                                trc::Creature &creature) {
+                                Creature &creature) {
     const Version &version = gamestate.Version;
     int creatureRX, creatureBY;
 
@@ -2246,7 +2246,7 @@ void DrawClientBackground(Gamestate &gamestate,
     }
 }
 
-void DumpItem(trc::Version &version, uint16_t item, Canvas &canvas) noexcept {
+void DumpItem(Version &version, uint16_t item, Canvas &canvas) noexcept {
     Object object(item);
     const auto &type = version.GetItem(item);
 
