@@ -26,92 +26,67 @@
 
 namespace trc {
 namespace Recordings {
-static const std::unordered_map<Format,
-                                std::tuple<std::string, std::filesystem::path>>
-        FormatDescriptions({{Format::Cam, {"cam", ".cam"}},
-                            {Format::Rec, {"rec", ".rec"}},
-                            {Format::Tibiacast, {"tibiacast", ".recording"}},
-                            {Format::TibiaMovie1, {"tmv1", ".tmv"}},
-                            {Format::TibiaMovie2, {"tmv2", ".tmv2"}},
-                            {Format::TibiaReplay, {"trp", ".trp"}},
-                            {Format::TibiaTimeMachine, {"ttm", ".ttm"}},
-                            {Format::YATC, {"yatc", ".yatc"}}});
+static const std::unordered_map<Format, FormatNames> FormatDescriptions(
+        {{Format::Cam, {"TibiacamTV", "cam", ".cam"}},
+         {Format::Rec, {"TibiCAM", "rec", ".rec"}},
+         {Format::Tibiacast, {"Tibiacast", "tibiacast", ".recording"}},
+         {Format::TibiaMovie1, {"TibiaMovie", "tmv1", ".tmv"}},
+         {Format::TibiaMovie2, {"TibiaMovie", "tmv2", ".tmv2"}},
+         {Format::TibiaReplay, {"TibiaReplay", "trp", ".trp"}},
+         {Format::TibiaTimeMachine, {"TibiaTimeMachine", "ttm", ".ttm"}},
+         {Format::YATC, {"YATC", "yatc", ".yatc"}}});
 
 namespace Cam {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace Cam
 
 namespace Rec {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace Rec
 
 namespace Tibiacast {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace Tibiacast
 
 namespace TibiaMovie1 {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace TibiaMovie1
 
 namespace TibiaMovie2 {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace TibiaMovie2
 
 namespace TibiaReplay {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace TibiaReplay
 
 namespace TibiaTimeMachine {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
 } // namespace TibiaTimeMachine
 
 namespace YATC {
-extern bool QueryTibiaVersion(const DataReader &file,
-                              int &major,
-                              int &minor,
-                              int &preview);
+extern bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet);
 extern std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                                                         const Version &version,
                                                         Recovery recovery);
@@ -132,10 +107,8 @@ Format GuessFormat(const std::filesystem::path &path, const DataReader &file) {
         return Format::TibiaReplay;
     }
 
-    for (const auto &[format, pair] : FormatDescriptions) {
-        [[maybe_unused]] const auto &[_name, extension] = pair;
-
-        if (path.extension() == extension) {
+    for (const auto &[format, names] : FormatDescriptions) {
+        if (path.extension() == names.Extension) {
             return format;
         }
     }
@@ -145,26 +118,24 @@ Format GuessFormat(const std::filesystem::path &path, const DataReader &file) {
 
 bool QueryTibiaVersion(Format format,
                        const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+                       VersionTriplet &triplet) {
     switch (format) {
     case Format::Cam:
-        return Cam::QueryTibiaVersion(file, major, minor, preview);
+        return Cam::QueryTibiaVersion(file, triplet);
     case Format::Rec:
-        return Rec::QueryTibiaVersion(file, major, minor, preview);
+        return Rec::QueryTibiaVersion(file, triplet);
     case Format::Tibiacast:
-        return Tibiacast::QueryTibiaVersion(file, major, minor, preview);
+        return Tibiacast::QueryTibiaVersion(file, triplet);
     case Format::TibiaMovie1:
-        return TibiaMovie1::QueryTibiaVersion(file, major, minor, preview);
+        return TibiaMovie1::QueryTibiaVersion(file, triplet);
     case Format::TibiaMovie2:
-        return TibiaMovie2::QueryTibiaVersion(file, major, minor, preview);
+        return TibiaMovie2::QueryTibiaVersion(file, triplet);
     case Format::TibiaReplay:
-        return TibiaReplay::QueryTibiaVersion(file, major, minor, preview);
+        return TibiaReplay::QueryTibiaVersion(file, triplet);
     case Format::TibiaTimeMachine:
-        return TibiaTimeMachine::QueryTibiaVersion(file, major, minor, preview);
+        return TibiaTimeMachine::QueryTibiaVersion(file, triplet);
     case Format::YATC:
-        return YATC::QueryTibiaVersion(file, major, minor, preview);
+        return YATC::QueryTibiaVersion(file, triplet);
     default:
         abort();
     }
@@ -196,14 +167,16 @@ std::pair<std::unique_ptr<Recording>, bool> Read(Format format,
     }
 }
 
-std::string FormatName(Format format) {
+const FormatNames &FormatNames::Get(Format format) {
+    static const FormatNames Unknown{"unknown", "unknown", ".unknown"};
+
     auto it = FormatDescriptions.find(format);
 
     if (it != FormatDescriptions.end()) {
-        return std::get<0>(it->second);
+        return it->second;
     }
 
-    return "unknown";
+    return Unknown;
 }
 
 } // namespace Recordings

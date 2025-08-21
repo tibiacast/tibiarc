@@ -20,7 +20,7 @@
 #include "cli.hpp"
 
 #include "events.hpp"
-#include "crypto.hpp"
+#include "collation.hpp"
 #include "memoryfile.hpp"
 #include "recordings.hpp"
 #include "utils.hpp"
@@ -29,10 +29,6 @@
 #include <chrono>
 #include <compare>
 #include <cstdlib>
-#ifndef _WIN32
-/* N.B: This fails under MXE cross-compilation. */
-#    include <execution>
-#endif
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -45,106 +41,6 @@
 #include <vector>
 
 using namespace trc;
-
-constexpr size_t SHA1Size = 20;
-
-struct Checksum : std::array<uint8_t, SHA1Size> {
-    Checksum(const std::string text) {
-        const auto to_nibble = [](uint8_t character) {
-            if (character >= '0' && character <= '9') {
-                return character - '0';
-            } else if (character >= 'a' && character <= 'f') {
-                return 10 + (character - 'a');
-            } else if (character >= 'A' && character <= 'F') {
-                return 10 + (character - 'A');
-            }
-
-            throw InvalidDataError();
-        };
-
-        try {
-            if (text.size() != (SHA1Size * 2)) {
-                throw InvalidDataError();
-            }
-
-            for (int i = 0; i < text.size(); i += 2) {
-                uint8_t high = to_nibble(text[i]), low = to_nibble(text[i + 1]);
-                this->operator[](i / 2) = high << 4 | low;
-            }
-        } catch ([[maybe_unused]] const InvalidDataError &ignored) {
-            throw text + " is not a valid SHA1 checksum";
-        }
-    }
-
-    Checksum(const Checksum &other) {
-        std::copy(other.begin(), other.end(), begin());
-    }
-
-    Checksum() {
-    }
-
-    operator std::string() const {
-        std::stringstream result;
-
-        for (int i = 0; i < size(); i++) {
-            const char as_hex[] = "0123456789abcdef";
-            uint32_t byte = this->operator[](i);
-
-            result << as_hex[byte >> 4] << as_hex[byte & 0xF];
-        }
-
-        return result.str();
-    }
-};
-
-struct File {
-    std::filesystem::path Path;
-    ::Checksum Checksum;
-
-    File(const std::filesystem::path &path, const ::Checksum &checksum)
-        : Path(path), Checksum(checksum) {
-    }
-
-    File() {
-    }
-
-    std::strong_ordering operator<=>(const File &other) const {
-        /* We assume that all paths are unique, relative or otherwise. */
-        return Path <=> other.Path;
-    }
-};
-
-class Line : public std::string {};
-
-std::istream &operator>>(std::istream &is, Line &line) {
-    std::getline(is, line);
-    return is;
-}
-
-void ParseDenyList(std::set<Checksum> &denyList, std::string path) {
-    std::ifstream file(path);
-    std::istream_iterator<Line> begin(file), end;
-    int index = 0;
-
-    for (const auto &line : std::ranges::subrange(begin, end)) {
-        index++;
-
-        try {
-            auto checksum = line.substr(
-                    0,
-                    std::min(line.size(),
-                             line.find_first_not_of("0123456789abcdef")));
-            if (checksum.size() > 0) {
-
-                denyList.emplace(checksum);
-            }
-        } catch (const std::string &reason) {
-            std::cerr << "error: failed to parse deny-list, line " << index
-                      << ": " << reason << std::endl;
-            std::exit(1);
-        }
-    }
-}
 
 std::list<std::unique_ptr<Version>> GetVersions(
         const std::filesystem::path &dataRoot) {
@@ -171,23 +67,20 @@ std::list<std::unique_ptr<Version>> GetVersions(
                 const MemoryFile spr(sprPath);
                 const MemoryFile dat(datPath);
 
-                result.push_back(std::make_unique<Version>(major,
-                                                           minor,
-                                                           0,
-                                                           pic.Reader(),
-                                                           spr.Reader(),
-                                                           dat.Reader()));
+                result.push_back(std::make_unique<Version>(
+                        VersionTriplet(major, minor, 0),
+                        pic.Reader(),
+                        spr.Reader(),
+                        dat.Reader()));
             }
         }
     }
 
     result.sort([](const std::unique_ptr<Version> &lhs,
                    const std::unique_ptr<Version> &rhs) {
-        if (lhs->Major == rhs->Major && lhs->Minor < rhs->Minor) {
-            return true;
-        }
-
-        return lhs->Major < rhs->Major;
+        auto order = lhs->Triplet <=> rhs->Triplet;
+        return (order == std::strong_ordering::equal) ||
+               (order == std::strong_ordering::less);
     });
 
     if (result.empty()) {
@@ -195,83 +88,13 @@ std::list<std::unique_ptr<Version>> GetVersions(
         std::exit(1);
     } else {
         std::cout << "Found versions:" << std::endl;
+
         for (const auto &version : result) {
-            std::cout << " " << version->Major << "." << version->Minor;
+            std::cout << static_cast<std::string>(version->Triplet) << " ";
         }
+
         std::cout << std::endl;
     }
-
-    return result;
-}
-
-void GatherRecordingPaths(const std::filesystem::path &recordingsRoot,
-                          std::vector<std::filesystem::path> &paths) {
-    for (const auto &entity :
-         std::filesystem::directory_iterator(recordingsRoot)) {
-        if (is_directory(entity)) {
-            GatherRecordingPaths(entity, paths);
-        } else {
-            const auto &path = entity.path();
-            const auto extension = path.filename().extension();
-
-            if (extension == ".cam" || extension == ".rec" ||
-                extension == ".recording" || extension == ".tmv" ||
-                extension == ".tmv2" || extension == ".trp" ||
-                extension == ".ttm" || extension == ".yatc") {
-                paths.push_back(path);
-            }
-        }
-    }
-}
-
-std::vector<File> GatherRecordings(const std::filesystem::path &recordingsRoot,
-                                   const std::set<Checksum> &denyList) {
-    std::vector<std::filesystem::path> paths;
-
-    GatherRecordingPaths(recordingsRoot, paths);
-
-    std::vector<std::optional<File>> unfiltered(paths.size());
-    std::transform(
-#ifndef _WIN32
-            std::execution::par_unseq,
-#endif
-            paths.begin(),
-            paths.end(),
-            unfiltered.begin(),
-            [&denyList](
-                    const std::filesystem::path &path) -> std::optional<File> {
-                const MemoryFile file(path);
-                const auto &reader = file.Reader();
-                auto context = Crypto::SHA1::Create();
-                unsigned int size;
-                Checksum checksum;
-
-                context->Hash(reader.Data, reader.Length, checksum.data());
-
-                if (denyList.contains(checksum)) {
-                    return std::nullopt;
-                }
-
-                return std::make_optional<File>(path, checksum);
-            });
-
-    if (unfiltered.empty()) {
-        std::cerr << "error: failed to find any recordings" << std::endl;
-        std::exit(1);
-    }
-
-    std::vector<File> result;
-    for (const auto &entity : unfiltered) {
-        if (entity) {
-            result.push_back(*entity);
-        }
-    }
-    const size_t skipped = unfiltered.size() - result.size();
-    std::cout << "Found " << result.size() << " recordings";
-    if (skipped != 0) {
-        std::cout << ", skipped " << skipped << " due to deny-list";
-    }
-    std::cout << std::endl;
 
     return result;
 }
@@ -326,7 +149,7 @@ std::optional<std::string> GuessVersion(
     for (const auto &frame : frames) {
         /* Don't bother looking too for into a recording; we'll either see the
          * login message almost immediately or not at all. */
-        if (frame.Timestamp > 2000) {
+        if (frame.Timestamp > std::chrono::seconds(2)) {
             break;
         }
 
@@ -375,8 +198,8 @@ std::optional<std::string> GuessVersion(
     return std::nullopt;
 }
 
-std::pair<File, std::filesystem::path> ProcessRecording(
-        const File &source,
+std::pair<Collation::RecordingFile, std::filesystem::path> ProcessRecording(
+        const Collation::RecordingFile &source,
         const std::list<std::unique_ptr<Version>> &versions) {
     std::optional<std::filesystem::path> guessedVersion;
     const MemoryFile file(source.Path);
@@ -399,10 +222,11 @@ std::pair<File, std::filesystem::path> ProcessRecording(
                         }
                     }
 
-                    std::filesystem::path folder =
-                            std::to_string(version->Major) + "." +
-                            std::to_string(version->Minor);
-                    return std::make_pair(source, folder);
+                    if (state.Creatures.contains(state.Player.Id)) {
+                        std::filesystem::path folder =
+                                static_cast<std::string>(version->Triplet);
+                        return std::make_pair(source, folder);
+                    }
                 } catch ([[maybe_unused]] const InvalidDataError &e) {
                     /* There's something wrong with the underlying data, but
                      * we may still be able to guess the version. */
@@ -425,10 +249,9 @@ std::pair<File, std::filesystem::path> ProcessRecording(
      * recordings in the earliest version for which they finish gracefully,
      * regardless of advertised version, and using the container-provided
      * version would interfere with that. */
-    int major, minor, preview;
-    if (Recordings::QueryTibiaVersion(format, reader, major, minor, preview)) {
-        guessedVersion = std::make_optional(std::to_string(major) + "." +
-                                            std::to_string(minor));
+    VersionTriplet triplet;
+    if (Recordings::QueryTibiaVersion(format, reader, triplet)) {
+        guessedVersion = std::make_optional(static_cast<std::string>(triplet));
     } else if (!guessedVersion) {
         guessedVersion = std::make_optional("unversioned");
     }
@@ -436,27 +259,23 @@ std::pair<File, std::filesystem::path> ProcessRecording(
     return std::make_pair(source, "graveyard" / *guessedVersion);
 }
 
-std::vector<std::pair<File, std::filesystem::path>> ProcessRecordings(
-        const std::vector<File> &recordings,
-        const std::list<std::unique_ptr<Version>> &versions) {
-    std::vector<std::pair<File, std::filesystem::path>> result(
-            recordings.size());
+std::vector<std::pair<Collation::RecordingFile, std::filesystem::path>>
+ProcessRecordings(const std::vector<Collation::RecordingFile> &recordings,
+                  const std::list<std::unique_ptr<Version>> &versions) {
+    std::vector<std::pair<Collation::RecordingFile, std::filesystem::path>>
+            result(recordings.size());
 
-    std::transform(
-#ifndef _WIN32
-            std::execution::par_unseq,
-#endif
-            recordings.begin(),
-            recordings.end(),
-            result.begin(),
-            [&versions](const File &in) {
-                return ProcessRecording(in, versions);
-            });
+    std::transform(recordings.begin(),
+                   recordings.end(),
+                   result.begin(),
+                   [&versions](const Collation::RecordingFile &in) {
+                       return ProcessRecording(in, versions);
+                   });
 
     return result;
 }
 
-std::filesystem::path MangleDestination(const File &file,
+std::filesystem::path MangleDestination(const Collation::RecordingFile &file,
                                         const std::filesystem::path &root,
                                         const std::filesystem::path folder) {
     std::basic_string<std::filesystem::path::value_type> filename =
@@ -475,7 +294,7 @@ enum class TransferAction { None, CopyFile, MoveFile };
 
 void TransferFile(TransferAction action,
                   bool verbose,
-                  const File &file,
+                  const Collation::RecordingFile &file,
                   const std::filesystem::path &root,
                   const std::filesystem::path &folder) {
     auto destination = MangleDestination(file, root, folder);
@@ -535,7 +354,7 @@ void TransferFile(TransferAction action,
 
 int main(int argc, char **argv) {
     TransferAction action = TransferAction::CopyFile;
-    std::set<Checksum> denyList;
+    Collation::DenyList denyList;
     bool verbose = false;
 
     auto paths = CLI::Process(
@@ -555,7 +374,7 @@ int main(int argc, char **argv) {
               {"skip files whose hashes are listed in the given file",
                {"file"},
                [&]([[maybe_unused]] const CLI::Range &args) {
-                   ParseDenyList(denyList, args[0]);
+                   Collation::ParseDenyList(args[0], denyList);
                }}},
              {"verbose",
               {"print the action taken for every recording",
@@ -590,9 +409,32 @@ int main(int argc, char **argv) {
         std::exit(1);
     }
 
+    std::vector<Collation::RecordingFile> recordings;
+
+    Collation::GatherRecordingFiles(sourceRoot, recordings);
+
+    if (recordings.empty()) {
+        std::cerr << "error: failed to find any recordings" << std::endl;
+        std::exit(1);
+    }
+
+    std::vector<Collation::RecordingFile> accepted;
+
+    for (const auto &file : recordings) {
+        if (denyList.contains(file.Checksum)) {
+            accepted.push_back(file);
+        }
+    }
+
+    const size_t skipped = recordings.size() - accepted.size();
+    std::cout << "Found " << recordings.size() << " recordings";
+    if (skipped != 0) {
+        std::cout << ", skipped " << skipped << " due to deny-list";
+    }
+    std::cout << std::endl;
+
     auto versions = GetVersions(dataRoot);
-    auto recordings = GatherRecordings(sourceRoot, denyList);
-    auto transfers = ProcessRecordings(recordings, versions);
+    auto transfers = ProcessRecordings(accepted, versions);
 
     /* Perform all file operations serially to avoid races, they're plenty
      * fast compared to the hashing and version determination done above. */

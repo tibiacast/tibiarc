@@ -45,26 +45,31 @@ enum class Format {
     Unknown
 };
 
+struct FormatNames {
+    const std::string Long;
+    const std::string Short;
+    const std::filesystem::path Extension;
+
+    static const FormatNames &Get(Format format);
+};
+
 enum class Recovery { None, Repair };
 
 struct Recording {
     struct Frame {
-        uint32_t Timestamp;
+        std::chrono::milliseconds Timestamp;
         std::list<std::unique_ptr<Events::Base>> Events;
     };
 
-    uint32_t Runtime;
+    std::chrono::milliseconds Runtime;
     std::list<Frame> Frames;
 };
 
 Format GuessFormat(const std::filesystem::path &path, const DataReader &file);
-std::string FormatName(Format format);
 
 bool QueryTibiaVersion(Format format,
                        const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview);
+                       VersionTriplet &triplet);
 std::pair<std::unique_ptr<Recording>, bool> Read(
         Format format,
         const DataReader &file,

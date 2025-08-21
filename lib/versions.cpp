@@ -31,10 +31,15 @@
 #include "versions.hpp"
 #include "utils.hpp"
 
-#include <stddef.h>
-#include <cstdlib>
+#ifdef DUMP_ITEMS
+#    include "renderer.hpp"
+#    include "textrenderer.hpp"
+#endif
 
 #include <bit>
+#include <cstddef>
+#include <cstdlib>
+#include <format>
 
 namespace trc {
 
@@ -145,56 +150,54 @@ void VersionBase::InitTypeProperties() {
 
 void VersionBase::InitUnifiedMessageTypes(
         TranslationTable<MessageMode> &table) {
-    table.Insert(1, trc::MessageMode::Say);
-    table.Insert(2, trc::MessageMode::Whisper);
-    table.Insert(3, trc::MessageMode::Yell);
-    table.Insert(4, trc::MessageMode::PrivateIn);
-    table.Insert(5, trc::MessageMode::PrivateOut);
-    table.Insert(6, trc::MessageMode::ChannelWhite);
-    table.Insert(7, trc::MessageMode::ChannelWhite);
-    table.Insert(8, trc::MessageMode::ChannelWhite);
-    table.Insert(9, trc::MessageMode::Spell);
-    table.Insert(10, trc::MessageMode::NPCStart);
-    table.Insert(11, trc::MessageMode::PlayerToNPC);
-    table.Insert(12, trc::MessageMode::Broadcast);
-    table.Insert(13, trc::MessageMode::ChannelRed);
-    table.Insert(14, trc::MessageMode::GMToPlayer);
-    table.Insert(15, trc::MessageMode::PlayerToGM);
-    table.Insert(16, trc::MessageMode::Login);
-    table.Insert(17, trc::MessageMode::Warning);
-    table.Insert(18, trc::MessageMode::Game);
-    table.Insert(19, trc::MessageMode::Failure);
-    table.Insert(20, trc::MessageMode::Look);
-    table.Insert(21, trc::MessageMode::DamageDealt);
-    table.Insert(22, trc::MessageMode::DamageReceived);
-    table.Insert(23, trc::MessageMode::Healing);
-    table.Insert(24, trc::MessageMode::Experience);
-    table.Insert(25, trc::MessageMode::DamageReceivedOthers);
-    table.Insert(26, trc::MessageMode::HealingOthers);
-    table.Insert(27, trc::MessageMode::ExperienceOthers);
-    table.Insert(28, trc::MessageMode::Status);
-    table.Insert(29, trc::MessageMode::Loot);
-    table.Insert(30, trc::MessageMode::NPCTrade);
-    table.Insert(31, trc::MessageMode::Guild);
-    table.Insert(32, trc::MessageMode::PartyWhite);
-    table.Insert(33, trc::MessageMode::Party);
-    table.Insert(34, trc::MessageMode::MonsterSay);
-    table.Insert(35, trc::MessageMode::MonsterYell);
-    table.Insert(36, trc::MessageMode::Report);
-    table.Insert(37, trc::MessageMode::Hotkey);
-    table.Insert(38, trc::MessageMode::Tutorial);
-    table.Insert(39, trc::MessageMode::ThankYou);
-    table.Insert(40, trc::MessageMode::Market);
-    table.Insert(41, trc::MessageMode::Mana);
+    table.Insert(1, MessageMode::Say);
+    table.Insert(2, MessageMode::Whisper);
+    table.Insert(3, MessageMode::Yell);
+    table.Insert(4, MessageMode::PrivateIn);
+    table.Insert(5, MessageMode::PrivateOut);
+    table.Insert(6, MessageMode::ChannelWhite);
+    table.Insert(7, MessageMode::ChannelWhite);
+    table.Insert(8, MessageMode::ChannelWhite);
+    table.Insert(9, MessageMode::Spell);
+    table.Insert(10, MessageMode::NPCStart);
+    table.Insert(11, MessageMode::PlayerToNPC);
+    table.Insert(12, MessageMode::Broadcast);
+    table.Insert(13, MessageMode::ChannelRed);
+    table.Insert(14, MessageMode::GMToPlayer);
+    table.Insert(15, MessageMode::PlayerToGM);
+    table.Insert(16, MessageMode::Login);
+    table.Insert(17, MessageMode::Warning);
+    table.Insert(18, MessageMode::Game);
+    table.Insert(19, MessageMode::Failure);
+    table.Insert(20, MessageMode::Look);
+    table.Insert(21, MessageMode::DamageDealt);
+    table.Insert(22, MessageMode::DamageReceived);
+    table.Insert(23, MessageMode::Healing);
+    table.Insert(24, MessageMode::Experience);
+    table.Insert(25, MessageMode::DamageReceivedOthers);
+    table.Insert(26, MessageMode::HealingOthers);
+    table.Insert(27, MessageMode::ExperienceOthers);
+    table.Insert(28, MessageMode::Status);
+    table.Insert(29, MessageMode::Loot);
+    table.Insert(30, MessageMode::NPCTrade);
+    table.Insert(31, MessageMode::Guild);
+    table.Insert(32, MessageMode::PartyWhite);
+    table.Insert(33, MessageMode::Party);
+    table.Insert(34, MessageMode::MonsterSay);
+    table.Insert(35, MessageMode::MonsterYell);
+    table.Insert(36, MessageMode::Report);
+    table.Insert(37, MessageMode::Hotkey);
+    table.Insert(38, MessageMode::Tutorial);
+    table.Insert(39, MessageMode::ThankYou);
+    table.Insert(40, MessageMode::Market);
+    table.Insert(41, MessageMode::Mana);
 
     if (AtLeast(10, 36)) {
-        table.Insert(11,
-                     trc::MessageMode::PlayerToNPC,
-                     trc::MessageMode::NPCContinued);
+        table.Insert(11, MessageMode::PlayerToNPC, MessageMode::NPCContinued);
     }
 
     if (AtLeast(10, 54)) {
-        table.Insert(29, trc::MessageMode::Failure, trc::MessageMode::Game);
+        table.Insert(29, MessageMode::Failure, MessageMode::Game);
     }
 }
 
@@ -208,19 +211,19 @@ void VersionBase::InitMessageTypes() {
 
     /* 7.11, serving as a baseline. */
     AbortUnless(AtLeast(7, 11));
-    table.Insert(14, trc::MessageMode::ConsoleOrange);
-    table.Insert(15, trc::MessageMode::Broadcast);
-    table.Insert(16, trc::MessageMode::Game);
-    table.Insert(17, trc::MessageMode::Login);
-    table.Insert(18, trc::MessageMode::Status);
-    table.Insert(19, trc::MessageMode::Look);
-    table.Insert(20, trc::MessageMode::Failure);
+    table.Insert(14, MessageMode::ConsoleOrange);
+    table.Insert(15, MessageMode::Broadcast);
+    table.Insert(16, MessageMode::Game);
+    table.Insert(17, MessageMode::Login);
+    table.Insert(18, MessageMode::Status);
+    table.Insert(19, MessageMode::Look);
+    table.Insert(20, MessageMode::Failure);
 
     if (AtLeast(7, 20)) {
         /* Dummy entry, no idea where this should be. */
         table.Gap(0);
 
-        table.Insert(17, trc::MessageMode::Warning, trc::MessageMode::Game);
+        table.Insert(17, MessageMode::Warning, MessageMode::Game);
     }
 
     if (AtLeast(7, 24)) {
@@ -229,19 +232,15 @@ void VersionBase::InitMessageTypes() {
     }
 
     if (AtLeast(8, 20)) {
-        table.Insert(17,
-                     trc::MessageMode::ConsoleRed,
-                     trc::MessageMode::Broadcast);
-        table.Gap(18, trc::MessageMode::Broadcast);
+        table.Insert(17, MessageMode::ConsoleRed, MessageMode::Broadcast);
+        table.Gap(18, MessageMode::Broadcast);
     }
 
     if (AtLeast(8, 40)) {
-        table.Insert(20,
-                     trc::MessageMode::ConsoleOrange,
-                     trc::MessageMode::Warning);
+        table.Insert(20, MessageMode::ConsoleOrange, MessageMode::Warning);
     }
 
-    /* TibiaCamTV decided to move their slogan to trc::MessageMode::Warning
+    /* TibiaCamTV decided to move their slogan to MessageMode::Warning
      * in 8.60, keep that in mind when adding new versions. */
 
     if (AtLeast(8, 61)) {
@@ -251,7 +250,7 @@ void VersionBase::InitMessageTypes() {
         table.Remove(0);
         table.Remove(0);
         table.Remove(0);
-        table.Insert(22, trc::MessageMode::Warning);
+        table.Insert(22, MessageMode::Warning);
     }
 }
 
@@ -265,54 +264,50 @@ void VersionBase::InitSpeakTypes() {
 
     /* 7.11, serving as a baseline. */
     AbortUnless(AtLeast(7, 11));
-    table.Insert(1, trc::MessageMode::Say);
-    table.Insert(2, trc::MessageMode::Whisper);
-    table.Insert(3, trc::MessageMode::Yell);
-    table.Insert(4, trc::MessageMode::PrivateIn);
-    table.Insert(5, trc::MessageMode::ChannelYellow);
-    table.Insert(6, trc::MessageMode::RuleViolationChannel);
-    table.Insert(7, trc::MessageMode::RuleViolationAnswer);
-    table.Insert(8, trc::MessageMode::RuleViolationContinue);
-    table.Insert(9, trc::MessageMode::Broadcast);
-    table.Insert(10, trc::MessageMode::ChannelRed);
-    table.Insert(11, trc::MessageMode::GMToPlayer);
-    table.Insert(12, trc::MessageMode::ChannelAnonymousRed);
-    table.Insert(13, trc::MessageMode::MonsterSay);
-    table.Insert(14, trc::MessageMode::MonsterYell);
+    table.Insert(1, MessageMode::Say);
+    table.Insert(2, MessageMode::Whisper);
+    table.Insert(3, MessageMode::Yell);
+    table.Insert(4, MessageMode::PrivateIn);
+    table.Insert(5, MessageMode::ChannelYellow);
+    table.Insert(6, MessageMode::RuleViolationChannel);
+    table.Insert(7, MessageMode::RuleViolationAnswer);
+    table.Insert(8, MessageMode::RuleViolationContinue);
+    table.Insert(9, MessageMode::Broadcast);
+    table.Insert(10, MessageMode::ChannelRed);
+    table.Insert(11, MessageMode::GMToPlayer);
+    table.Insert(12, MessageMode::ChannelAnonymousRed);
+    table.Insert(13, MessageMode::MonsterSay);
+    table.Insert(14, MessageMode::MonsterYell);
 
     if (AtLeast(7, 20)) {
         table.Insert(12,
-                     trc::MessageMode::ChannelOrange,
-                     trc::MessageMode::ChannelAnonymousRed);
-        table.Gap(13, trc::MessageMode::ChannelAnonymousRed);
+                     MessageMode::ChannelOrange,
+                     MessageMode::ChannelAnonymousRed);
+        table.Gap(13, MessageMode::ChannelAnonymousRed);
     }
 
     if (AtLeast(7, 23)) {
-        table.Gap(15, trc::MessageMode::MonsterSay);
+        table.Gap(15, MessageMode::MonsterSay);
     }
 
     if (AtLeast(8, 20)) {
-        table.Insert(4,
-                     trc::MessageMode::PlayerToNPC,
-                     trc::MessageMode::PrivateIn);
-        table.Insert(5,
-                     trc::MessageMode::NPCStart,
-                     trc::MessageMode::PrivateIn);
+        table.Insert(4, MessageMode::PlayerToNPC, MessageMode::PrivateIn);
+        table.Insert(5, MessageMode::NPCStart, MessageMode::PrivateIn);
     }
 
     if (AtLeast(8, 40)) {
         table.Insert(8,
-                     trc::MessageMode::ChannelWhite,
-                     trc::MessageMode::RuleViolationChannel);
+                     MessageMode::ChannelWhite,
+                     MessageMode::RuleViolationChannel);
     }
 
     if (AtLeast(8, 61)) {
-        table.Remove(9, trc::MessageMode::RuleViolationChannel);
-        table.Remove(9, trc::MessageMode::RuleViolationAnswer);
-        table.Remove(9, trc::MessageMode::RuleViolationContinue);
+        table.Remove(9, MessageMode::RuleViolationChannel);
+        table.Remove(9, MessageMode::RuleViolationAnswer);
+        table.Remove(9, MessageMode::RuleViolationContinue);
 
         table.Remove(13);
-        table.Remove(13, trc::MessageMode::ChannelAnonymousRed);
+        table.Remove(13, MessageMode::ChannelAnonymousRed);
         table.Remove(13);
     }
 }
@@ -588,12 +583,12 @@ uint8_t VersionBase::TranslateFluidColor(uint8_t color) const {
 
 #    define DUMP_PROPERTY(Name)                                                \
         if (properties.Name) {                                                 \
-            trc::TextRenderer::DrawString(&version->Fonts.InterfaceFontSmall,  \
-                                          &fontColor,                          \
-                                          0 + (emitted % 2) * 64,              \
-                                          66 + (emitted / 2) * 14,             \
-                                          #Name,                               \
-                                          canvas);                             \
+            TextRenderer::DrawString(Fonts.InterfaceSmall,                     \
+                                     fontColor,                                \
+                                     0 + (emitted % 2) * 64,                   \
+                                     66 + (emitted / 2) * 14,                  \
+                                     #Name,                                    \
+                                     canvas);                                  \
             emitted++;                                                         \
         }
 
@@ -601,12 +596,12 @@ void Version::DumpItems() {
     const Pixel fontColor(0xFF, 0xFF, 0xFF);
     Canvas canvas(128, 128);
 
-    for (int i = Types.Items.MinId; i < Types.Items.MaxId; i++) {
+    for (int i = 100; i < Types.ItemMaxId; i++) {
         const auto &properties = Types.GetItem(i).Properties;
         int emitted = 0;
 
         canvas.Wipe();
-        trc::Renderer::DumpItem(this, i, canvas);
+        Renderer::DumpItem(*this, i, canvas);
 
         DUMP_PROPERTY(Animated);
         DUMP_PROPERTY(AnimateIdle);
@@ -643,16 +638,21 @@ void Version::DumpItems() {
         DUMP_PROPERTY(Write);
         DUMP_PROPERTY(WriteOnce);
 
-        char path[512];
-        sprintf(path, "items/%i.bmp", i);
-        canvas.Dump(path);
+        canvas.Dump(std::format("items/{}.bmp", i));
     }
 }
 #endif
 
-VersionBase::VersionBase(int major, int minor, int preview)
-    : Major(major), Minor(minor), Preview(preview), Protocol({}), Features({}) {
+VersionTriplet::operator std::string() const {
+    return std::format(
+            "{}.{}{}",
+            Major,
+            Minor,
+            (Preview > 0 ? std::format(".{}", Preview) : std::string()));
+}
 
+VersionBase::VersionBase(const VersionTriplet &triplet)
+    : Triplet(triplet), Protocol({}), Features({}) {
     InitTypeProperties();
     InitMessageTypes();
     InitSpeakTypes();
@@ -660,13 +660,11 @@ VersionBase::VersionBase(int major, int minor, int preview)
     InitProtocol();
 }
 
-Version::Version(int major,
-                 int minor,
-                 int preview,
-                 const trc::DataReader &pictureData,
-                 const trc::DataReader &spriteData,
-                 const trc::DataReader &typeData)
-    : VersionBase(major, minor, preview),
+Version::Version(const VersionTriplet &triplet,
+                 const DataReader &pictureData,
+                 const DataReader &spriteData,
+                 const DataReader &typeData)
+    : VersionBase(triplet),
       Pictures(static_cast<VersionBase &>(*this), pictureData),
       Sprites(static_cast<VersionBase &>(*this), spriteData),
       Types(*this, typeData),

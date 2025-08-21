@@ -92,9 +92,6 @@ endif()
 option(TIBIARC_NO_OPENSSL "Explicitly disable libcrypto support" OFF)
 if(NOT TIBIARC_NO_OPENSSL)
   find_package(OpenSSL QUIET)
-  if(NOT OPENSSL_FOUND)
-    message(WARNING "libcrypto (OpenSSL) was not found")
-  endif()
 endif()
 
 option(TIBIARC_NO_SDL2 "Explicitly disable SDL2" OFF)
@@ -112,6 +109,16 @@ if(NOT TIBIARC_NO_ZLIB)
     message(WARNING "zlib was not found, tibiarc will be built without zlib support")
   endif()
 endif()
+
+option(TIBIARC_NO_QT "Explicitly disable Qt support" OFF)
+if(NOT TIBIARC_NO_QT)
+  find_package(Qt6 COMPONENTS Concurrent Widgets QUIET)
+  if(Qt6Widgets_VERSION VERSION_LESS 6.9.0)
+    set(Qt6Widgets_FOUND FALSE)
+  endif()
+endif()
+
+set(TIBIARC_HAVE_QT_CONCURRENT (Qt6Concurrent_FOUND AND (NOT EMSCRIPTEN)))
 
 # ########################################################################### #
 ## `tibiarc` library
@@ -234,6 +241,7 @@ if(BCRYPT_FOUND)
   target_link_libraries(tibiarc PRIVATE bcrypt)
 
   target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
+  target_compile_definitions(tibiarc PRIVATE DISABLE_QT_CRYPTO)
   set(TIBIARC_HAVE_CRYPTO TRUE)
 else()
   if(OPENSSL_FOUND)
@@ -245,7 +253,17 @@ else()
     endif()
 
     target_compile_definitions(tibiarc PRIVATE DISABLE_BCRYPT_CRYPTO)
+    target_compile_definitions(tibiarc PRIVATE DISABLE_QT_CRYPTO)
     set(TIBIARC_HAVE_CRYPTO TRUE)
+  else()
+    if(Qt6Core_FOUND)
+      target_include_directories(tibiarc PRIVATE ${QT6_INCLUDE_DIRS})
+      target_link_libraries(tibiarc PUBLIC Qt6::Core)
+
+      target_compile_definitions(tibiarc PRIVATE DISABLE_BCRYPT_CRYPTO)
+      target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
+      set(TIBIARC_HAVE_CRYPTO TRUE)
+    endif()
   endif()
 endif()
 
@@ -253,6 +271,7 @@ if(NOT TIBIARC_HAVE_CRYPTO)
   message(WARNING "No supported crypto library found, tibiarc will be built without .rec support")
   target_compile_definitions(tibiarc PRIVATE DISABLE_BCRYPT_CRYPTO)
   target_compile_definitions(tibiarc PRIVATE DISABLE_OPENSSL_CRYPTO)
+  target_compile_definitions(tibiarc PRIVATE DISABLE_QT_CRYPTO)
 endif()
 
 if(ZLIB_FOUND)
@@ -266,63 +285,70 @@ endif()
 ## Recording converter
 # ########################################################################### #
 
-add_executable(converter
-  "converter/converter.cpp"
-  "converter/encoders/inert.cpp"
-  "converter/encoders/inert.hpp"
-  "converter/encoders/libav.cpp"
-  "converter/encoders/libav.hpp"
-  "converter/encoding.cpp"
-  "converter/encoding.hpp"
-  "converter/exporter.cpp"
-  "converter/exporter.hpp"
-  "utils/cli.hpp"
-  "utils/memoryfile.cpp"
-  "utils/memoryfile.hpp"
-)
+if(NOT EMSCRIPTEN)
+  add_executable(converter
+    "converter/converter.cpp"
+    "converter/encoders/inert.cpp"
+    "converter/encoders/inert.hpp"
+    "converter/encoders/libav.cpp"
+    "converter/encoders/libav.hpp"
+    "converter/encoding.cpp"
+    "converter/encoding.hpp"
+    "converter/exporter.cpp"
+    "converter/exporter.hpp"
+    "utils/cli.hpp"
+    "utils/memoryfile.cpp"
+    "utils/memoryfile.hpp"
+  )
 
-target_include_directories(converter PRIVATE "converter" "utils")
-target_link_libraries(converter PRIVATE tibiarc)
+  target_include_directories(converter PRIVATE "converter" "utils")
+  target_link_libraries(converter PRIVATE tibiarc)
 
-if(LIBAV_FOUND)
-  target_include_directories(converter PRIVATE ${LIBAV_INCLUDE_DIRS})
-  target_link_libraries(converter PRIVATE PkgConfig::LIBAV)
-else()
-  target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
-endif()
+  if(LIBAV_FOUND)
+    target_include_directories(converter PRIVATE ${LIBAV_INCLUDE_DIRS})
+    target_link_libraries(converter PRIVATE PkgConfig::LIBAV)
+  else()
+    target_compile_definitions(converter PRIVATE DISABLE_LIBAV)
+  endif()
 
-if(OpenMP_FOUND)
-  target_include_directories(converter PRIVATE ${OpenMP_CXX_INCLUDE_DIRS})
-  target_compile_options(converter PRIVATE ${OpenMP_CXX_FLAGS})
-  target_link_libraries(converter PRIVATE ${OpenMP_CXX_LIBRARIES})
+  if(OpenMP_FOUND)
+    target_include_directories(converter PRIVATE ${OpenMP_CXX_INCLUDE_DIRS})
+    target_compile_options(converter PRIVATE ${OpenMP_CXX_FLAGS})
+    target_link_libraries(converter PRIVATE ${OpenMP_CXX_LIBRARIES})
+  endif()
 endif()
 
 # ########################################################################### #
 ## Miner
 # ########################################################################### #
 
-add_executable(miner
-  "miner/deps/json.hpp"
-  "miner/miner.cpp"
-  "miner/serializer.cpp"
-  "miner/serializer.hpp"
-  "utils/cli.hpp"
-  "utils/memoryfile.cpp"
-  "utils/memoryfile.hpp"
-)
-target_include_directories(miner PRIVATE "miner" "utils")
-target_link_libraries(miner PRIVATE tibiarc)
+if(NOT EMSCRIPTEN)
+  add_executable(miner
+    "deps/json.hpp"
+    "miner/miner.cpp"
+    "miner/serializer.cpp"
+    "miner/serializer.hpp"
+    "utils/cli.hpp"
+    "utils/memoryfile.cpp"
+    "utils/memoryfile.hpp"
+  )
+
+  target_include_directories(miner PRIVATE "miner" "deps" "utils")
+  target_link_libraries(miner PRIVATE tibiarc)
+endif()
 
 # ########################################################################### #
 ## Collator
 # ########################################################################### #
 
-if(TIBIARC_HAVE_CRYPTO)
+if(TIBIARC_HAVE_CRYPTO AND (NOT EMSCRIPTEN))
   add_executable(collator
     "collator/collator.cpp"
+    "utils/cli.hpp"
+    "utils/collation.cpp"
+    "utils/collation.hpp"
     "utils/memoryfile.cpp"
     "utils/memoryfile.hpp"
-    "utils/cli.hpp"
   )
   target_include_directories(collator PRIVATE "collator" "utils")
   target_link_libraries(collator PRIVATE tibiarc)
@@ -338,53 +364,46 @@ if(TIBIARC_HAVE_CRYPTO)
   endif()
 endif()
 
-# ########################################################################### #
-## player
-# ########################################################################### #
+if(Qt6Widgets_FOUND AND (EMSCRIPTEN OR Qt6Concurrent_FOUND))
+  qt_standard_project_setup()
 
-if(EMSCRIPTEN OR SDL2_FOUND)
-  add_executable(player
-    "player/player.cpp"
-    "player/playback.cpp"
-    "player/playback.hpp"
-    "player/rendering.cpp"
-    "player/rendering.hpp"
+  qt_add_executable(gui
+    "deps/json.hpp"
+    "gui/collection.cpp"
+    "gui/collection.hpp"
+    "gui/database.cpp"
+    "gui/database.hpp"
+    "gui/main.cpp"
+    "gui/mediacontrols.cpp"
+    "gui/mediacontrols.hpp"
+    "gui/player.cpp"
+    "gui/player.hpp"
+    "gui/window.cpp"
+    "gui/window.hpp"
+    "utils/collation.cpp"
+    "utils/collation.hpp"
     "utils/memoryfile.cpp"
     "utils/memoryfile.hpp"
   )
-  target_include_directories(player PRIVATE "player" "utils")
-  target_link_libraries(player PRIVATE tibiarc)
 
-  if(NOT EMSCRIPTEN)
-    target_include_directories(player PRIVATE ${SDL2_INCLUDE_DIRS})
-    target_link_libraries(player PRIVATE ${SDL2_LIBRARIES})
+  target_include_directories(gui PRIVATE "gui"
+                                         "deps"
+                                         "utils"
+                                         ${QT6_INCLUDE_DIRS})
+  target_link_libraries(gui PRIVATE tibiarc Qt6::Widgets)
 
-    # Ensure that SDL2 does not swallow console output on Windows. This is only
-    # useful for debugging and may cause crashes on its own as SDL2 assumes
-    # -mwindows
-    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-      if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_link_options(player PRIVATE -mconsole)
-      endif()
-    endif()
+  if(TIBIARC_HAVE_QT_CONCURRENT)
+    target_link_libraries(gui PRIVATE Qt6::Concurrent)
   else()
-    set_target_properties(converter PROPERTIES EXCLUDE_FROM_ALL 1)
-    set_target_properties(player PROPERTIES SUFFIX ".html")
-    target_compile_options(player PRIVATE -sUSE_SDL=2)
-    target_link_options(player PRIVATE
-                          -sUSE_SDL=2
-                          -sALLOW_MEMORY_GROWTH=1
-                          -sEXPORTED_FUNCTIONS=_main,_load_files,_malloc
-                          -sEXPORTED_RUNTIME_METHODS=ccall)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-      target_link_options(player PRIVATE
-                            -sEXCEPTION_DEBUG=1
-                            -sASSERTIONS=1
-                            -sSAFE_HEAP=1
-                            -sDEMANGLE_SUPPORT=1)
-    endif()
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/player/index.html"
-                     "${CMAKE_BINARY_DIR}/index.html" COPYONLY)
+    target_compile_definitions(gui PRIVATE DISABLE_QT_CONCURRENT)
+  endif()
+
+  if(EMSCRIPTEN)
+    target_link_options(gui PUBLIC -sASYNCIFY
+                                   -sASSERTIONS
+                                   -sNO_DISABLE_EXCEPTION_CATCHING
+                                   -Os)
+    target_link_libraries(gui PRIVATE idbfs.js)
   endif()
 endif()
 

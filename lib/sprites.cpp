@@ -121,14 +121,13 @@ static size_t ExtractSprite(const Canvas &canvas,
                     runLength = 0;
                 }
 
-                static_assert(sizeof(trc::Pixel) == 4 &&
-                                      alignof(trc::Pixel) == 1,
+                static_assert(sizeof(Pixel) == 4 && alignof(Pixel) == 1,
                               "Pixel struct must be byte-aligned");
                 if (buffer) {
-                    *(trc::Pixel *)&buffer[bufferIdx] = currentPixel;
+                    *(Pixel *)&buffer[bufferIdx] = currentPixel;
                 }
 
-                bufferIdx += sizeof(trc::Pixel);
+                bufferIdx += sizeof(Pixel);
                 runLength++;
             } else {
                 if (!transparent) {
@@ -291,10 +290,10 @@ Sprite::~Sprite() {
     }
 }
 
-SpriteFile::SpriteFile(const VersionBase &version, DataReader data) {
-    Signature = data.ReadU32();
-
+SpriteFile::SpriteFile(const VersionBase &version, DataReader data)
+    : Signature(data.ReadU32()) {
     uint32_t count;
+
     if (version.Features.SpriteIndexU32) {
         /* To avoid running out of memory on version mismatches, we'll set a
          * reasonably-high upper bound to error out quicker. */

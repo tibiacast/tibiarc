@@ -36,9 +36,7 @@ namespace trc {
 namespace Recordings {
 namespace TibiaMovie1 {
 bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
-                       [[maybe_unused]] int &major,
-                       [[maybe_unused]] int &minor,
-                       [[maybe_unused]] int &preview) {
+                       [[maybe_unused]] VersionTriplet &triplet) {
 #ifndef DISABLE_ZLIB
     uint8_t buffer[4];
     uLongf bufferSize;
@@ -57,11 +55,11 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
         reader.ReadU16<2, 2>();
         auto tibiaVersion = reader.ReadU16();
 
-        major = tibiaVersion / 100;
-        minor = tibiaVersion % 100;
-        preview = 0;
+        triplet.Major = tibiaVersion / 100;
+        triplet.Minor = tibiaVersion % 100;
+        triplet.Preview = 0;
 
-        return major >= 7 && major <= 12 && minor < 99;
+        return triplet.Major >= 7 && triplet.Major <= 12 && triplet.Minor <= 99;
     }
 #endif
 
@@ -69,7 +67,7 @@ bool QueryTibiaVersion([[maybe_unused]] const DataReader &file,
 }
 
 #ifndef DISABLE_ZLIB
-static std::unique_ptr<uint8_t[]> Uncompress(const trc::DataReader &reader,
+static std::unique_ptr<uint8_t[]> Uncompress(const DataReader &reader,
                                              size_t &size) {
     z_stream stream;
     int error;
@@ -134,9 +132,10 @@ static std::unique_ptr<uint8_t[]> Uncompress(const trc::DataReader &reader,
 }
 #endif
 
-std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
-                                                 const Version &version,
-                                                 Recovery recovery) {
+std::pair<std::unique_ptr<Recording>, bool> Read(
+        [[maybe_unused]] const DataReader &file,
+        [[maybe_unused]] const Version &version,
+        [[maybe_unused]] Recovery recovery) {
 #ifdef DISABLE_ZLIB
     throw NotSupportedError();
 #else
@@ -153,26 +152,25 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     auto recording = std::make_unique<Recording>();
     bool partialReturn = false;
 
-    recording->Runtime = reader.ReadU32();
+    recording->Runtime = std::chrono::milliseconds(reader.ReadU32());
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
         Demuxer demuxer(2);
-        uint32_t frameTime = 0;
 
+        std::chrono::milliseconds frameTime(0);
         while (reader.Remaining() > 0) {
             if (reader.ReadU8<0, 1>() == 0) {
-                auto frameDelay = reader.ReadU32();
+                auto frameDelay = std::chrono::milliseconds(reader.ReadU32());
 
                 DataReader frameReader = reader.Slice(reader.ReadU16());
-                demuxer.Submit(
-                        frameTime,
-                        frameReader,
-                        [&](DataReader packetReader, uint32_t timestamp) {
-                            recording->Frames.emplace_back(
-                                    timestamp,
-                                    parser.Parse(packetReader));
-                        });
+                demuxer.Submit(frameTime,
+                               frameReader,
+                               [&](DataReader packetReader, auto timestamp) {
+                                   recording->Frames.emplace_back(
+                                           timestamp,
+                                           parser.Parse(packetReader));
+                               });
 
                 frameTime += frameDelay;
             }

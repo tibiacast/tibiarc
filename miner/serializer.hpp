@@ -22,6 +22,7 @@
 
 #include "recordings.hpp"
 #include "events.hpp"
+#include "versions.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -36,13 +37,10 @@ struct Settings {
 
     std::unordered_set<Events::Type> SkippedEvents;
 
-    int StartTime;
-    int EndTime;
+    std::chrono::milliseconds StartTime;
+    std::chrono::milliseconds EndTime;
 
-    struct {
-        int Major, Minor, Preview;
-    } DesiredTibiaVersion;
-
+    VersionTriplet DesiredTibiaVersion;
     bool DryRun;
 };
 

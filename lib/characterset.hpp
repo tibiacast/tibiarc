@@ -89,13 +89,14 @@ static inline bool IsLower(uint8_t c) {
 }
 
 inline uint8_t ToPrintable(uint8_t c) {
-    if (c < 32) {
+    if (c != '\n' && c < 32) {
         return 127; /* That square we all know and love. */
     }
 
     return c;
 }
 
+std::string ToPrintableUtf8(const std::string &text);
 std::string ToUtf8(const std::string &text);
 }; // namespace CharacterSet
 }; // namespace trc

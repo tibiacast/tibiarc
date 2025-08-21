@@ -27,6 +27,7 @@
 #include <string>
 #include <list>
 
+#include "pixel.hpp"
 #include "position.hpp"
 
 static constexpr uint32_t MESSAGE_DISPLAY_TIME = 3000;
@@ -132,6 +133,8 @@ struct Message {
 
     Message() {
     }
+
+    static Pixel TextColor(MessageMode type);
 
 private:
     uint32_t EndTick;

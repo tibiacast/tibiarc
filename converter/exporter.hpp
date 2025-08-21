@@ -24,8 +24,10 @@
 #include "encoding.hpp"
 #include "renderer.hpp"
 #include "recordings.hpp"
+#include "versions.hpp"
 
 #include <filesystem>
+#include <chrono>
 
 namespace trc {
 namespace Exporter {
@@ -41,14 +43,12 @@ struct Settings {
     std::string OutputFormat;
     std::string OutputEncoding;
 
+    std::chrono::milliseconds StartTime;
+    std::chrono::milliseconds EndTime;
     int FrameRate;
     int FrameSkip;
-    int StartTime;
-    int EndTime;
 
-    struct {
-        int Major, Minor, Preview;
-    } DesiredTibiaVersion;
+    VersionTriplet DesiredTibiaVersion;
 };
 
 void Export(const Settings &settings,

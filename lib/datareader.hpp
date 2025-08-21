@@ -143,13 +143,12 @@ public:
     template <typename T,
               std::enable_if_t<std::is_same<T, double>::value, bool> = true>
     T Read() {
-        auto Exponent = Read<uint8_t>();
-        auto Significand = Read<uint32_t>();
+        auto exponent = Read<uint8_t>();
+        auto significand = Read<uint32_t>();
 
-        T result =
-                (static_cast<double>(Significand) -
-                 std::numeric_limits<int32_t>::max()) /
-                std::pow<double, double>(10.0, static_cast<double>(Exponent));
+        T result = (static_cast<double>(significand) -
+                    std::numeric_limits<int32_t>::max()) /
+                   std::pow(10.0, static_cast<double>(exponent));
 
         return result;
     }

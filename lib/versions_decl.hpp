@@ -24,6 +24,7 @@
 namespace trc {
 /* Forward-declare the Version structs to get around circular reference
  * problems in the `versions` header. */
+struct VersionTriplet;
 struct VersionBase;
 struct Version;
 } // namespace trc

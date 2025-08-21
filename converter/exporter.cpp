@@ -28,6 +28,7 @@
 #include "versions.hpp"
 
 #include <algorithm>
+#include <format>
 #include <iostream>
 
 #include "utils.hpp"
@@ -193,11 +194,12 @@ static void ConvertVideo(
         Canvas &mapCanvas,
         Canvas &outputCanvas,
         uint32_t frameRate,
-        uint32_t startTime,
-        uint32_t endTime) {
+        std::chrono::milliseconds startTime,
+        std::chrono::milliseconds endTime) {
     const Renderer::Options &renderOptions = settings.RenderOptions;
     int viewLeftX, viewTopY, viewRightX, viewBottomY;
-    uint32_t frameNumber = 0, frameTimestamp = 0;
+    std::chrono::milliseconds frameTimestamp(0);
+    uint32_t frameNumber = 0;
 
     {
         /* Determine the bounds of the viewport, maintaning the aspect ratio
@@ -228,7 +230,7 @@ static void ConvertVideo(
     /* Clip start/end to recording bounds, allowing another second in case of
      * an abrupt end to the recording. */
     startTime = std::min(startTime, recording->Runtime);
-    endTime = std::min(endTime, recording->Runtime + 1000);
+    endTime = std::min(endTime, recording->Runtime + std::chrono::seconds(1));
 
     auto currentFrame = recording->Frames.cbegin();
 
@@ -254,8 +256,9 @@ static void ConvertVideo(
         do {
             frameNumber++;
 
-            frameTimestamp = (frameNumber * 1000) / frameRate;
-            gamestate.CurrentTick = frameTimestamp;
+            frameTimestamp =
+                    std::chrono::milliseconds((frameNumber * 1000) / frameRate);
+            gamestate.CurrentTick = frameTimestamp.count();
 
             if ((frameTimestamp < startTime) ||
                 (frameNumber % settings.FrameSkip)) {
@@ -294,9 +297,13 @@ static void ConvertVideo(
 
             encoder.WriteFrame(outputCanvas);
 
-            if ((frameTimestamp % 500) == 0) {
-                std::cout << "progress: " << frameTimestamp << " / "
-                          << startTime << " / " << endTime << std::endl;
+            if ((frameTimestamp.count() % 500) == 0) {
+                std::cout << std::format("progress: {:%H:%M:%S} / {:%H:%M:%S} "
+                                         "/ {:%H:%M:%S}",
+                                         frameTimestamp,
+                                         startTime,
+                                         endTime)
+                          << std::endl;
             }
         } while (frameTimestamp <=
                  (currentFrame != recording->Frames.cend()
@@ -312,39 +319,34 @@ static auto Open(const Settings &settings,
                  const std::filesystem::path &path,
                  const DataReader &reader) {
     auto inputFormat = settings.InputFormat;
-    int major, minor, preview;
+    VersionTriplet desiredVersion;
 
     if (inputFormat == Recordings::Format::Unknown) {
         inputFormat = Recordings::GuessFormat(path, reader);
         std::cerr << "warning: Unknown recording format, guessing "
-                  << Recordings::FormatName(inputFormat) << std::endl;
+                  << Recordings::FormatNames::Get(inputFormat).Short
+                  << std::endl;
     }
 
-    major = settings.DesiredTibiaVersion.Major;
-    minor = settings.DesiredTibiaVersion.Minor;
-    preview = settings.DesiredTibiaVersion.Preview;
+    desiredVersion = settings.DesiredTibiaVersion;
 
     /* Ask the file for the version if none was provided. */
-    if ((major | minor | preview) == 0) {
+    if (desiredVersion == VersionTriplet()) {
         if (!Recordings::QueryTibiaVersion(inputFormat,
                                            reader,
-                                           major,
-                                           minor,
-                                           preview)) {
+                                           desiredVersion)) {
             throw InvalidDataError();
         }
 
-        std::cerr << "warning: Unknown recording version, guessing " << major
-                  << "." << minor << "(" << preview << ")" << std::endl;
+        std::cerr << "warning: Unknown recording version, guessing "
+                  << static_cast<std::string>(desiredVersion) << std::endl;
     }
 
     const MemoryFile pictures(dataFolder / "Tibia.pic");
     const MemoryFile sprites(dataFolder / "Tibia.spr");
     const MemoryFile types(dataFolder / "Tibia.dat");
 
-    auto version = std::make_unique<Version>(major,
-                                             minor,
-                                             preview,
+    auto version = std::make_unique<Version>(desiredVersion,
                                              pictures.Reader(),
                                              sprites.Reader(),
                                              types.Reader());
@@ -373,14 +375,14 @@ void Export(const Settings &settings,
     Canvas outputCanvas(settings.RenderOptions.Width,
                         settings.RenderOptions.Height);
 
-    auto encoder = trc::Encoding::Open(settings.EncodeBackend,
-                                       settings.OutputFormat,
-                                       settings.OutputEncoding,
-                                       settings.EncoderFlags,
-                                       outputCanvas.Width,
-                                       outputCanvas.Height,
-                                       settings.FrameRate,
-                                       outputPath);
+    auto encoder = Encoding::Open(settings.EncodeBackend,
+                                  settings.OutputFormat,
+                                  settings.OutputEncoding,
+                                  settings.EncoderFlags,
+                                  outputCanvas.Width,
+                                  outputCanvas.Height,
+                                  settings.FrameRate,
+                                  outputPath);
     ConvertVideo(settings,
                  recording,
                  Gamestate(*version),

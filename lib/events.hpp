@@ -25,10 +25,6 @@
 #include <vector>
 
 namespace trc {
-
-/* Forward-declare gamestate? */
-struct Gamestate;
-
 namespace Events {
 
 enum class Type {
@@ -84,7 +80,7 @@ enum class Type {
 };
 
 struct Base {
-    virtual void Update(trc::Gamestate &gamestate) = 0;
+    virtual void Update(trc::Gamestate &gamestate) const = 0;
     virtual Events::Type Kind() const = 0;
 
     virtual ~Base() = default;
@@ -100,7 +96,7 @@ struct WorldInitialized : public Base {
     uint8_t PvPFraming;
     bool ExpertMode;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::WorldInitialized;
     }
@@ -110,7 +106,7 @@ struct AmbientLightChanged : public Base {
     uint8_t Intensity;
     uint8_t Color;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::AmbientLightChanged;
     }
@@ -121,7 +117,7 @@ struct TileUpdated : public Base {
 
     std::vector<Object> Objects;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::TileUpdated;
     }
@@ -133,7 +129,7 @@ struct TileObjectAdded : public Base {
 
     trc::Object Object;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::TileObjectAdded;
     }
@@ -145,7 +141,7 @@ struct TileObjectTransformed : public Base {
 
     trc::Object Object;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::TileObjectTransformed;
     }
@@ -155,7 +151,7 @@ struct TileObjectRemoved : public Base {
     Position TilePosition;
     uint8_t StackPosition;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::TileObjectRemoved;
     }
@@ -168,7 +164,7 @@ struct CreatureMoved : public Base {
     uint8_t StackPosition;
     uint32_t CreatureId;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureMoved;
     }
@@ -177,7 +173,7 @@ struct CreatureMoved : public Base {
 struct CreatureRemoved : public Base {
     uint32_t CreatureId;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureRemoved;
     }
@@ -206,7 +202,7 @@ struct CreatureSeen : public Base {
 
     bool Impassable = true;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureSeen;
     }
@@ -216,7 +212,7 @@ struct CreatureHealthUpdated : public Base {
     uint32_t CreatureId;
     uint8_t Health;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureHealthUpdated;
     }
@@ -226,7 +222,7 @@ struct CreatureHeadingUpdated : public Base {
     uint32_t CreatureId;
     Creature::Direction Heading;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureHeadingUpdated;
     }
@@ -237,7 +233,7 @@ struct CreatureLightUpdated : public Base {
     uint8_t Intensity;
     uint8_t Color;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureLightUpdated;
     }
@@ -248,7 +244,7 @@ struct CreatureOutfitUpdated : public Base {
 
     trc::Appearance Outfit;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureOutfitUpdated;
     }
@@ -259,7 +255,7 @@ struct CreatureSpeedUpdated : public Base {
 
     uint16_t Speed;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureSpeedUpdated;
     }
@@ -270,7 +266,7 @@ struct CreatureSkullUpdated : public Base {
 
     CharacterSkull Skull;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureSkullUpdated;
     }
@@ -281,7 +277,7 @@ struct CreatureShieldUpdated : public Base {
 
     PartyShield Shield;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureShieldUpdated;
     }
@@ -292,7 +288,7 @@ struct CreatureImpassableUpdated : public Base {
 
     bool Impassable;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureImpassableUpdated;
     }
@@ -304,7 +300,7 @@ struct CreaturePvPHelpersUpdated : public Base {
     bool MarkIsPermanent;
     uint8_t Mark;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreaturePvPHelpersUpdated;
     }
@@ -315,7 +311,7 @@ struct CreatureGuildMembersUpdated : public Base {
 
     uint16_t GuildMembersOnline;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureGuildMembersUpdated;
     }
@@ -326,7 +322,7 @@ struct CreatureTypeUpdated : public Base {
 
     CreatureType Type;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureTypeUpdated;
     }
@@ -337,7 +333,7 @@ struct CreatureNPCCategoryUpdated : public Base {
 
     NPCCategory Category;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureNPCCategoryUpdated;
     }
@@ -346,7 +342,7 @@ struct CreatureNPCCategoryUpdated : public Base {
 struct PlayerMoved : public Base {
     trc::Position Position;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerMoved;
     }
@@ -356,7 +352,7 @@ struct PlayerInventoryUpdated : public Base {
     InventorySlot Slot;
     Object Item;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerInventoryUpdated;
     }
@@ -365,7 +361,7 @@ struct PlayerInventoryUpdated : public Base {
 struct PlayerBlessingsUpdated : public Base {
     uint16_t Blessings;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerBlessingsUpdated;
     }
@@ -375,7 +371,7 @@ struct PlayerDied : public Base {
     uint8_t Type = 0;
     uint8_t Reduction = 0;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerDied;
     }
@@ -385,7 +381,7 @@ struct PlayerHotkeyPresetUpdated : public Base {
     uint32_t CreatureId;
     uint32_t HotkeyPreset;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerHotkeyPresetUpdated;
     }
@@ -398,7 +394,7 @@ struct PlayerDataBasicUpdated : public Base {
     uint8_t Vocation;
     std::vector<uint16_t> Spells;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerDataBasicUpdated;
     }
@@ -424,7 +420,7 @@ struct PlayerDataUpdated : public Base {
     uint8_t MagicLevelPercent = 0;
     uint8_t SoulPoints = 0;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerDataUpdated;
     }
@@ -437,7 +433,7 @@ struct PlayerSkillsUpdated : public Base {
         uint8_t Percent;
     } Skills[PLAYER_SKILL_COUNT];
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerSkillsUpdated;
     }
@@ -446,7 +442,7 @@ struct PlayerSkillsUpdated : public Base {
 struct PlayerIconsUpdated : public Base {
     StatusIcon Icons;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerIconsUpdated;
     }
@@ -458,7 +454,7 @@ struct PlayerTacticsUpdated : public Base {
     bool SecureMode = false;
     bool PvPMode = false;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PlayerTacticsUpdated;
     }
@@ -467,7 +463,7 @@ struct PlayerTacticsUpdated : public Base {
 struct PvPSituationsChanged : public Base {
     uint8_t OpenSituations;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PvPSituationsChanged;
     }
@@ -482,7 +478,7 @@ struct CreatureSpoke : public Base {
 
     std::string Message;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureSpoke;
     }
@@ -491,7 +487,7 @@ struct CreatureSpoke : public Base {
 struct CreatureSpokeOnMap : public CreatureSpoke {
     trc::Position Position;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureSpokeOnMap;
     }
@@ -500,7 +496,7 @@ struct CreatureSpokeOnMap : public CreatureSpoke {
 struct CreatureSpokeInChannel : public CreatureSpoke {
     uint16_t ChannelId;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::CreatureSpokeInChannel;
     }
@@ -509,7 +505,7 @@ struct CreatureSpokeInChannel : public CreatureSpoke {
 struct ChannelListUpdated : public Base {
     std::vector<std::pair<uint16_t, std::string>> Channels;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ChannelListUpdated;
     }
@@ -522,7 +518,7 @@ struct ChannelOpened : public Base {
     std::vector<std::string> Participants;
     std::vector<std::string> Invitees;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ChannelOpened;
     }
@@ -531,7 +527,7 @@ struct ChannelOpened : public Base {
 struct ChannelClosed : public Base {
     uint16_t Id;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ChannelClosed;
     }
@@ -540,7 +536,7 @@ struct ChannelClosed : public Base {
 struct PrivateConversationOpened : public Base {
     std::string Name;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::PrivateConversationOpened;
     }
@@ -564,7 +560,7 @@ struct ContainerOpened : public Base {
 
     std::vector<Object> Items;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ContainerOpened;
     }
@@ -573,7 +569,7 @@ struct ContainerOpened : public Base {
 struct ContainerClosed : public Base {
     uint32_t ContainerId;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ContainerClosed;
     }
@@ -586,7 +582,7 @@ struct ContainerAddedItem : public Base {
 
     Object Item;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ContainerAddedItem;
     }
@@ -599,7 +595,7 @@ struct ContainerTransformedItem : public Base {
 
     Object Item;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ContainerTransformedItem;
     }
@@ -612,7 +608,7 @@ struct ContainerRemovedItem : public Base {
 
     Object Backfill;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::ContainerRemovedItem;
     }
@@ -623,7 +619,7 @@ struct NumberEffectPopped : public Base {
     uint8_t Color;
     uint32_t Value;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::NumberEffectPopped;
     }
@@ -633,7 +629,7 @@ struct GraphicalEffectPopped : public Base {
     trc::Position Position;
     uint8_t Id;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::GraphicalEffectPopped;
     }
@@ -644,7 +640,7 @@ struct MissileFired : public Base {
     Position Target;
     uint8_t Id;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::MissileFired;
     }
@@ -655,7 +651,7 @@ struct StatusMessageReceived : public Base {
 
     std::string Message;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::StatusMessageReceived;
     }
@@ -664,7 +660,7 @@ struct StatusMessageReceived : public Base {
 struct StatusMessageReceivedInChannel : public StatusMessageReceived {
     uint16_t ChannelId;
 
-    virtual void Update(Gamestate &gamestate);
+    virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::StatusMessageReceivedInChannel;
     }

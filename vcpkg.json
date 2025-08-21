@@ -1,7 +1,6 @@
 {
   "dependencies": [
     "ffmpeg",
-    "sdl2",
     "zlib"
   ]
 }

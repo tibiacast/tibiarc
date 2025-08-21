@@ -95,7 +95,7 @@ Canvas::Canvas(int width, int height, Canvas::Type kind)
         /* Cache-align each line and overallocate the canvas as most encoding
          * libraries (e.g. libswscale) work best with aligned input, and are
          * often sloppy with regards to out-of-bound reads. */
-        Stride = (width * sizeof(trc::Pixel) + LEVEL1_DCACHE_LINEMASK) &
+        Stride = (width * sizeof(Pixel) + LEVEL1_DCACHE_LINEMASK) &
                  ~LEVEL1_DCACHE_LINEMASK;
         Buffer = (uint8_t *)AlignedAllocate(LEVEL1_DCACHE_LINESIZE,
                                             (Height + 1) * Stride);
@@ -125,7 +125,7 @@ Canvas::~Canvas() {
     /* FIXME: C++ migration, keep parent alive somehow. */
 }
 
-void Canvas::DrawRectangle(const trc::Pixel &color,
+void Canvas::DrawRectangle(const Pixel &color,
                            const int x,
                            const int y,
                            const int width,
@@ -136,7 +136,7 @@ void Canvas::DrawRectangle(const trc::Pixel &color,
     }
 
     for (int xIdx = std::max(x, 0); xIdx < std::min(x + width, Width); xIdx++) {
-        memcpy(&GetPixel(xIdx, y), &color, sizeof(trc::Pixel));
+        memcpy(&GetPixel(xIdx, y), &color, sizeof(Pixel));
     }
 
     for (int yIdx = std::max(y + 1, 0); yIdx < std::min(y + height, Height);
@@ -146,13 +146,13 @@ void Canvas::DrawRectangle(const trc::Pixel &color,
         if (pixelsToCopy > 0) {
             memcpy(&GetPixel(std::max(x, 0), yIdx),
                    &GetPixel(std::max(x, 0), y),
-                   sizeof(trc::Pixel) * pixelsToCopy);
+                   sizeof(Pixel) * pixelsToCopy);
         }
     }
 }
 
-void Canvas::DrawCharacter(const trc::Sprite &sprite,
-                           const trc::Pixel &fontColor,
+void Canvas::DrawCharacter(const Sprite &sprite,
+                           const Pixel &fontColor,
                            const int x,
                            const int y) {
     unsigned pixelIdx = 0, byteIdx = 0;
@@ -194,21 +194,21 @@ void Canvas::DrawCharacter(const trc::Sprite &sprite,
                 int skipCount = std::min(sprite.Width - fromX -
                                                  (1 + targetY) * sprite.Width,
                                          pixelCount);
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else if (targetX >= Width) {
                 /* Right of canvas. Skip what pixels are left in block or
                  * sprite row. */
                 int skipCount = std::min(sprite.Width - fromX, pixelCount);
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else if (targetX < 0) {
                 /* Left of canvas. Skip what pixels are left in block or
                  * until we get on canvas. */
                 int skipCount = std::min(-targetX, pixelCount);
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else {
@@ -217,22 +217,21 @@ void Canvas::DrawCharacter(const trc::Sprite &sprite,
                 int tintCount =
                         std::min(std::min(sprite.Width - fromX, pixelCount),
                                  Width - targetX);
-                int targetIdx =
-                        (targetX * sizeof(trc::Pixel)) + (targetY * Stride);
-                unsigned stopIdx = byteIdx + tintCount * sizeof(trc::Pixel);
+                int targetIdx = (targetX * sizeof(Pixel)) + (targetY * Stride);
+                unsigned stopIdx = byteIdx + tintCount * sizeof(Pixel);
 
                 while (byteIdx < stopIdx) {
-                    const trc::Pixel &tintKey =
-                            *(trc::Pixel *)&sprite.Buffer[byteIdx + 0];
-                    trc::Pixel &targetPixel = *(trc::Pixel *)&Buffer[targetIdx];
+                    const Pixel &tintKey =
+                            *(Pixel *)&sprite.Buffer[byteIdx + 0];
+                    Pixel &targetPixel = *(Pixel *)&Buffer[targetIdx];
 
                     targetPixel.Red = (tintKey.Red * fontColor.Red) >> 8;
                     targetPixel.Green = (tintKey.Green * fontColor.Green) >> 8;
                     targetPixel.Blue = (tintKey.Blue * fontColor.Blue) >> 8;
                     targetPixel.Alpha = fontColor.Alpha;
 
-                    targetIdx += sizeof(trc::Pixel);
-                    byteIdx += sizeof(trc::Pixel);
+                    targetIdx += sizeof(Pixel);
+                    byteIdx += sizeof(Pixel);
                 }
 
                 pixelCount -= tintCount;
@@ -242,7 +241,7 @@ void Canvas::DrawCharacter(const trc::Sprite &sprite,
     }
 }
 
-void Canvas::Tint(const trc::Sprite &sprite,
+void Canvas::Tint(const Sprite &sprite,
                   const int x,
                   const int y,
                   const int width,
@@ -332,7 +331,7 @@ void Canvas::Tint(const trc::Sprite &sprite,
                 int skipCount = std::min(sprite.Width - fromX -
                                                  (1 + targetY) * sprite.Width,
                                          pixelCount);
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else if (targetX >= Width || fromX >= width) {
@@ -340,14 +339,14 @@ void Canvas::Tint(const trc::Sprite &sprite,
                  * sprite row.
                  */
                 int skipCount = std::min(sprite.Width - fromX, pixelCount);
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else if (targetX < 0) {
                 /* Left of canvas. Skip what pixels are left in block or
                  * until we get on canvas. */
                 int skipCount = std::min(-targetX, pixelCount);
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else {
@@ -356,15 +355,13 @@ void Canvas::Tint(const trc::Sprite &sprite,
                 int tintCount =
                         std::min(std::min(sprite.Width - fromX, pixelCount),
                                  Width - targetX);
-                int targetIdx =
-                        (targetX * sizeof(trc::Pixel)) + (targetY * Stride);
-                unsigned stopIdx = byteIdx + std::min(width, tintCount) *
-                                                     sizeof(trc::Pixel);
+                int targetIdx = (targetX * sizeof(Pixel)) + (targetY * Stride);
+                unsigned stopIdx =
+                        byteIdx + std::min(width, tintCount) * sizeof(Pixel);
 
                 while (byteIdx < stopIdx) {
-                    const trc::Pixel &tintKey =
-                            *(trc::Pixel *)&sprite.Buffer[byteIdx];
-                    trc::Pixel *targetPixel = (trc::Pixel *)&Buffer[targetIdx];
+                    const Pixel &tintKey = *(Pixel *)&sprite.Buffer[byteIdx];
+                    Pixel *targetPixel = (Pixel *)&Buffer[targetIdx];
 
                     if (tintKey.Red == 0 && tintKey.Green == 0 &&
                         tintKey.Blue == 0xFF) {
@@ -389,12 +386,12 @@ void Canvas::Tint(const trc::Sprite &sprite,
                         targetPixel->Blue = targetPixel->Blue * primaryB >> 8;
                     }
 
-                    targetIdx += sizeof(trc::Pixel);
-                    byteIdx += sizeof(trc::Pixel);
+                    targetIdx += sizeof(Pixel);
+                    byteIdx += sizeof(Pixel);
                 }
 
                 byteIdx += (tintCount - std::min(width, tintCount)) *
-                           sizeof(trc::Pixel);
+                           sizeof(Pixel);
 
                 pixelCount -= tintCount;
                 pixelIdx += tintCount;
@@ -403,7 +400,7 @@ void Canvas::Tint(const trc::Sprite &sprite,
     }
 }
 
-void Canvas::Draw(const trc::Sprite &sprite,
+void Canvas::Draw(const Sprite &sprite,
                   const int x,
                   const int y,
                   const int width,
@@ -448,7 +445,7 @@ void Canvas::Draw(const trc::Sprite &sprite,
                                                  (1 + targetY) * sprite.Width,
                                          pixelCount);
 
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else if (targetX >= Width || fromX >= width) {
@@ -457,7 +454,7 @@ void Canvas::Draw(const trc::Sprite &sprite,
                  */
                 int skipCount = std::min(sprite.Width - fromX, pixelCount);
 
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else if (targetX < 0) {
@@ -465,7 +462,7 @@ void Canvas::Draw(const trc::Sprite &sprite,
                  * until we get on canvas. */
                 int skipCount = std::min(-targetX, pixelCount);
 
-                byteIdx += skipCount * sizeof(trc::Pixel);
+                byteIdx += skipCount * sizeof(Pixel);
                 pixelCount -= skipCount;
                 pixelIdx += skipCount;
             } else {
@@ -475,15 +472,14 @@ void Canvas::Draw(const trc::Sprite &sprite,
 
                 copyCount = std::min(std::min(sprite.Width - fromX, pixelCount),
                                      Width - targetX);
-                destIdx = (targetX * sizeof(trc::Pixel)) + (targetY * Stride);
+                destIdx = (targetX * sizeof(Pixel)) + (targetY * Stride);
 
                 Assert(width > 0);
                 memcpy(&Buffer[destIdx],
                        &sprite.Buffer[byteIdx],
-                       std::min(copyCount, (unsigned)width) *
-                               sizeof(trc::Pixel));
+                       std::min(copyCount, (unsigned)width) * sizeof(Pixel));
 
-                byteIdx += copyCount * sizeof(trc::Pixel);
+                byteIdx += copyCount * sizeof(Pixel);
                 pixelCount -= copyCount;
                 pixelIdx += copyCount;
             }
@@ -495,12 +491,12 @@ void Canvas::Wipe() {
     DrawRectangle(Pixel(0, 0, 0, 0), 0, 0, Width, Height);
 }
 
-void Canvas::Dump(const char *path) const {
+void Canvas::Dump(const std::filesystem::path &path) const {
     const int FILE_HEADER_SIZE = 10, INFO_HEADER_SIZE = 40;
     uint32_t u32;
     uint16_t u16;
 
-    FILE *bmp = fopen(path, "wb");
+    FILE *bmp = fopen(path.c_str(), "wb");
 
     /* File header. */
     fwrite("BM", 2, 1, bmp);
@@ -537,7 +533,7 @@ void Canvas::Dump(const char *path) const {
 
     for (int y = (Height - 1); y >= 0; y--) {
         for (int x = 0; x < Width; x++) {
-            const trc::Pixel &pixel = GetPixel(x, y);
+            const Pixel &pixel = GetPixel(x, y);
             fwrite(&pixel.Blue, 1, 1, bmp);
             fwrite(&pixel.Green, 1, 1, bmp);
             fwrite(&pixel.Red, 1, 1, bmp);

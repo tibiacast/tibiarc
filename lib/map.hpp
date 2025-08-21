@@ -61,7 +61,7 @@ struct Map {
     }
 
     trc::Tile &Tile(int X, int Y, int Z) {
-        trc::Assert(X >= 0 && Y >= 0 && Z >= 0);
+        Assert(X >= 0 && Y >= 0 && Z >= 0);
 
         X %= TileBufferWidth;
         Y %= TileBufferHeight;
@@ -71,19 +71,23 @@ struct Map {
     }
 
     uint8_t GetRenderHeight(int rX, int bY) const {
-        trc::Assert((rX / 32) >= 0 && (bY / 32) >= 0);
-        trc::Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
-                    RenderHeightMapSize);
+        if (rX > 0 && bY > 0) {
+            Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
+                   RenderHeightMapSize);
 
-        return RenderHeightMap[(rX / 32) + ((bY / 32) * TileBufferWidth)];
+            return RenderHeightMap[(rX / 32) + ((bY / 32) * TileBufferWidth)];
+        }
+
+        return std::numeric_limits<uint8_t>::max();
     }
 
     void UpdateRenderHeight(int rX, int bY, uint8_t Z) {
-        trc::Assert((rX / 32) >= 0 && (bY / 32) >= 0);
-        trc::Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
-                    RenderHeightMapSize);
+        if (rX > 0 && bY > 0) {
+            Assert((rX / 32) + ((bY / 32) * TileBufferWidth) <=
+                   RenderHeightMapSize);
 
-        RenderHeightMap[(rX / 32) + ((bY / 32) * TileBufferWidth)] = Z;
+            RenderHeightMap[(rX / 32) + ((bY / 32) * TileBufferWidth)] = Z;
+        }
     }
 
     void Clear() {

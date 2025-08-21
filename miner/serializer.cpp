@@ -23,13 +23,29 @@
 #include "memoryfile.hpp"
 #include "versions.hpp"
 
-#include "deps/json.hpp"
+#include "json.hpp"
 
 #include <algorithm>
 #include <filesystem>
 #include <iterator>
 
 using json = nlohmann::json;
+
+namespace nlohmann {
+template <> struct adl_serializer<std::chrono::milliseconds> {
+    static void from_json(const json &j, std::chrono::milliseconds &d) {
+        int64_t time;
+
+        nlohmann::from_json(j, time);
+
+        d = std::chrono::milliseconds(time);
+    }
+
+    static void to_json(json &j, const std::chrono::milliseconds &d) {
+        nlohmann::to_json(j, d.count());
+    }
+};
+} // namespace nlohmann
 
 namespace trc {
 NLOHMANN_JSON_SERIALIZE_ENUM(
@@ -932,39 +948,34 @@ static auto Open(const Settings &settings,
                  const std::filesystem::path &path,
                  const DataReader &reader) {
     auto inputFormat = settings.InputFormat;
-    int major, minor, preview;
+    VersionTriplet desiredVersion;
 
     if (inputFormat == Recordings::Format::Unknown) {
         inputFormat = Recordings::GuessFormat(path, reader);
         std::cerr << "warning: Unknown recording format, guessing "
-                  << Recordings::FormatName(inputFormat) << std::endl;
+                  << Recordings::FormatNames::Get(inputFormat).Short
+                  << std::endl;
     }
 
-    major = settings.DesiredTibiaVersion.Major;
-    minor = settings.DesiredTibiaVersion.Minor;
-    preview = settings.DesiredTibiaVersion.Preview;
+    desiredVersion = settings.DesiredTibiaVersion;
 
     /* Ask the file for the version if none was provided. */
-    if ((major | minor | preview) == 0) {
+    if (desiredVersion == VersionTriplet()) {
         if (!Recordings::QueryTibiaVersion(inputFormat,
                                            reader,
-                                           major,
-                                           minor,
-                                           preview)) {
+                                           desiredVersion)) {
             throw InvalidDataError();
         }
 
-        std::cerr << "warning: Unknown recording version, guessing " << major
-                  << "." << minor << "(" << preview << ")" << std::endl;
+        std::cerr << "warning: Unknown recording version, guessing "
+                  << static_cast<std::string>(desiredVersion) << std::endl;
     }
 
     const MemoryFile pictures(dataFolder / "Tibia.pic");
     const MemoryFile sprites(dataFolder / "Tibia.spr");
     const MemoryFile types(dataFolder / "Tibia.dat");
 
-    auto version = std::make_unique<Version>(major,
-                                             minor,
-                                             preview,
+    auto version = std::make_unique<Version>(desiredVersion,
                                              pictures.Reader(),
                                              sprites.Reader(),
                                              types.Reader());
@@ -993,12 +1004,13 @@ void Serialize(const Settings &settings,
     auto frames = std::vector<json>();
 
     for (const auto &frame : recording->Frames) {
-        Assert(settings.StartTime >= 0 && settings.EndTime >= 0);
+        Assert(settings.StartTime >= std::chrono::milliseconds::zero() &&
+               settings.EndTime >= std::chrono::milliseconds::zero());
 
         /* Clip to given bounds. */
-        if (frame.Timestamp < static_cast<uint64_t>(settings.StartTime)) {
+        if (frame.Timestamp < settings.StartTime) {
             continue;
-        } else if (frame.Timestamp > static_cast<uint64_t>(settings.EndTime)) {
+        } else if (frame.Timestamp > settings.EndTime) {
             break;
         }
 

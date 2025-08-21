@@ -28,17 +28,14 @@
 namespace trc {
 namespace Recordings {
 namespace TibiaTimeMachine {
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     auto tibiaVersion = file.Peek<uint16_t>();
 
-    major = tibiaVersion / 100;
-    minor = tibiaVersion % 100;
-    preview = 0;
+    triplet.Major = tibiaVersion / 100;
+    triplet.Minor = tibiaVersion % 100;
+    triplet.Preview = 0;
 
-    if (major < 7 || major > 12) {
+    if (triplet.Major < 7 || triplet.Major > 12) {
         throw InvalidDataError();
     }
 
@@ -64,12 +61,12 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     auto recording = std::make_unique<Recording>();
     bool partialReturn = false;
 
-    recording->Runtime = reader.ReadU32();
+    recording->Runtime = std::chrono::milliseconds(reader.ReadU32());
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
 
-        uint32_t timestamp = 0;
+        std::chrono::milliseconds timestamp(0);
 
         for (;;) {
             auto packetReader = reader.Slice(reader.ReadU16());
@@ -83,10 +80,10 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
 
             if (reader.ReadU8<0, 1>() == 0) {
                 /* Packet delay. */
-                timestamp += reader.ReadU16();
+                timestamp += std::chrono::milliseconds(reader.ReadU16());
             } else {
-                /* Fixed delay of 1s. */
-                timestamp += 1000;
+                /* Fixed delay. */
+                timestamp += std::chrono::seconds(1);
             }
         }
     } catch ([[maybe_unused]] const InvalidDataError &e) {

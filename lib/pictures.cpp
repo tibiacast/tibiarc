@@ -25,6 +25,8 @@
 #include "versions.hpp"
 
 #include <cstdlib>
+#include <format>
+#include <type_traits>
 
 #include "utils.hpp"
 
@@ -61,8 +63,8 @@ void PictureFile::ReadPicture(DataReader &reader, const PictureIndex index) {
     }
 }
 
-PictureFile::PictureFile(const VersionBase &version, DataReader data) {
-    Signature = data.ReadU32();
+PictureFile::PictureFile(const VersionBase &version, DataReader data)
+    : Signature(data.ReadU32()) {
 
     /* Picture count, must be kept in sync with the code below. */
     data.SkipU16<8, 9>();
@@ -85,9 +87,7 @@ PictureFile::PictureFile(const VersionBase &version, DataReader data) {
 
 #ifdef DUMP_PIC
     for (const auto &[index, canvas] : Pictures) {
-        char path[128];
-        snprintf(path, sizeof(path), "pict_%i.bmp", static_cast<int>(index));
-        canvas.Dump(path);
+        canvas.Dump(std::format("pict_{}.bmp", std::to_underlying(index)));
     }
 #endif
 }

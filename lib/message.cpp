@@ -28,6 +28,64 @@
 
 namespace trc {
 
+Pixel Message::TextColor(MessageMode mode) {
+    switch (mode) {
+    case MessageMode::Say:
+    case MessageMode::Spell:
+    case MessageMode::Whisper:
+    case MessageMode::Yell:
+        return Pixel::TextColor(210);
+    case MessageMode::MonsterSay:
+#ifdef DEBUG
+        /* Helps distinguish between monster say/yell when figuring out speak
+         * types. */
+        return Pixel::TextColor(10);
+#endif
+    case MessageMode::MonsterYell:
+        return Pixel::TextColor(192);
+    case MessageMode::NPCStart:
+        /* Light-blue, above creature */
+        return Pixel::TextColor(35);
+    case MessageMode::Game:
+        /* White, center screen */
+        return Pixel::TextColor(215);
+    case MessageMode::PrivateIn:
+        /* Light-blue, top-center screen */
+        return Pixel::TextColor(35);
+    case MessageMode::Warning:
+        /* Red, center screen */
+        return Pixel::TextColor(194);
+    case MessageMode::Hotkey:
+#ifdef DEBUG
+        /* Helps distinguish between hotkey/look when figuring out speak
+         * types. */
+        return 10;
+#endif
+    case MessageMode::NPCTrade:
+    case MessageMode::Guild:
+    case MessageMode::Loot:
+    case MessageMode::Look:
+        /* Green, center screen */
+        return Pixel::TextColor(30);
+    case MessageMode::Failure:
+    case MessageMode::Status:
+    case MessageMode::Login:
+        /* White, bottom-center screen */
+        return Pixel::TextColor(215);
+    case MessageMode::ChannelRed:
+        return Pixel::TextColor(194);
+    case MessageMode::ChannelOrange:
+        return Pixel::TextColor(198);
+    case MessageMode::ChannelYellow:
+        return Pixel::TextColor(210);
+    case MessageMode::ChannelWhite:
+        return Pixel::TextColor(215);
+    default:
+        /* Return something fugly so it gets reported. */
+        return Pixel::TextColor(10);
+    }
+}
+
 std::strong_ordering MessageList::CompareTypes(MessageMode messageType,
                                                MessageMode compareType) {
     switch (messageType) {
@@ -113,7 +171,7 @@ std::pair<bool, bool> MessageList::QueryNext(MessageList::Iterator current) {
 }
 
 void MessageList::AddMessage(MessageMode type,
-                             const trc::Position &position,
+                             const Position &position,
                              const std::string &author,
                              const std::string &text,
                              uint32_t tick) {

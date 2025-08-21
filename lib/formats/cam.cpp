@@ -39,21 +39,18 @@ extern "C" {
 namespace trc {
 namespace Recordings {
 namespace Cam {
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
-    trc::DataReader reader = file;
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
+    DataReader reader = file;
     uint8_t version[4];
 
     reader.Skip(32);
     reader.Copy(4, version);
 
-    major = version[0];
-    minor = version[1] * 10 + version[2];
-    preview = 0;
+    triplet.Major = version[0];
+    triplet.Minor = version[1] * 10 + version[2];
+    triplet.Preview = 0;
 
-    return CheckRange(major, 7, 12) && CheckRange(minor, 0, 99);
+    return CheckRange(triplet.Major, 7, 12) && CheckRange(triplet.Minor, 0, 99);
 }
 
 static void Decompress(uint8_t lzmaProperties[5],
@@ -139,13 +136,13 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
         Demuxer demuxer(2);
 
         for (int32_t i = 0; i < frameCount; i++) {
-            uint16_t fragmentLength = reader.ReadU16();
-            uint32_t fragmentTimestamp = reader.ReadU32();
+            auto fragmentLength = reader.ReadU16();
+            auto timestamp = std::chrono::milliseconds(reader.ReadU32());
 
             auto fragment = reader.Slice(fragmentLength);
-            demuxer.Submit(fragmentTimestamp,
+            demuxer.Submit(timestamp,
                            fragment,
-                           [&](DataReader packetReader, uint32_t timestamp) {
+                           [&](DataReader packetReader, auto timestamp) {
                                recording->Frames.emplace_back(
                                        timestamp,
                                        parser.Parse(packetReader));

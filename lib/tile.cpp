@@ -24,7 +24,7 @@
 #include "versions.hpp"
 
 namespace trc {
-static int GetStackPriority(const trc::Version &version, const Object &object) {
+static int GetStackPriority(const Version &version, const Object &object) {
     if (object.IsCreature()) {
         return 4;
     }
@@ -72,7 +72,7 @@ void Tile::AddNumericalEffect(uint8_t color,
     NumericalIndex = (NumericalIndex + 1) % Tile::MaxEffects;
 }
 
-void Tile::RemoveObject(const trc::Version &version, uint8_t stackPosition) {
+void Tile::RemoveObject(const Version &version, uint8_t stackPosition) {
     if (version.Features.ModernStacking) {
         if (stackPosition >= ObjectCount) {
             throw InvalidDataError();
@@ -96,7 +96,7 @@ void Tile::RemoveObject(const trc::Version &version, uint8_t stackPosition) {
     ObjectCount--;
 }
 
-Object &Tile::GetObject(const trc::Version &version, uint8_t stackPosition) {
+Object &Tile::GetObject(const Version &version, uint8_t stackPosition) {
     if (version.Features.ModernStacking) {
         if (stackPosition >= ObjectCount) {
             throw InvalidDataError();
@@ -114,7 +114,7 @@ Object &Tile::GetObject(const trc::Version &version, uint8_t stackPosition) {
     return Objects[stackPosition];
 }
 
-void Tile::SetObject(const trc::Version &version,
+void Tile::SetObject(const Version &version,
                      const Object &object,
                      uint8_t stackPosition) {
     uint8_t positionLimit;
@@ -132,7 +132,7 @@ void Tile::SetObject(const trc::Version &version,
     Objects[stackPosition] = object;
 }
 
-void Tile::InsertObject(const trc::Version &version,
+void Tile::InsertObject(const Version &version,
                         const Object &object,
                         uint8_t stackPosition) {
     if (stackPosition == Tile::StackPositionTop) {

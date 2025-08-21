@@ -25,7 +25,7 @@
 namespace trc {
 namespace Events {
 
-void WorldInitialized::Update(Gamestate &gamestate) {
+void WorldInitialized::Update(Gamestate &gamestate) const {
     /* Clear out all containers, messages, and so on in case we've
      * relogged. */
     gamestate.Reset();
@@ -40,16 +40,16 @@ void WorldInitialized::Update(Gamestate &gamestate) {
     gamestate.SpeedC = SpeedC;
 }
 
-void AmbientLightChanged::Update(Gamestate &gamestate) {
+void AmbientLightChanged::Update(Gamestate &gamestate) const {
     gamestate.Map.LightIntensity = Intensity;
     gamestate.Map.LightColor = Color;
 }
 
-void PlayerMoved::Update(Gamestate &gamestate) {
+void PlayerMoved::Update(Gamestate &gamestate) const {
     gamestate.Map.Position = Position;
 }
 
-void TileUpdated::Update(Gamestate &gamestate) {
+void TileUpdated::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(Position);
 
     tile.Clear();
@@ -61,25 +61,25 @@ void TileUpdated::Update(Gamestate &gamestate) {
     }
 }
 
-void TileObjectAdded::Update(Gamestate &gamestate) {
+void TileObjectAdded::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(TilePosition);
 
     tile.InsertObject(gamestate.Version, Object, StackPosition);
 }
 
-void TileObjectTransformed::Update(Gamestate &gamestate) {
+void TileObjectTransformed::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(TilePosition);
 
     tile.SetObject(gamestate.Version, Object, StackPosition);
 }
 
-void TileObjectRemoved::Update(Gamestate &gamestate) {
+void TileObjectRemoved::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(TilePosition);
 
     tile.RemoveObject(gamestate.Version, StackPosition);
 }
 
-void CreatureMoved::Update(Gamestate &gamestate) {
+void CreatureMoved::Update(Gamestate &gamestate) const {
     const Version &version = gamestate.Version;
 
     uint32_t creatureId;
@@ -174,11 +174,11 @@ void CreatureMoved::Update(Gamestate &gamestate) {
     toTile.InsertObject(gamestate.Version, movedObject, Tile::StackPositionTop);
 }
 
-void CreatureRemoved::Update(Gamestate &gamestate) {
+void CreatureRemoved::Update(Gamestate &gamestate) const {
     gamestate.Creatures.erase(CreatureId);
 }
 
-void CreatureSeen::Update(Gamestate &gamestate) {
+void CreatureSeen::Update(Gamestate &gamestate) const {
     /* It's okay for this to point at the old one, in which case this is
      * just a really big property update. */
     [[maybe_unused]] auto [it, added] =
@@ -208,102 +208,102 @@ void CreatureSeen::Update(Gamestate &gamestate) {
     creature.GuildMembersOnline = GuildMembersOnline;
 }
 
-void CreatureHealthUpdated::Update(Gamestate &gamestate) {
+void CreatureHealthUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Health = std::max<uint8_t>(0, std::min<uint8_t>(Health, 100));
 }
 
-void CreatureHeadingUpdated::Update(Gamestate &gamestate) {
+void CreatureHeadingUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Heading = Heading;
 }
 
-void CreatureLightUpdated::Update(Gamestate &gamestate) {
+void CreatureLightUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.LightIntensity = Intensity;
     creature.LightColor = Color;
 }
 
-void CreatureOutfitUpdated::Update(Gamestate &gamestate) {
+void CreatureOutfitUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Outfit = Outfit;
 }
 
-void CreatureSpeedUpdated::Update(Gamestate &gamestate) {
+void CreatureSpeedUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Speed = Speed;
 }
 
-void CreatureSkullUpdated::Update(Gamestate &gamestate) {
+void CreatureSkullUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Skull = Skull;
 }
 
-void CreatureShieldUpdated::Update(Gamestate &gamestate) {
+void CreatureShieldUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Shield = Shield;
 }
 
-void CreatureImpassableUpdated::Update(Gamestate &gamestate) {
+void CreatureImpassableUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Impassable = Impassable;
 }
 
-void CreaturePvPHelpersUpdated::Update(Gamestate &gamestate) {
+void CreaturePvPHelpersUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.MarkIsPermanent = MarkIsPermanent;
     creature.Mark = Mark;
 }
 
-void CreatureGuildMembersUpdated::Update(Gamestate &gamestate) {
+void CreatureGuildMembersUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.GuildMembersOnline = GuildMembersOnline;
 }
 
-void CreatureTypeUpdated::Update(Gamestate &gamestate) {
+void CreatureTypeUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.Type = Type;
 }
 
-void CreatureNPCCategoryUpdated::Update(Gamestate &gamestate) {
+void CreatureNPCCategoryUpdated::Update(Gamestate &gamestate) const {
     auto &creature = gamestate.GetCreature(CreatureId);
 
     creature.NPCCategory = Category;
 }
 
-void PlayerInventoryUpdated::Update(Gamestate &gamestate) {
+void PlayerInventoryUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.Inventory(Slot) = Item;
 }
 
-void PlayerBlessingsUpdated::Update(Gamestate &gamestate) {
+void PlayerBlessingsUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.Blessings = Blessings;
 }
 
-void PlayerDied::Update([[maybe_unused]] Gamestate &gamestate) {
+void PlayerDied::Update([[maybe_unused]] Gamestate &gamestate) const {
 }
 
-void PlayerHotkeyPresetUpdated::Update(Gamestate &gamestate) {
+void PlayerHotkeyPresetUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.HotkeyPreset = HotkeyPreset;
 }
 
-void PlayerDataBasicUpdated::Update(Gamestate &gamestate) {
+void PlayerDataBasicUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.IsPremium = IsPremium;
     gamestate.Player.PremiumUntil = PremiumUntil;
     gamestate.Player.Vocation = Vocation;
 }
 
-void PlayerDataUpdated::Update(Gamestate &gamestate) {
+void PlayerDataUpdated::Update(Gamestate &gamestate) const {
     auto &stats = gamestate.Player.Stats;
 
     stats.Capacity = Capacity;
@@ -325,7 +325,7 @@ void PlayerDataUpdated::Update(Gamestate &gamestate) {
     stats.Stamina = Stamina;
 }
 
-void PlayerSkillsUpdated::Update(Gamestate &gamestate) {
+void PlayerSkillsUpdated::Update(Gamestate &gamestate) const {
     auto &player = gamestate.Player;
 
     for (int i = 0; i < PLAYER_SKILL_COUNT; i++) {
@@ -335,45 +335,47 @@ void PlayerSkillsUpdated::Update(Gamestate &gamestate) {
     }
 }
 
-void PlayerIconsUpdated::Update(Gamestate &gamestate) {
+void PlayerIconsUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.Icons = Icons;
 }
 
-void PlayerTacticsUpdated::Update(Gamestate &gamestate) {
+void PlayerTacticsUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.AttackMode = AttackMode;
     gamestate.Player.ChaseMode = ChaseMode;
     gamestate.Player.SecureMode = SecureMode;
     gamestate.Player.PvPMode = PvPMode;
 }
 
-void PvPSituationsChanged::Update(Gamestate &gamestate) {
+void PvPSituationsChanged::Update(Gamestate &gamestate) const {
     gamestate.Player.OpenPvPSituations = OpenSituations;
 }
 
-void CreatureSpoke::Update(Gamestate &gamestate) {
+void CreatureSpoke::Update(Gamestate &gamestate) const {
     gamestate.AddTextMessage(Mode, Message, AuthorName);
 }
 
-void CreatureSpokeOnMap::Update(Gamestate &gamestate) {
+void CreatureSpokeOnMap::Update(Gamestate &gamestate) const {
     gamestate.AddTextMessage(Mode, Message, AuthorName, Position);
 }
 
-void CreatureSpokeInChannel::Update([[maybe_unused]] Gamestate &gamestate) {
+void CreatureSpokeInChannel::Update(
+        [[maybe_unused]] Gamestate &gamestate) const {
 }
 
-void ChannelListUpdated::Update([[maybe_unused]] Gamestate &gamestate) {
+void ChannelListUpdated::Update([[maybe_unused]] Gamestate &gamestate) const {
 }
 
-void ChannelOpened::Update([[maybe_unused]] Gamestate &gamestate) {
+void ChannelOpened::Update([[maybe_unused]] Gamestate &gamestate) const {
 }
 
-void ChannelClosed::Update([[maybe_unused]] Gamestate &gamestate) {
+void ChannelClosed::Update([[maybe_unused]] Gamestate &gamestate) const {
 }
 
-void PrivateConversationOpened::Update([[maybe_unused]] Gamestate &gamestate) {
+void PrivateConversationOpened::Update(
+        [[maybe_unused]] Gamestate &gamestate) const {
 }
 
-void ContainerOpened::Update(Gamestate &gamestate) {
+void ContainerOpened::Update(Gamestate &gamestate) const {
     auto [it, added] = gamestate.Containers.try_emplace(ContainerId);
 
     auto &container = it->second;
@@ -398,12 +400,12 @@ void ContainerOpened::Update(Gamestate &gamestate) {
     container.Items = Items;
 }
 
-void ContainerClosed::Update(Gamestate &gamestate) {
+void ContainerClosed::Update(Gamestate &gamestate) const {
     /* It's fine to close a non-existing container. */
     (void)gamestate.Containers.erase(ContainerId);
 }
 
-void ContainerAddedItem::Update(Gamestate &gamestate) {
+void ContainerAddedItem::Update(Gamestate &gamestate) const {
     auto it = gamestate.Containers.find(ContainerId);
 
     if (it != gamestate.Containers.end()) {
@@ -419,7 +421,7 @@ void ContainerAddedItem::Update(Gamestate &gamestate) {
     }
 }
 
-void ContainerTransformedItem::Update(Gamestate &gamestate) {
+void ContainerTransformedItem::Update(Gamestate &gamestate) const {
     auto it = gamestate.Containers.find(ContainerId);
 
     if (it != gamestate.Containers.end()) {
@@ -435,7 +437,7 @@ void ContainerTransformedItem::Update(Gamestate &gamestate) {
     }
 }
 
-void ContainerRemovedItem::Update(Gamestate &gamestate) {
+void ContainerRemovedItem::Update(Gamestate &gamestate) const {
     auto it = gamestate.Containers.find(ContainerId);
 
     if (it != gamestate.Containers.end()) {
@@ -458,23 +460,23 @@ void ContainerRemovedItem::Update(Gamestate &gamestate) {
     }
 }
 
-void NumberEffectPopped::Update(Gamestate &gamestate) {
+void NumberEffectPopped::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(Position);
 
     tile.AddNumericalEffect(Color, Value, gamestate.CurrentTick);
 }
 
-void GraphicalEffectPopped::Update(Gamestate &gamestate) {
+void GraphicalEffectPopped::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(Position);
 
     tile.AddGraphicalEffect(Id, gamestate.CurrentTick);
 }
 
-void MissileFired::Update(Gamestate &gamestate) {
+void MissileFired::Update(Gamestate &gamestate) const {
     gamestate.AddMissileEffect(Origin, Target, Id);
 }
 
-void StatusMessageReceived::Update(Gamestate &gamestate) {
+void StatusMessageReceived::Update(Gamestate &gamestate) const {
     switch (Mode) {
     case MessageMode::DamageDealt:
     case MessageMode::DamageReceived:
@@ -493,7 +495,7 @@ void StatusMessageReceived::Update(Gamestate &gamestate) {
 }
 
 void StatusMessageReceivedInChannel::Update(
-        [[maybe_unused]] Gamestate &gamestate) {
+        [[maybe_unused]] Gamestate &gamestate) const {
 }
 
 } // namespace Events

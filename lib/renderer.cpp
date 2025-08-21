@@ -31,9 +31,9 @@
 #include "textrenderer.hpp"
 #include "types.hpp"
 
-#include <math.h>
+#include <cmath>
 #include <cstdlib>
-
+#include <format>
 #include <initializer_list>
 #include <tuple>
 
@@ -45,20 +45,13 @@ namespace trc {
 
 namespace Renderer {
 
-template <typename... Args>
-static std::string FormatString(const char *format, Args... args) {
-    char textBuffer[256];
-    auto textLength = snprintf(textBuffer, sizeof(textBuffer), format, args...);
-    return std::string(textBuffer, textLength);
-}
-
 static Pixel Convert8BitColor(uint8_t color) {
     return Pixel(((color / 36) * 51),
                  (((color / 6) % 6) * 51),
                  ((color % 6) * 51));
 }
 
-static void UpdateWalkOffset(Gamestate &gamestate, trc::Creature &creature) {
+static void UpdateWalkOffset(Gamestate &gamestate, Creature &creature) {
     if (creature.MovementInformation.LastUpdateTick < gamestate.CurrentTick) {
         uint32_t startTick, endTick;
 
@@ -106,7 +99,7 @@ static Pixel GetCreatureInfoColor(int healthPercentage, int isObscured) {
     return Pixel(0, 192, 0);
 }
 
-static bool GetTileUnlookable(const trc::Version &version, const Tile &tile) {
+static bool GetTileUnlookable(const Version &version, const Tile &tile) {
     for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
         const auto &object = tile.Objects[objectIdx];
 
@@ -122,7 +115,7 @@ static bool GetTileUnlookable(const trc::Version &version, const Tile &tile) {
     return false;
 }
 
-static bool GetTileUpdateRenderHeight(const trc::Version &version,
+static bool GetTileUpdateRenderHeight(const Version &version,
                                       const Tile &tile) {
     for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
         const auto &object = tile.Objects[objectIdx];
@@ -139,7 +132,7 @@ static bool GetTileUpdateRenderHeight(const trc::Version &version,
     return false;
 }
 
-static bool GetTileBlocksPlayerVision(const trc::Version &version,
+static bool GetTileBlocksPlayerVision(const Version &version,
                                       const Tile &tile) {
     for (int objectIdx = 0; objectIdx < tile.ObjectCount; objectIdx++) {
         const auto &object = tile.Objects[objectIdx];
@@ -332,7 +325,7 @@ static void TintType(const EntityType::FrameGroup &frameGroup,
     }
 }
 
-static void DrawGraphicalEffect(const trc::Version &version,
+static void DrawGraphicalEffect(const Version &version,
                                 const GraphicalEffect &effect,
                                 const Position &position,
                                 int rightX,
@@ -402,7 +395,7 @@ static void DrawMissile(const Missile &missile,
     }
 }
 
-static bool DrawOutfit(const trc::Creature &creature,
+static bool DrawOutfit(const Creature &creature,
                        const EntityType &type,
                        int isMounted,
                        int rightX,
@@ -500,7 +493,7 @@ static bool DrawOutfit(const trc::Creature &creature,
 }
 
 /* FIXME: Phase ticks should NOT modify the item! */
-static void DrawItem(const trc::Version &version,
+static void DrawItem(const Version &version,
                      Object &item,
                      const EntityType &type,
                      int rightX,
@@ -619,8 +612,8 @@ static void DrawItem(const trc::Version &version,
     }
 }
 
-static void DrawCreature(const trc::Version &version,
-                         const trc::Creature &creature,
+static void DrawCreature(const Version &version,
+                         const Creature &creature,
                          int rightX,
                          int bottomY,
                          uint32_t tick,
@@ -1050,7 +1043,7 @@ static void DrawInventoryItem(Gamestate &gamestate,
                     Pixel(0xBF, 0xBF, 0xBF),
                     X + 32,
                     Y + 22,
-                    FormatString("%hhu", item.ExtraByte),
+                    std::format("{}", item.ExtraByte),
                     canvas);
         }
     }
@@ -1224,7 +1217,7 @@ static void DrawNumericalEffects(Gamestate &gamestate,
                                              Convert8BitColor(effect.Color),
                                              textCenterX,
                                              textCenterY,
-                                             FormatString("%u", effect.Value),
+                                             std::format("{}", effect.Value),
                                              canvas);
         }
     } while (effectIdx != tile.NumericalIndex);
@@ -1239,7 +1232,7 @@ static void DrawCreatureOverlay(const Options &options,
                                 int bottomY,
                                 float scaleX,
                                 float scaleY,
-                                trc::Creature &creature) {
+                                Creature &creature) {
     const Version &version = gamestate.Version;
     int creatureRX, creatureBY;
 
@@ -1533,56 +1526,6 @@ static bool DrawMapOverlay(const Options &options,
     return true;
 }
 
-static int MessageColor(MessageMode mode) {
-    switch (mode) {
-    case MessageMode::Say:
-    case MessageMode::Spell:
-    case MessageMode::Whisper:
-    case MessageMode::Yell:
-        return 210;
-    case MessageMode::MonsterSay:
-#ifdef DEBUG
-        /* Helps distinguish between monster say/yell when figuring out speak
-         * types. */
-        return 10;
-#endif
-    case MessageMode::MonsterYell:
-        return 192;
-    case MessageMode::NPCStart:
-        /* Light-blue, above creature */
-        return 35;
-    case MessageMode::Game:
-        /* White, center screen */
-        return 215;
-    case MessageMode::PrivateIn:
-        /* Light-blue, top-center screen */
-        return 35;
-    case MessageMode::Warning:
-        /* Red, center screen */
-        return 194;
-    case MessageMode::Hotkey:
-#ifdef DEBUG
-        /* Helps distinguish between hotkey/look when figuring out speak
-         * types. */
-        return 10;
-#endif
-    case MessageMode::NPCTrade:
-    case MessageMode::Guild:
-    case MessageMode::Loot:
-    case MessageMode::Look:
-        /* Green, center screen */
-        return 30;
-    case MessageMode::Failure:
-    case MessageMode::Status:
-    case MessageMode::Login:
-        /* White, bottom-center screen */
-        return 215;
-    default:
-        /* Return something fugly so it gets reported. */
-        return 10;
-    }
-}
-
 static bool DrawMessages(const Options &options,
                          Gamestate &gamestate,
                          Canvas &canvas,
@@ -1705,7 +1648,7 @@ static bool DrawMessages(const Options &options,
                 continue;
             }
         } else {
-            messageColor = Pixel::TextColor(MessageColor(message->Type));
+            messageColor = Message::TextColor(message->Type);
 
             switch (message->Type) {
             case MessageMode::NPCStart:
@@ -1834,9 +1777,7 @@ static bool DrawMessages(const Options &options,
                         messageColor,
                         centerX,
                         bottomY,
-                        FormatString("%s %s:",
-                                     message->Author.c_str(),
-                                     messagePrefix),
+                        std::format("{} {}:", message->Author, messagePrefix),
                         canvas);
             }
         }
@@ -1880,6 +1821,12 @@ void DrawOverlay(const Options &options,
                      scaleX,
                      scaleY);
     }
+}
+
+int MeasureIconBarHeight(Gamestate &gamestate) noexcept {
+    const Icons &icons = gamestate.Version.Icons;
+
+    return 2 + icons.IconBarBackground.Height;
 }
 
 void DrawIconBar(Gamestate &gamestate,
@@ -2008,6 +1955,12 @@ static void DrawIconArea(Gamestate &gamestate,
      * icon area. */
 }
 
+int MeasureStatusBarsHeight(Gamestate &gamestate) noexcept {
+    const Icons &icons = gamestate.Version.Icons;
+
+    return 18 + icons.EmptyStatusBar.Height;
+}
+
 void DrawStatusBars(Gamestate &gamestate,
                     Canvas &canvas,
                     int &offsetX,
@@ -2069,9 +2022,9 @@ void DrawStatusBars(Gamestate &gamestate,
             Pixel(0xFF, 0xFF, 0xFF),
             statusBarX + 2 + icons.HealthBar.Width / 2,
             statusBarY + 2,
-            FormatString("%hi / %hi",
-                         gamestate.Player.Stats.Health,
-                         gamestate.Player.Stats.MaxHealth),
+            std::format("{} / {}",
+                        gamestate.Player.Stats.Health,
+                        gamestate.Player.Stats.MaxHealth),
             canvas);
 
     TextRenderer::DrawCenteredString(
@@ -2079,15 +2032,21 @@ void DrawStatusBars(Gamestate &gamestate,
             Pixel(0xFF, 0xFF, 0xFF),
             statusBarX + 2 + icons.ManaBar.Width / 2,
             statusBarY + 15,
-            FormatString("%hi / %hi",
-                         gamestate.Player.Stats.Mana,
-                         gamestate.Player.Stats.MaxMana),
+            std::format("{} / {}",
+                        gamestate.Player.Stats.Mana,
+                        gamestate.Player.Stats.MaxMana),
             canvas);
 
     /* Update the render position */
     baseY += 18 + icons.EmptyStatusBar.Height;
 
     offsetY = baseY;
+}
+
+int MeasureInventoryAreaHeight(Gamestate &gamestate) noexcept {
+    const Icons &icons = gamestate.Version.Icons;
+
+    return 124 + icons.SecondaryStatBackground.Height + 3;
 }
 
 void DrawInventoryArea(Gamestate &gamestate,
@@ -2142,7 +2101,7 @@ void DrawInventoryArea(Gamestate &gamestate,
                 Pixel(0xAF, 0xAF, 0xAF),
                 16 + baseX + 17,
                 baseY + 10,
-                FormatString("%hhu", gamestate.Player.Stats.SoulPoints),
+                std::format("{}", gamestate.Player.Stats.SoulPoints),
                 canvas);
     }
 
@@ -2164,11 +2123,32 @@ void DrawInventoryArea(Gamestate &gamestate,
                                      Pixel(0xAF, 0xAF, 0xAF),
                                      16 + baseX + 90,
                                      baseY + 10,
-                                     FormatString("%u", capacity),
+                                     std::format("{}", capacity),
                                      canvas);
 
     /* Update the render position */
     offsetY = baseY + icons.SecondaryStatBackground.Height + 3;
+}
+
+int MeasureContainerHeight(Gamestate &gamestate,
+                           Container &container,
+                           bool collapsed,
+                           int width) {
+    const Version &version = gamestate.Version;
+    int height = version.Fonts.InterfaceLarge.Height;
+
+    if (!collapsed) {
+        const int slotSize = (32 + 4);
+        const int slotsPerRow = width / slotSize;
+
+        /* Round up to avoid having the next container overdraw this one, in
+         * case the container size wasn't a clean multiple of the slot
+         * modulus. */
+        height += ((container.SlotsPerPage + (slotsPerRow - 1) / slotsPerRow)) *
+                  slotSize;
+    }
+
+    return height;
 }
 
 void DrawContainer(Gamestate &gamestate,
@@ -2236,6 +2216,67 @@ void DrawContainer(Gamestate &gamestate,
     offsetY = baseY;
 }
 
+int MeasureSkillsHeight(Gamestate &gamestate) noexcept {
+    const Version &version = gamestate.Version;
+    return version.Fonts.InterfaceLarge.Height * 13;
+}
+
+void DrawSkills(Gamestate &gamestate,
+                Canvas &canvas,
+                int rightX,
+                int &offsetX,
+                int &offsetY) noexcept {
+    const Version &version = gamestate.Version;
+
+    int baseX = offsetX, baseY = offsetY;
+
+    TextRenderer::DrawProperCaseString(version.Fonts.InterfaceLarge,
+                                       Pixel(0xBF, 0xBF, 0xBF),
+                                       baseX,
+                                       baseY + 2,
+                                       "Skills",
+                                       canvas);
+
+    baseY += version.Fonts.InterfaceLarge.Height;
+    baseX += 8;
+
+    auto drawStat = [&](const char *name, int64_t value) {
+        TextRenderer::DrawProperCaseString(version.Fonts.InterfaceLarge,
+                                           Pixel(0xBF, 0xBF, 0xBF),
+                                           baseX,
+                                           baseY + 2,
+                                           name,
+                                           canvas);
+        TextRenderer::DrawRightAlignedString(version.Fonts.InterfaceLarge,
+                                             Pixel(0xBF, 0xBF, 0xBF),
+                                             rightX,
+                                             baseY + 2,
+                                             std::format("{}", value),
+                                             canvas);
+        baseY += version.Fonts.InterfaceLarge.Height;
+    };
+
+    drawStat("Experience", gamestate.Player.Stats.Experience);
+    drawStat("Level", gamestate.Player.Stats.Level);
+    drawStat("Hitpoints", gamestate.Player.Stats.Health);
+    drawStat("Mana", gamestate.Player.Stats.Mana);
+
+    uint32_t capacity =
+            gamestate.Player.Stats.Capacity / version.Features.CapacityDivisor;
+    drawStat("Capacity", capacity);
+    drawStat("Magic level", gamestate.Player.Stats.MagicLevel);
+
+    drawStat("Fist fighting", gamestate.Player.Skills[0].Effective);
+    drawStat("Club fighting", gamestate.Player.Skills[1].Effective);
+    drawStat("Sword fighting", gamestate.Player.Skills[2].Effective);
+    drawStat("Axe fighting", gamestate.Player.Skills[3].Effective);
+    drawStat("Distance fighting", gamestate.Player.Skills[4].Effective);
+    drawStat("Shielding", gamestate.Player.Skills[5].Effective);
+    drawStat("Fishing", gamestate.Player.Skills[6].Effective);
+
+    offsetY = baseY;
+}
+
 void DrawClientBackground(Gamestate &gamestate,
                           Canvas &canvas,
                           int leftX,
@@ -2255,7 +2296,7 @@ void DrawClientBackground(Gamestate &gamestate,
     }
 }
 
-void DumpItem(trc::Version &version, uint16_t item, Canvas &canvas) noexcept {
+void DumpItem(Version &version, uint16_t item, Canvas &canvas) noexcept {
     Object object(item);
     const auto &type = version.GetItem(item);
 

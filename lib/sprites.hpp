@@ -63,7 +63,7 @@ struct SpriteFile {
     std::unordered_map<uint32_t, Sprite> Sprites;
 
 public:
-    uint32_t Signature;
+    const uint32_t Signature;
 
     SpriteFile(const VersionBase &version, DataReader data);
 

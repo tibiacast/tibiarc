@@ -40,22 +40,22 @@ std::pair<size_t, size_t> MeasureBounds(const Font &font,
 void Render(const Font &font,
             const TextAlignment alignment,
             const TextTransform transform,
-            const trc::Pixel &color,
+            const Pixel &color,
             int X,
             int Y,
             const size_t lineMaxLength,
             const std::string &text,
-            trc::Canvas &canvas);
+            Canvas &canvas);
 
 /* Helper macros, calling Render directly all the time would get ugly. Add more
  * as necessary. */
 
 static inline void DrawRightAlignedString(const Font &font,
-                                          const trc::Pixel &color,
+                                          const Pixel &color,
                                           int X,
                                           int Y,
                                           const std::string &text,
-                                          trc::Canvas &canvas) {
+                                          Canvas &canvas) {
     Render(font,
            TextAlignment::Right,
            TextTransform::None,
@@ -68,11 +68,11 @@ static inline void DrawRightAlignedString(const Font &font,
 }
 
 static inline void DrawCenteredString(const Font &font,
-                                      const trc::Pixel &color,
+                                      const Pixel &color,
                                       int X,
                                       int Y,
                                       const std::string &text,
-                                      trc::Canvas &canvas) {
+                                      Canvas &canvas) {
     Render(font,
            TextAlignment::Center,
            TextTransform::None,
@@ -85,11 +85,11 @@ static inline void DrawCenteredString(const Font &font,
 }
 
 static inline void DrawCenteredProperCaseString(const Font &font,
-                                                const trc::Pixel &color,
+                                                const Pixel &color,
                                                 int X,
                                                 int Y,
                                                 const std::string &text,
-                                                trc::Canvas &canvas) {
+                                                Canvas &canvas) {
     Render(font,
            TextAlignment::Center,
            TextTransform::ProperCase,
@@ -102,11 +102,11 @@ static inline void DrawCenteredProperCaseString(const Font &font,
 }
 
 static inline void DrawProperCaseString(const Font &font,
-                                        const trc::Pixel &color,
+                                        const Pixel &color,
                                         int X,
                                         int Y,
                                         const std::string &text,
-                                        trc::Canvas &canvas) {
+                                        Canvas &canvas) {
     Render(font,
            TextAlignment::Left,
            TextTransform::ProperCase,
@@ -119,11 +119,11 @@ static inline void DrawProperCaseString(const Font &font,
 }
 
 static inline void DrawString(const Font &font,
-                              const trc::Pixel &color,
+                              const Pixel &color,
                               int X,
                               int Y,
                               const std::string &text,
-                              trc::Canvas &canvas) {
+                              Canvas &canvas) {
     Render(font,
            TextAlignment::Left,
            TextTransform::None,

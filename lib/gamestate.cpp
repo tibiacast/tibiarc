@@ -40,7 +40,7 @@ void Gamestate::AddMissileEffect(const trc::Position &origin,
 void Gamestate::AddTextMessage(MessageMode type,
                                const std::string &message,
                                const std::string &author,
-                               const trc::Position &position) {
+                               const Position &position) {
     Messages.AddMessage(type, position, author, message, CurrentTick);
 }
 

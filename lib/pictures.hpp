@@ -49,7 +49,7 @@ class PictureFile {
     void ReadPicture(DataReader &data, PictureIndex index);
 
 public:
-    uint32_t Signature;
+    const uint32_t Signature;
 
     PictureFile(const VersionBase &version, DataReader data);
 

@@ -28,10 +28,7 @@
 namespace trc {
 namespace Recordings {
 namespace TibiaReplay {
-bool QueryTibiaVersion(const DataReader &file,
-                       int &major,
-                       int &minor,
-                       int &preview) {
+bool QueryTibiaVersion(const DataReader &file, VersionTriplet &triplet) {
     DataReader reader = file;
 
     auto magic = reader.ReadU16();
@@ -42,11 +39,11 @@ bool QueryTibiaVersion(const DataReader &file,
 
     auto tibiaVersion = reader.ReadU16();
 
-    major = tibiaVersion / 100;
-    minor = tibiaVersion % 100;
-    preview = 0;
+    triplet.Major = tibiaVersion / 100;
+    triplet.Minor = tibiaVersion % 100;
+    triplet.Preview = 0;
 
-    if (major < 7 || major > 12) {
+    if (triplet.Major < 7 || triplet.Major > 12) {
         throw InvalidDataError();
     }
 
@@ -69,14 +66,14 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
     auto recording = std::make_unique<Recording>();
     bool partialReturn = false;
 
-    recording->Runtime = reader.ReadU32();
+    recording->Runtime = std::chrono::milliseconds(reader.ReadU32());
     auto frames = reader.ReadU32();
 
     try {
         Parser parser(version, recovery == Recovery::Repair);
 
         while (frames--) {
-            auto timestamp = reader.ReadU32();
+            auto timestamp = std::chrono::milliseconds(reader.ReadU32());
             auto packetReader = reader.Slice(reader.ReadU16());
 
             recording->Frames.emplace_back(timestamp,

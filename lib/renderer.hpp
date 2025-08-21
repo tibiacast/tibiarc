@@ -69,20 +69,31 @@ struct Options {
  * std::terminate() on data errors, which should've been caught by the
  * parser. */
 
+int MeasureInventoryAreaHeight(Gamestate &gamestate) noexcept;
+
 void DrawInventoryArea(Gamestate &gamestate,
                        Canvas &canvas,
                        int &offsetX,
                        int &offsetY) noexcept;
+
+int MeasureIconBarHeight(Gamestate &gamestate) noexcept;
 
 void DrawIconBar(Gamestate &gamestate,
                  Canvas &canvas,
                  int &offsetX,
                  int &offsetY) noexcept;
 
+int MeasureStatusBarsHeight(Gamestate &gamestate) noexcept;
+
 void DrawStatusBars(Gamestate &gamestate,
                     Canvas &canvas,
                     int &offsetX,
                     int &offsetY) noexcept;
+
+int MeasureContainerHeight(Gamestate &gamestate,
+                           Container &container,
+                           bool collapsed,
+                           int width);
 
 void DrawContainer(Gamestate &gamestate,
                    Canvas &canvas,
@@ -92,6 +103,14 @@ void DrawContainer(Gamestate &gamestate,
                    int maxY,
                    int &offsetX,
                    int &offsetY) noexcept;
+
+int MeasureSkillsHeight(Gamestate &gamestate) noexcept;
+
+void DrawSkills(Gamestate &gamestate,
+                Canvas &canvas,
+                int rightX,
+                int &offsetX,
+                int &offsetY) noexcept;
 
 void DrawClientBackground(Gamestate &gamestate,
                           Canvas &canvas,
@@ -110,7 +129,7 @@ void DrawOverlay(const Options &options,
                  Gamestate &gamestate,
                  Canvas &canvas) noexcept;
 
-void DumpItem(trc::Version &version, uint16_t item, Canvas &canvas) noexcept;
+void DumpItem(Version &version, uint16_t item, Canvas &canvas) noexcept;
 } // namespace Renderer
 } // namespace trc
 
