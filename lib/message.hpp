@@ -182,7 +182,7 @@ public:
         return Messages.cend();
     }
 
-    std::pair<bool, bool> QueryNext(Iterator current);
+    std::pair<bool, bool> QueryNext(Iterator current) const;
 };
 
 } // namespace trc

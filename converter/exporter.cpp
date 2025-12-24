@@ -279,6 +279,7 @@ static void ConvertVideo(
                                            outputCanvas.Width,
                                            outputCanvas.Height);
 
+            Renderer::Update(renderOptions, gamestate);
             Renderer::DrawGamestate(renderOptions, gamestate, mapCanvas);
 
             RescaleClone(outputCanvas,
@@ -287,9 +288,6 @@ static void ConvertVideo(
                          viewRightX,
                          viewBottomY,
                          mapCanvas);
-
-            /* FIXME: C++ migration. */
-            gamestate.Messages.Prune(gamestate.CurrentTick);
 
             Renderer::DrawOverlay(renderOptions, gamestate, overlaySlice);
             DrawInterface(renderOptions, gamestate, outputCanvas);

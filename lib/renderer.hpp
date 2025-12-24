@@ -69,50 +69,50 @@ struct Options {
  * std::terminate() on data errors, which should've been caught by the
  * parser. */
 
-int MeasureInventoryAreaHeight(Gamestate &gamestate) noexcept;
+int MeasureInventoryAreaHeight(const Gamestate &gamestate) noexcept;
 
-void DrawInventoryArea(Gamestate &gamestate,
+void DrawInventoryArea(const Gamestate &gamestate,
                        Canvas &canvas,
                        int &offsetX,
                        int &offsetY) noexcept;
 
-int MeasureIconBarHeight(Gamestate &gamestate) noexcept;
+int MeasureIconBarHeight(const Gamestate &gamestate) noexcept;
 
-void DrawIconBar(Gamestate &gamestate,
+void DrawIconBar(const Gamestate &gamestate,
                  Canvas &canvas,
                  int &offsetX,
                  int &offsetY) noexcept;
 
-int MeasureStatusBarsHeight(Gamestate &gamestate) noexcept;
+int MeasureStatusBarsHeight(const Gamestate &gamestate) noexcept;
 
-void DrawStatusBars(Gamestate &gamestate,
+void DrawStatusBars(const Gamestate &gamestate,
                     Canvas &canvas,
                     int &offsetX,
                     int &offsetY) noexcept;
 
-int MeasureContainerHeight(Gamestate &gamestate,
-                           Container &container,
+int MeasureContainerHeight(const Gamestate &gamestate,
+                           const Container &container,
                            bool collapsed,
                            int width);
 
-void DrawContainer(Gamestate &gamestate,
+void DrawContainer(const Gamestate &gamestate,
                    Canvas &canvas,
-                   Container &container,
+                   const Container &container,
                    bool collapsed,
                    int maxX,
                    int maxY,
                    int &offsetX,
                    int &offsetY) noexcept;
 
-int MeasureSkillsHeight(Gamestate &gamestate) noexcept;
+int MeasureSkillsHeight(const Gamestate &gamestate) noexcept;
 
-void DrawSkills(Gamestate &gamestate,
+void DrawSkills(const Gamestate &gamestate,
                 Canvas &canvas,
                 int rightX,
                 int &offsetX,
                 int &offsetY) noexcept;
 
-void DrawClientBackground(Gamestate &gamestate,
+void DrawClientBackground(const Gamestate &gamestate,
                           Canvas &canvas,
                           int topX,
                           int topY,
@@ -122,12 +122,14 @@ void DrawClientBackground(Gamestate &gamestate,
 /* ************************************************************************* */
 
 void DrawGamestate(const Options &options,
-                   Gamestate &gamestate,
+                   const Gamestate &gamestate,
                    Canvas &canvas) noexcept;
 
 void DrawOverlay(const Options &options,
-                 Gamestate &gamestate,
+                 const Gamestate &gamestate,
                  Canvas &canvas) noexcept;
+
+void Update(const Options &options, Gamestate &gamestate);
 
 void DumpItem(Version &version, uint16_t item, Canvas &canvas) noexcept;
 } // namespace Renderer

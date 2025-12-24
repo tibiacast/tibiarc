@@ -34,27 +34,27 @@ Pixel Message::TextColor(MessageMode mode) {
     case MessageMode::Spell:
     case MessageMode::Whisper:
     case MessageMode::Yell:
-        return Pixel::TextColor(210);
+        return Pixel::ProtocolColor(210);
     case MessageMode::MonsterSay:
 #ifdef DEBUG
         /* Helps distinguish between monster say/yell when figuring out speak
          * types. */
-        return Pixel::TextColor(10);
+        return Pixel::ProtocolColor(10);
 #endif
     case MessageMode::MonsterYell:
-        return Pixel::TextColor(192);
+        return Pixel::ProtocolColor(192);
     case MessageMode::NPCStart:
         /* Light-blue, above creature */
-        return Pixel::TextColor(35);
+        return Pixel::ProtocolColor(35);
     case MessageMode::Game:
         /* White, center screen */
-        return Pixel::TextColor(215);
+        return Pixel::ProtocolColor(215);
     case MessageMode::PrivateIn:
         /* Light-blue, top-center screen */
-        return Pixel::TextColor(35);
+        return Pixel::ProtocolColor(35);
     case MessageMode::Warning:
         /* Red, center screen */
-        return Pixel::TextColor(194);
+        return Pixel::ProtocolColor(194);
     case MessageMode::Hotkey:
 #ifdef DEBUG
         /* Helps distinguish between hotkey/look when figuring out speak
@@ -66,23 +66,23 @@ Pixel Message::TextColor(MessageMode mode) {
     case MessageMode::Loot:
     case MessageMode::Look:
         /* Green, center screen */
-        return Pixel::TextColor(30);
+        return Pixel::ProtocolColor(30);
     case MessageMode::Failure:
     case MessageMode::Status:
     case MessageMode::Login:
         /* White, bottom-center screen */
-        return Pixel::TextColor(215);
+        return Pixel::ProtocolColor(215);
     case MessageMode::ChannelRed:
-        return Pixel::TextColor(194);
+        return Pixel::ProtocolColor(194);
     case MessageMode::ChannelOrange:
-        return Pixel::TextColor(198);
+        return Pixel::ProtocolColor(198);
     case MessageMode::ChannelYellow:
-        return Pixel::TextColor(210);
+        return Pixel::ProtocolColor(210);
     case MessageMode::ChannelWhite:
-        return Pixel::TextColor(215);
+        return Pixel::ProtocolColor(215);
     default:
         /* Return something fugly so it gets reported. */
-        return Pixel::TextColor(10);
+        return Pixel::ProtocolColor(10);
     }
 }
 
@@ -148,7 +148,8 @@ std::strong_ordering MessageList::SortFunction(MessageMode type,
     return author <=> compareTo.Author;
 }
 
-std::pair<bool, bool> MessageList::QueryNext(MessageList::Iterator current) {
+std::pair<bool, bool> MessageList::QueryNext(
+        MessageList::Iterator current) const {
     bool preserveCoordinates = false, canMerge = false;
 
     AbortUnless(current != end());
