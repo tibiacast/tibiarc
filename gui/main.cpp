@@ -52,11 +52,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 #else
+    /* Our IndexedDB filesystem has already been mounted by presettings.js */
     const std::filesystem::path root = "/tibiarc";
-
-    /* Store all of our data in IndexedDB. */
-    EM_ASM(FS.mkdir('/tibiarc');
-           FS.mount(IDBFS, {autoPersist : true}, '/tibiarc'););
 #endif
 
     GUI::Database database(root);
