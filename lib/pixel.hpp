@@ -23,8 +23,6 @@
 
 #include <cstdint>
 
-#include "utils.hpp"
-
 namespace trc {
 
 #ifdef _MSC_VER
@@ -53,7 +51,7 @@ struct
         return Alpha != 0xFF;
     }
 
-    static Pixel TextColor(int color) {
+    static Pixel ProtocolColor(int color) {
         return Pixel((color / 36) * 51,
                      ((color / 6) % 6) * 51,
                      (color % 6) * 51);

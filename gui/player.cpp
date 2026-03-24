@@ -228,6 +228,8 @@ void Player::RenderViewport() {
 
     ViewportScene.clear();
 
+    Renderer::Update(options, *Gamestate);
+
     {
         Canvas canvas(Renderer::NativeResolutionX,
                       Renderer::NativeResolutionY,

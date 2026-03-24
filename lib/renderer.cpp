@@ -50,36 +50,6 @@ static Pixel Convert8BitColor(uint8_t color) {
                  ((color % 6) * 51));
 }
 
-static void UpdateWalkOffset(Gamestate &gamestate, Creature &creature) {
-    if (creature.MovementInformation.LastUpdateTick < gamestate.CurrentTick) {
-        uint32_t startTick, endTick;
-
-        creature.MovementInformation.LastUpdateTick = gamestate.CurrentTick;
-
-        startTick = creature.MovementInformation.WalkStartTick;
-        endTick = creature.MovementInformation.WalkEndTick;
-        Assert(startTick <= endTick);
-
-        if ((endTick > gamestate.CurrentTick) && ((endTick - startTick) != 0)) {
-            float const walkProgress =
-                    ((float)(gamestate.CurrentTick - startTick) /
-                     (float)(endTick - startTick));
-
-            creature.MovementInformation.WalkOffsetX =
-                    (int)((creature.MovementInformation.Target.X -
-                           creature.MovementInformation.Origin.X) *
-                          (walkProgress - 1) * 32);
-            creature.MovementInformation.WalkOffsetY =
-                    (int)((creature.MovementInformation.Target.Y -
-                           creature.MovementInformation.Origin.Y) *
-                          (walkProgress - 1) * 32);
-        } else {
-            creature.MovementInformation.WalkOffsetX = 0;
-            creature.MovementInformation.WalkOffsetY = 0;
-        }
-    }
-}
-
 static Pixel GetCreatureInfoColor(int healthPercentage, int isObscured) {
     if (isObscured) {
         return Pixel(192, 192, 192);
@@ -491,9 +461,8 @@ static bool DrawOutfit(const Creature &creature,
     return true;
 }
 
-/* FIXME: Phase ticks should NOT modify the item! */
 static void DrawItem(const Version &version,
-                     Object &item,
+                     const Object &item,
                      const EntityType &type,
                      int rightX,
                      int bottomY,
@@ -512,19 +481,6 @@ static void DrawItem(const Version &version,
         /* Phases were introduced in 10.50, otherwise let each animation frame
          * take 500ms. */
         if (version.Features.AnimationPhases) {
-            /* FIXME: This is a lazy and incorrect implementation as the
-             * animation time is effectively reset every time an item bounces
-             * in and out of the viewport. I remember it being especially
-             * noticeable with magic walls back in the day, but didn't have the
-             * time to implement it properly back then. Revisit this once we've
-             * got some >=10.50 recordings to test with. */
-            uint32_t minTime = frameGroup.Phases[item.Animation].Minimum;
-
-            if (tick >= (item.PhaseTick + minTime)) {
-                item.Animation = (item.Animation + 1) % frameGroup.FrameCount;
-                item.PhaseTick = tick;
-            }
-
             frame = item.Animation;
         } else {
             frame = (tick / 500) % frameGroup.FrameCount;
@@ -678,7 +634,7 @@ static void DrawCreature(const Version &version,
     }
 }
 
-static void DrawMovingCreatures(Gamestate &gamestate,
+static void DrawMovingCreatures(const Gamestate &gamestate,
                                 const Position &position,
                                 int heightDisplacement,
                                 int rightX,
@@ -704,8 +660,6 @@ static void DrawMovingCreatures(Gamestate &gamestate,
                  * creatures here, simply skipping them. */
                 if (auto creature = gamestate.FindCreature(object.CreatureId)) {
                     int offsetRelativeThisX, offsetRelativeThisY;
-
-                    UpdateWalkOffset(gamestate, *creature);
 
                     if (creature->MovementInformation.WalkEndTick <= tick) {
                         continue;
@@ -740,15 +694,15 @@ static void DrawMovingCreatures(Gamestate &gamestate,
 }
 
 /* Check for and draw all projectiles which might overlap with this tile. */
-static void DrawMissiles(Gamestate &gamestate,
+static void DrawMissiles(const Gamestate &gamestate,
                          const Position &position,
                          int heightDisplacement,
                          int rightX,
                          int bottomY,
-                         uint32_t tick,
                          Canvas &canvas) {
     const Version &version = gamestate.Version;
     unsigned missileIdx = gamestate.MissileIndex;
+    auto tick = gamestate.CurrentTick;
 
     do {
         missileIdx = (missileIdx - 1) % Gamestate::MaxMissiles;
@@ -791,11 +745,10 @@ static void DrawMissiles(Gamestate &gamestate,
 }
 
 static void DrawTile(const Options &options,
-                     Gamestate &gamestate,
+                     const Gamestate &gamestate,
                      const Position &position,
                      int viewOffsetX,
                      int viewOffsetY,
-                     uint32_t tick,
                      bool *redrawNearbyTop,
                      Canvas &canvas) {
     const Version &version = gamestate.Version;
@@ -810,11 +763,6 @@ static void DrawTile(const Options &options,
     bottomY = position.Y * 32 + viewOffsetY;
 
     auto &tile = gamestate.Map.Tile(position);
-
-    if (tile.ObjectCount > 0 &&
-        GetTileUpdateRenderHeight(gamestate.Version, tile)) {
-        gamestate.Map.UpdateRenderHeight(rightX, bottomY, position.Z);
-    }
 
     if (*redrawNearbyTop) {
         /* We're only supposed to redraw the top items, so just calculate the
@@ -857,7 +805,7 @@ static void DrawTile(const Options &options,
                      type,
                      rightX - heightDisplacement,
                      bottomY - heightDisplacement,
-                     tick,
+                     gamestate.CurrentTick,
                      position,
                      horizontal,
                      vertical,
@@ -894,7 +842,7 @@ static void DrawTile(const Options &options,
                          type,
                          rightX - heightDisplacement,
                          bottomY - heightDisplacement,
-                         tick,
+                         gamestate.CurrentTick,
                          position,
                          horizontal,
                          vertical,
@@ -919,7 +867,7 @@ static void DrawTile(const Options &options,
                                 heightDisplacement,
                                 rightX,
                                 bottomY,
-                                tick,
+                                gamestate.CurrentTick,
                                 canvas);
         }
     }
@@ -936,9 +884,8 @@ static void DrawTile(const Options &options,
             /* Strangely, the official client is okay with non-existent
              * creatures here, simply skipping them. */
             if (auto creature = gamestate.FindCreature(object.CreatureId)) {
-                UpdateWalkOffset(gamestate, *creature);
-
-                if (creature->MovementInformation.WalkEndTick <= tick) {
+                if (creature->MovementInformation.WalkEndTick <=
+                    gamestate.CurrentTick) {
                     DrawCreature(
                             gamestate.Version,
                             *creature,
@@ -946,7 +893,7 @@ static void DrawTile(const Options &options,
                                     creature->MovementInformation.WalkOffsetX,
                             bottomY - heightDisplacement +
                                     creature->MovementInformation.WalkOffsetY,
-                            tick,
+                            gamestate.CurrentTick,
                             canvas);
                 }
             }
@@ -964,7 +911,7 @@ static void DrawTile(const Options &options,
                                     position,
                                     rightX - heightDisplacement,
                                     bottomY - heightDisplacement,
-                                    tick,
+                                    gamestate.CurrentTick,
                                     canvas);
             }
         }
@@ -976,7 +923,6 @@ static void DrawTile(const Options &options,
                      heightDisplacement,
                      rightX,
                      bottomY,
-                     tick,
                      canvas);
     }
 
@@ -996,7 +942,7 @@ static void DrawTile(const Options &options,
                          type,
                          rightX,
                          bottomY,
-                         tick,
+                         gamestate.CurrentTick,
                          position,
                          horizontal,
                          vertical,
@@ -1010,8 +956,8 @@ static void DrawTile(const Options &options,
     }
 }
 
-static void DrawInventoryItem(Gamestate &gamestate,
-                              Object &item,
+static void DrawInventoryItem(const Gamestate &gamestate,
+                              const Object &item,
                               int X,
                               int Y,
                               Canvas &canvas) {
@@ -1047,15 +993,14 @@ static void DrawInventoryItem(Gamestate &gamestate,
     }
 }
 
-static void DrawInventorySlot(Gamestate &gamestate,
+static void DrawInventorySlot(const Gamestate &gamestate,
                               InventorySlot slot,
                               int X,
                               int Y,
                               Canvas &canvas) {
     const Version &version = gamestate.Version;
 
-    /* FIXME: C++ migration. */
-    Object &object = gamestate.Player.Inventory(slot);
+    const Object &object = gamestate.Player.Inventory(slot);
 
     DrawInventoryItem(gamestate, object, X, Y, canvas);
 
@@ -1066,19 +1011,12 @@ static void DrawInventorySlot(Gamestate &gamestate,
 }
 
 void DrawGamestate(const Options &options,
-                   Gamestate &gamestate,
+                   const Gamestate &gamestate,
                    Canvas &canvas) noexcept {
     int bottomVisibleFloor, topVisibleFloor;
     int viewOffsetX, viewOffsetY;
 
     auto &playerCreature = gamestate.GetCreature(gamestate.Player.Id);
-
-    /* Force a small amount of light around the player like the Tibia client
-     * does. */
-    playerCreature.LightIntensity =
-            std::max<uint8_t>(playerCreature.LightIntensity, 1);
-
-    UpdateWalkOffset(gamestate, playerCreature);
 
     viewOffsetX = (8 - gamestate.Map.Position.X) * 32 -
                   playerCreature.MovementInformation.WalkOffsetX;
@@ -1117,7 +1055,6 @@ void DrawGamestate(const Options &options,
                          position,
                          viewOffsetX - xyOffset * 32,
                          viewOffsetY - xyOffset * 32,
-                         gamestate.CurrentTick,
                          &redrawNearbyTop,
                          canvas);
 
@@ -1130,7 +1067,6 @@ void DrawGamestate(const Options &options,
                                  position,
                                  viewOffsetX - xyOffset * 32,
                                  viewOffsetY - xyOffset * 32,
-                                 gamestate.CurrentTick,
                                  &redrawNearbyTop,
                                  canvas);
                     }
@@ -1143,7 +1079,6 @@ void DrawGamestate(const Options &options,
                                  position,
                                  viewOffsetX - xyOffset * 32,
                                  viewOffsetY - xyOffset * 32,
-                                 gamestate.CurrentTick,
                                  &redrawNearbyTop,
                                  canvas);
 
@@ -1154,7 +1089,6 @@ void DrawGamestate(const Options &options,
                                  position,
                                  viewOffsetX - xyOffset * 32,
                                  viewOffsetY - xyOffset * 32,
-                                 gamestate.CurrentTick,
                                  &redrawNearbyTop,
                                  canvas);
 
@@ -1166,7 +1100,6 @@ void DrawGamestate(const Options &options,
                              position,
                              viewOffsetX - xyOffset * 32,
                              viewOffsetY - xyOffset * 32,
-                             gamestate.CurrentTick,
                              &redrawNearbyTop,
                              canvas);
                 }
@@ -1175,7 +1108,7 @@ void DrawGamestate(const Options &options,
     }
 }
 
-static void DrawNumericalEffects(Gamestate &gamestate,
+static void DrawNumericalEffects(const Gamestate &gamestate,
                                  Canvas &canvas,
                                  int viewOffsetX,
                                  int viewOffsetY,
@@ -1222,7 +1155,7 @@ static void DrawNumericalEffects(Gamestate &gamestate,
 }
 
 static void DrawCreatureOverlay(const Options &options,
-                                Gamestate &gamestate,
+                                const Gamestate &gamestate,
                                 Canvas &canvas,
                                 int isObscured,
                                 int heightDisplacement,
@@ -1230,7 +1163,7 @@ static void DrawCreatureOverlay(const Options &options,
                                 int bottomY,
                                 float scaleX,
                                 float scaleY,
-                                Creature &creature) {
+                                const Creature &creature) {
     const Version &version = gamestate.Version;
     int creatureRX, creatureBY;
 
@@ -1399,14 +1332,14 @@ static void DrawCreatureOverlay(const Options &options,
 }
 
 static bool DrawTileOverlay(const Options &options,
-                            Gamestate &gamestate,
+                            const Gamestate &gamestate,
                             Canvas &canvas,
                             int isObscured,
                             int rightX,
                             int bottomY,
                             float scaleX,
                             float scaleY,
-                            Tile &tile) {
+                            const Tile &tile) {
     const Version &version = gamestate.Version;
     int heightDisplacement = 0;
 
@@ -1457,7 +1390,7 @@ static bool DrawTileOverlay(const Options &options,
 }
 
 static bool DrawMapOverlay(const Options &options,
-                           Gamestate &gamestate,
+                           const Gamestate &gamestate,
                            Canvas &canvas,
                            int viewOffsetX,
                            int viewOffsetY,
@@ -1525,7 +1458,7 @@ static bool DrawMapOverlay(const Options &options,
 }
 
 static bool DrawMessages(const Options &options,
-                         Gamestate &gamestate,
+                         const Gamestate &gamestate,
                          Canvas &canvas,
                          int viewOffsetX,
                          int viewOffsetY,
@@ -1785,7 +1718,7 @@ static bool DrawMessages(const Options &options,
 }
 
 void DrawOverlay(const Options &options,
-                 Gamestate &gamestate,
+                 const Gamestate &gamestate,
                  Canvas &canvas) noexcept {
     int viewOffsetX, viewOffsetY;
     float scaleX, scaleY;
@@ -1810,6 +1743,9 @@ void DrawOverlay(const Options &options,
                        scaleY);
     }
 
+    /* FIXME: Light for this Z-position must be applied at this point to
+     * obscure names, not before... */
+
     if (!options.SkipRenderingMessages) {
         DrawMessages(options,
                      gamestate,
@@ -1821,13 +1757,13 @@ void DrawOverlay(const Options &options,
     }
 }
 
-int MeasureIconBarHeight(Gamestate &gamestate) noexcept {
+int MeasureIconBarHeight(const Gamestate &gamestate) noexcept {
     const Icons &icons = gamestate.Version.Icons;
 
     return 2 + icons.IconBarBackground.Height;
 }
 
-void DrawIconBar(Gamestate &gamestate,
+void DrawIconBar(const Gamestate &gamestate,
                  Canvas &canvas,
                  int &offsetX,
                  int &offsetY) noexcept {
@@ -1886,7 +1822,7 @@ void DrawIconBar(Gamestate &gamestate,
     offsetY = baseY + 2 + icons.IconBarBackground.Height;
 }
 
-static void DrawIconArea(Gamestate &gamestate,
+static void DrawIconArea(const Gamestate &gamestate,
                          Canvas &canvas,
                          int offsetX,
                          int offsetY) {
@@ -1953,13 +1889,13 @@ static void DrawIconArea(Gamestate &gamestate,
      * icon area. */
 }
 
-int MeasureStatusBarsHeight(Gamestate &gamestate) noexcept {
+int MeasureStatusBarsHeight(const Gamestate &gamestate) noexcept {
     const Icons &icons = gamestate.Version.Icons;
 
     return 18 + icons.EmptyStatusBar.Height;
 }
 
-void DrawStatusBars(Gamestate &gamestate,
+void DrawStatusBars(const Gamestate &gamestate,
                     Canvas &canvas,
                     int &offsetX,
                     int &offsetY) noexcept {
@@ -2039,13 +1975,13 @@ void DrawStatusBars(Gamestate &gamestate,
     offsetY = baseY;
 }
 
-int MeasureInventoryAreaHeight(Gamestate &gamestate) noexcept {
+int MeasureInventoryAreaHeight(const Gamestate &gamestate) noexcept {
     const Icons &icons = gamestate.Version.Icons;
 
     return 124 + icons.SecondaryStatBackground.Height + 3;
 }
 
-void DrawInventoryArea(Gamestate &gamestate,
+void DrawInventoryArea(const Gamestate &gamestate,
                        Canvas &canvas,
                        int &offsetX,
                        int &offsetY) noexcept {
@@ -2126,8 +2062,8 @@ void DrawInventoryArea(Gamestate &gamestate,
     offsetY = baseY + icons.SecondaryStatBackground.Height + 3;
 }
 
-int MeasureContainerHeight(Gamestate &gamestate,
-                           Container &container,
+int MeasureContainerHeight(const Gamestate &gamestate,
+                           const Container &container,
                            bool collapsed,
                            int width) {
     const Version &version = gamestate.Version;
@@ -2147,9 +2083,9 @@ int MeasureContainerHeight(Gamestate &gamestate,
     return height;
 }
 
-void DrawContainer(Gamestate &gamestate,
+void DrawContainer(const Gamestate &gamestate,
                    Canvas &canvas,
-                   Container &container,
+                   const Container &container,
                    bool collapsed,
                    int maxX,
                    int maxY,
@@ -2212,12 +2148,12 @@ void DrawContainer(Gamestate &gamestate,
     offsetY = baseY;
 }
 
-int MeasureSkillsHeight(Gamestate &gamestate) noexcept {
+int MeasureSkillsHeight(const Gamestate &gamestate) noexcept {
     const Version &version = gamestate.Version;
     return version.Fonts.InterfaceLarge.Height * 13;
 }
 
-void DrawSkills(Gamestate &gamestate,
+void DrawSkills(const Gamestate &gamestate,
                 Canvas &canvas,
                 int rightX,
                 int &offsetX,
@@ -2273,7 +2209,7 @@ void DrawSkills(Gamestate &gamestate,
     offsetY = baseY;
 }
 
-void DrawClientBackground(Gamestate &gamestate,
+void DrawClientBackground(const Gamestate &gamestate,
                           Canvas &canvas,
                           int leftX,
                           int topY,
@@ -2288,6 +2224,163 @@ void DrawClientBackground(Gamestate &gamestate,
                         toY,
                         std::min(sprite.Width, rightX - toX),
                         std::min(sprite.Height, bottomY - toY));
+        }
+    }
+}
+
+static void UpdateWalkOffset(Gamestate &gamestate, Creature &creature) {
+    if (creature.MovementInformation.LastUpdateTick < gamestate.CurrentTick) {
+        uint32_t startTick, endTick;
+
+        creature.MovementInformation.LastUpdateTick = gamestate.CurrentTick;
+
+        startTick = creature.MovementInformation.WalkStartTick;
+        endTick = creature.MovementInformation.WalkEndTick;
+        Assert(startTick <= endTick);
+
+        if ((endTick > gamestate.CurrentTick) && ((endTick - startTick) != 0)) {
+            float const walkProgress =
+                    ((float)(gamestate.CurrentTick - startTick) /
+                     (float)(endTick - startTick));
+
+            creature.MovementInformation.WalkOffsetX =
+                    (int)((creature.MovementInformation.Target.X -
+                           creature.MovementInformation.Origin.X) *
+                          (walkProgress - 1) * 32);
+            creature.MovementInformation.WalkOffsetY =
+                    (int)((creature.MovementInformation.Target.Y -
+                           creature.MovementInformation.Origin.Y) *
+                          (walkProgress - 1) * 32);
+        } else {
+            creature.MovementInformation.WalkOffsetX = 0;
+            creature.MovementInformation.WalkOffsetY = 0;
+        }
+    }
+}
+
+static void UpdateItem(Gamestate &gamestate, Object &item) {
+    const auto &type = gamestate.Version.GetItem(item.Id);
+
+    if (gamestate.Version.Features.AnimationPhases &&
+        type.Properties.Animated) {
+        const auto &frameGroup =
+                type.FrameGroups[std::to_underlying(FrameGroupIndex::Default)];
+
+        /* FIXME: This is a lazy and incorrect implementation as the animation
+         * time is effectively reset every time an item bounces in and out of
+         * the viewport. I remember it being especially noticeable with magic
+         * walls back in the day, but didn't have the time to implement it
+         * properly back then. Revisit this once we've got some >=10.50
+         * recordings to test with. */
+        uint32_t minTime = frameGroup.Phases[item.Animation].Minimum;
+
+        if (gamestate.CurrentTick >= (item.PhaseTick + minTime)) {
+            item.Animation = (item.Animation + 1) % frameGroup.FrameCount;
+            item.PhaseTick = gamestate.CurrentTick;
+        }
+    }
+}
+
+static void UpdateTile(Gamestate &gamestate,
+                       const Position &position,
+                       int viewOffsetX,
+                       int viewOffsetY) {
+    int rightX = position.X * 32 + viewOffsetX;
+    int bottomY = position.Y * 32 + viewOffsetY;
+
+    auto &tile = gamestate.Map.Tile(position);
+
+    if (tile.ObjectCount > 0 &&
+        GetTileUpdateRenderHeight(gamestate.Version, tile)) {
+        gamestate.Map.UpdateRenderHeight(rightX, bottomY, position.Z);
+    }
+
+    /* Update all animations ... */
+    for (auto ix = 0u; ix < tile.ObjectCount; ix++) {
+        auto &object = tile.GetObject(gamestate.Version, ix);
+
+        if (!object.IsCreature() && object.Id != 0) {
+            UpdateItem(gamestate, object);
+        }
+    }
+}
+
+void Update(const Options &options, Gamestate &gamestate) {
+    int bottomVisibleFloor, topVisibleFloor;
+    int viewOffsetX, viewOffsetY;
+
+    gamestate.Messages.Prune(gamestate.CurrentTick);
+
+    for (auto &[_, creature] : gamestate.Creatures) {
+        UpdateWalkOffset(gamestate, creature);
+    }
+
+    for (auto &[_, container] : gamestate.Containers) {
+        for (auto &item : container.Items) {
+            UpdateItem(gamestate, item);
+        }
+    }
+
+    for (auto slot : {
+                 InventorySlot::Head,
+                 InventorySlot::Amulet,
+                 InventorySlot::Backpack,
+                 InventorySlot::Chest,
+                 InventorySlot::RightArm,
+                 InventorySlot::LeftArm,
+                 InventorySlot::Legs,
+                 InventorySlot::Boots,
+                 InventorySlot::Ring,
+                 InventorySlot::Quiver,
+         }) {
+        Object &object = gamestate.Player.Inventory(slot);
+
+        if (object.Id != 0) {
+            UpdateItem(gamestate, object);
+        }
+    }
+
+    auto &playerCreature = gamestate.GetCreature(gamestate.Player.Id);
+
+    /* Force a small amount of light around the player like the Tibia client
+     * does. */
+    playerCreature.LightIntensity =
+            std::max<uint8_t>(playerCreature.LightIntensity, 1);
+
+    viewOffsetX = (8 - gamestate.Map.Position.X) * 32 -
+                  playerCreature.MovementInformation.WalkOffsetX;
+    viewOffsetY = (6 - gamestate.Map.Position.Y) * 32 -
+                  playerCreature.MovementInformation.WalkOffsetY;
+
+    if (gamestate.Map.Position.Z > 7) {
+        bottomVisibleFloor = std::min<int>(15, gamestate.Map.Position.Z + 2);
+        topVisibleFloor = gamestate.Map.Position.Z;
+    } else {
+        if (!options.SkipRenderingUpperFloors) {
+            topVisibleFloor = GetTopVisibleFloor(gamestate);
+        } else {
+            topVisibleFloor = gamestate.Map.Position.Z;
+        }
+
+        bottomVisibleFloor = 7;
+    }
+
+    for (int zIdx = bottomVisibleFloor; zIdx >= topVisibleFloor; zIdx--) {
+        int xyOffset = gamestate.Map.Position.Z - zIdx;
+
+        for (int xIdx = 0; xIdx <= 17; xIdx++) {
+            for (int yIdx = 0; yIdx <= 13; yIdx++) {
+                Position position;
+
+                position.X = gamestate.Map.Position.X - 8 + xIdx + xyOffset;
+                position.Y = gamestate.Map.Position.Y - 6 + yIdx + xyOffset;
+                position.Z = zIdx;
+
+                UpdateTile(gamestate,
+                           position,
+                           viewOffsetX - xyOffset * 32,
+                           viewOffsetY - xyOffset * 32);
+            }
         }
     }
 }

@@ -123,8 +123,6 @@ if(NOT TIBIARC_NO_QT)
   endif()
 endif()
 
-set(TIBIARC_HAVE_QT_CONCURRENT (Qt6Concurrent_FOUND AND (NOT EMSCRIPTEN)))
-
 # ########################################################################### #
 ## `tibiarc` library
 # ########################################################################### #
@@ -404,17 +402,21 @@ if(Qt6Widgets_FOUND AND (EMSCRIPTEN OR Qt6Concurrent_FOUND))
                                          ${QT6_INCLUDE_DIRS})
   target_link_libraries(gui PRIVATE tibiarc Qt6::Widgets)
 
-  if(TIBIARC_HAVE_QT_CONCURRENT)
+  if(Qt6Concurrent_FOUND AND (NOT EMSCRIPTEN))
     target_link_libraries(gui PRIVATE Qt6::Concurrent)
   else()
+    # QtConcurrent does not work well with emscripten, regardless of whether
+    # it's in multi- or single-threaded mode.
     target_compile_definitions(gui PRIVATE DISABLE_QT_CONCURRENT)
   endif()
 
   if(EMSCRIPTEN)
-    target_link_options(gui PUBLIC -sASYNCIFY
-                                   -sASSERTIONS
+    target_link_options(gui PUBLIC -sASSERTIONS
                                    -sNO_DISABLE_EXCEPTION_CATCHING
                                    -Os)
+    target_link_options(gui PRIVATE
+                          --pre-js ${CMAKE_SOURCE_DIR}/gui/presettings.js)
+    target_link_options(gui PRIVATE "SHELL:-s FORCE_FILESYSTEM=1 ")
     target_link_libraries(gui PRIVATE idbfs.js)
   endif()
 endif()

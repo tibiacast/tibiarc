@@ -105,6 +105,10 @@ public:
         uint8_t SkullDuration;
     } UnjustifiedKillsInfo = {};
 
+    const Object &Inventory(InventorySlot slot) const {
+        return Inventory_[std::to_underlying(slot) - 1];
+    }
+
     Object &Inventory(InventorySlot slot) {
         return Inventory_[std::to_underlying(slot) - 1];
     }
