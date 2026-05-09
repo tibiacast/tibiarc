@@ -136,8 +136,9 @@ private:
     void ParseMoveNorth(DataReader &reader, EventList &events);
     void ParseMoveSouth(DataReader &reader, EventList &events);
     void ParseMoveWest(DataReader &reader, EventList &events);
-    void ParseNPCVendorBegin(DataReader &reader, EventList &events);
-    void ParseNPCVendorPlayerGoods(DataReader &reader, EventList &events);
+    void ParseNPCTradeClose(DataReader &reader, EventList &events);
+    void ParseNPCTradeOpen(DataReader &reader, EventList &events);
+    void ParseNPCTradePlayerGoods(DataReader &reader, EventList &events);
     void ParseOffenseReportResponse(DataReader &reader, EventList &events);
     void ParseOpenEditList(DataReader &reader, EventList &events);
     void ParseOpenEditText(DataReader &reader, EventList &events);
@@ -151,7 +152,8 @@ private:
     void ParsePlayerInventory(DataReader &reader, EventList &events);
     void ParsePlayerSkills(DataReader &reader, EventList &events);
     void ParsePlayerTactics(DataReader &reader, EventList &events);
-    void ParsePlayerTradeItems(DataReader &reader, EventList &events);
+    void ParsePlayerTradeClose(DataReader &reader, EventList &events);
+    void ParsePlayerTradeOpen(DataReader &reader, EventList &events);
     void ParsePremiumTrigger(DataReader &reader, EventList &events);
     void ParseQuestDialog(DataReader &reader, EventList &events);
     void ParseQuestDialogMission(DataReader &reader, EventList &events);

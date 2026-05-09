@@ -267,8 +267,12 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
         partialReturn = true;
     }
 
-    recording->Runtime =
-            std::max(recording->Runtime, recording->Frames.back().Timestamp);
+    if (!recording->Frames.empty()) {
+        recording->Runtime = recording->Frames.back().Timestamp;
+    } else {
+        recording->Runtime = std::chrono::milliseconds(0);
+        partialReturn = true;
+    }
 
     return std::make_pair(std::move(recording), partialReturn);
 }

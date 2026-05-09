@@ -346,6 +346,12 @@ void PlayerTacticsUpdated::Update(Gamestate &gamestate) const {
     gamestate.Player.PvPMode = PvPMode;
 }
 
+void PlayerTradeClosed::Update([[maybe_unused]] Gamestate &gamestate) const {
+}
+
+void PlayerTradeOpened::Update([[maybe_unused]] Gamestate &gamestate) const {
+}
+
 void PvPSituationsChanged::Update(Gamestate &gamestate) const {
     gamestate.Player.OpenPvPSituations = OpenSituations;
 }
@@ -460,6 +466,15 @@ void ContainerRemovedItem::Update(Gamestate &gamestate) const {
     }
 }
 
+void NPCTradeClosed::Update([[maybe_unused]] Gamestate &gamestate) const {
+}
+
+void NPCTradeOpened::Update([[maybe_unused]] Gamestate &gamestate) const {
+}
+
+void NPCTradePlayerGoods::Update([[maybe_unused]] Gamestate &gamestate) const {
+}
+
 void NumberEffectPopped::Update(Gamestate &gamestate) const {
     auto &tile = gamestate.Map.Tile(Position);
 
@@ -496,6 +511,12 @@ void StatusMessageReceived::Update(Gamestate &gamestate) const {
 
 void StatusMessageReceivedInChannel::Update(
         [[maybe_unused]] Gamestate &gamestate) const {
+}
+
+void VIPStatus::Update([[maybe_unused]] Gamestate &gamestate) const {
+}
+
+void VIPOnlineChanged::Update([[maybe_unused]] Gamestate &gamestate) const {
 }
 
 } // namespace Events

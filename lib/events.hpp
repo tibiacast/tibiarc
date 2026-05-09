@@ -28,55 +28,62 @@ namespace trc {
 namespace Events {
 
 enum class Type {
-    WorldInitialized,
     AmbientLightChanged,
-    TileUpdated,
-    TileObjectAdded,
-    TileObjectTransformed,
-    TileObjectRemoved,
-    CreatureMoved,
-    CreatureRemoved,
-    CreatureSeen,
-    CreatureHealthUpdated,
-    CreatureHeadingUpdated,
-    CreatureLightUpdated,
-    CreatureOutfitUpdated,
-    CreatureSpeedUpdated,
-    CreatureSkullUpdated,
-    CreatureShieldUpdated,
-    CreatureImpassableUpdated,
-    CreaturePvPHelpersUpdated,
-    CreatureGuildMembersUpdated,
-    CreatureTypeUpdated,
-    CreatureNPCCategoryUpdated,
-    PlayerMoved,
-    PlayerInventoryUpdated,
-    PlayerBlessingsUpdated,
-    PlayerDied,
-    PlayerHotkeyPresetUpdated,
-    PlayerDataBasicUpdated,
-    PlayerDataUpdated,
-    PlayerSkillsUpdated,
-    PlayerIconsUpdated,
-    PlayerTacticsUpdated,
-    PvPSituationsChanged,
-    CreatureSpoke,
-    CreatureSpokeOnMap,
-    CreatureSpokeInChannel,
+    ChannelClosed,
     ChannelListUpdated,
     ChannelOpened,
-    ChannelClosed,
-    PrivateConversationOpened,
-    ContainerOpened,
-    ContainerClosed,
     ContainerAddedItem,
-    ContainerTransformedItem,
+    ContainerClosed,
+    ContainerOpened,
     ContainerRemovedItem,
-    NumberEffectPopped,
+    ContainerTransformedItem,
+    CreatureGuildMembersUpdated,
+    CreatureHeadingUpdated,
+    CreatureHealthUpdated,
+    CreatureImpassableUpdated,
+    CreatureLightUpdated,
+    CreatureMoved,
+    CreatureNPCCategoryUpdated,
+    CreatureOutfitUpdated,
+    CreaturePvPHelpersUpdated,
+    CreatureRemoved,
+    CreatureSeen,
+    CreatureShieldUpdated,
+    CreatureSkullUpdated,
+    CreatureSpeedUpdated,
+    CreatureSpoke,
+    CreatureSpokeInChannel,
+    CreatureSpokeOnMap,
+    CreatureTypeUpdated,
     GraphicalEffectPopped,
     MissileFired,
+    NPCTradeClosed,
+    NPCTradeOpened,
+    NPCTradePlayerGoods,
+    NumberEffectPopped,
+    PlayerBlessingsUpdated,
+    PlayerDataBasicUpdated,
+    PlayerDataUpdated,
+    PlayerDied,
+    PlayerHotkeyPresetUpdated,
+    PlayerIconsUpdated,
+    PlayerInventoryUpdated,
+    PlayerMoved,
+    PlayerSkillsUpdated,
+    PlayerTacticsUpdated,
+    PlayerTradeClosed,
+    PlayerTradeOpened,
+    PrivateConversationOpened,
+    PvPSituationsChanged,
     StatusMessageReceived,
-    StatusMessageReceivedInChannel
+    StatusMessageReceivedInChannel,
+    TileObjectAdded,
+    TileObjectRemoved,
+    TileObjectTransformed,
+    TileUpdated,
+    VIPOnlineChanged,
+    VIPStatus,
+    WorldInitialized
 };
 
 struct Base {
@@ -460,6 +467,23 @@ struct PlayerTacticsUpdated : public Base {
     }
 };
 
+struct PlayerTradeClosed : public Base {
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::PlayerTradeClosed;
+    }
+};
+
+struct PlayerTradeOpened : public Base {
+    std::string Name;
+    std::vector<Object> Items;
+
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::PlayerTradeOpened;
+    }
+};
+
 struct PvPSituationsChanged : public Base {
     uint8_t OpenSituations;
 
@@ -614,6 +638,50 @@ struct ContainerRemovedItem : public Base {
     }
 };
 
+struct NPCTradeClosed : public Base {
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::NPCTradeClosed;
+    }
+};
+
+struct NPCTradeOpened : public Base {
+    std::string Name;
+
+    struct Item {
+        std::string Name;
+        uint32_t BuyPrice;
+        uint32_t SellPrice;
+        uint32_t Weight = 0;
+
+        uint16_t Id;
+        uint8_t ExtraByte;
+    };
+
+    std::vector<Item> Items;
+
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::NPCTradeOpened;
+    }
+};
+
+struct NPCTradePlayerGoods : public Base {
+    uint64_t Money;
+
+    struct Item {
+        uint16_t Id;
+        uint8_t ExtraByte;
+    };
+
+    std::vector<Item> Items;
+
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::NPCTradePlayerGoods;
+    }
+};
+
 struct NumberEffectPopped : public Base {
     trc::Position Position;
     uint8_t Color;
@@ -663,6 +731,27 @@ struct StatusMessageReceivedInChannel : public StatusMessageReceived {
     virtual void Update(Gamestate &gamestate) const;
     virtual Events::Type Kind() const {
         return Events::Type::StatusMessageReceivedInChannel;
+    }
+};
+
+struct VIPOnlineChanged : public Base {
+    uint32_t Id;
+    bool Online;
+
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::VIPOnlineChanged;
+    }
+};
+
+struct VIPStatus : public Base {
+    uint32_t Id;
+    std::string Name;
+    bool Online;
+
+    virtual void Update(Gamestate &gamestate) const;
+    virtual Events::Type Kind() const {
+        return Events::Type::VIPStatus;
     }
 };
 

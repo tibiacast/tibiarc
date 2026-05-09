@@ -721,68 +721,78 @@ void Parser::ParseInventoryClearSlot(DataReader &reader, EventList &events) {
     event.Item = {};
 }
 
-void Parser::ParseNPCVendorBegin(DataReader &reader,
-                                 [[maybe_unused]] EventList &events) {
-    uint16_t itemCount;
+void Parser::ParseNPCTradeClose([[maybe_unused]] DataReader &reader,
+                                EventList &events) {
+    /* Single-byte packet, we just need the event. */
+    (void)AddEvent<NPCTradeClosed>(events);
+}
 
-    if (Version_.Protocol.NPCVendorName) {
-        reader.SkipString();
+void Parser::ParseNPCTradeOpen(DataReader &reader, EventList &events) {
+    auto &event = AddEvent<NPCTradeOpened>(events);
+
+    if (Version_.Protocol.NPCTradeName) {
+        event.Name = reader.ReadString();
     }
 
-    if (Version_.Protocol.NPCVendorItemCountU16) {
+    uint16_t itemCount;
+    if (Version_.Protocol.NPCTradeItemCountU16) {
         itemCount = reader.ReadU16();
     } else {
         itemCount = reader.ReadU8();
     }
 
     while (itemCount--) {
-        /* itemId */
-        reader.SkipU16();
-        /* extraByte */
-        reader.SkipU8();
-        reader.SkipString();
+        auto &item = event.Items.emplace_back();
 
-        if (Version_.Protocol.NPCVendorWeight) {
-            reader.SkipU32();
+        item.Id = reader.ReadU16();
+        item.ExtraByte = reader.ReadU8();
+        item.Name = reader.ReadString();
+
+        if (Version_.Protocol.NPCTradeWeight) {
+            item.Weight = reader.ReadU32();
+        } else {
+            item.Weight = 0;
         }
 
-        /* buyPrice */
-        reader.SkipU32();
-        /* sellPrice */
-        reader.SkipU32();
+        item.BuyPrice = reader.ReadU32();
+        item.SellPrice = reader.ReadU32();
     }
 }
 
-void Parser::ParseNPCVendorPlayerGoods(DataReader &reader,
-                                       [[maybe_unused]] EventList &events) {
-    uint8_t itemCount;
+void Parser::ParseNPCTradePlayerGoods(DataReader &reader, EventList &events) {
+    auto &event = AddEvent<NPCTradePlayerGoods>(events);
 
     if (Version_.Protocol.PlayerMoneyU64) {
-        reader.SkipU64();
+        event.Money = reader.ReadU64();
     } else {
-        reader.SkipU32();
+        event.Money = reader.ReadU32();
     }
 
-    itemCount = reader.ReadU8();
-
+    uint8_t itemCount = reader.ReadU8();
     while (itemCount--) {
-        /* itemId */
-        reader.SkipU16();
-        /* extraByte */
-        reader.SkipU8();
+        auto &item = event.Items.emplace_back();
+
+        item.Id = reader.ReadU16();
+        item.ExtraByte = reader.ReadU8();
     }
 }
 
-void Parser::ParsePlayerTradeItems(DataReader &reader, EventList &events) {
-    uint8_t itemCount;
+void Parser::ParsePlayerTradeOpen(DataReader &reader, EventList &events) {
+    auto &event = AddEvent<PlayerTradeOpened>(events);
 
-    reader.SkipString();
-    itemCount = reader.ReadU8();
+    event.Name = reader.ReadString();
 
+    uint8_t itemCount = reader.ReadU8();
     while (itemCount--) {
-        Object nullObject;
-        ParseObject(reader, events, nullObject);
+        auto &item = event.Items.emplace_back();
+        ParseObject(reader, events, item);
     }
+}
+
+void Parser::ParsePlayerTradeClose([[maybe_unused]] DataReader &reader,
+                                   EventList &events) {
+    /* Single-byte packet, we just need the event. */
+    (void)AddEvent<PlayerTradeClosed>(events);
 }
 
 void Parser::ParseAmbientLight(DataReader &reader, EventList &events) {
@@ -1701,42 +1711,43 @@ void Parser::ParseOutfitDialog(DataReader &reader,
     }
 }
 
-void Parser::ParseVIPStatus(DataReader &reader,
-                            [[maybe_unused]] EventList &events) {
-    /* player id */
-    reader.SkipU32();
-    /* player name */
-    reader.SkipString();
+void Parser::ParseVIPStatus(DataReader &reader, EventList &events) {
+    auto &event = AddEvent<VIPStatus>(events);
+
+    event.Id = reader.ReadU32();
+    event.Name = reader.ReadString();
 
     if (Version_.Protocol.ExtendedVIPData) {
+        /* I've forgotten what these are. I think it's description, ??, icon. */
         reader.SkipString();
         reader.SkipU32();
         reader.SkipU8();
     }
 
-    /* isOnline */
-    reader.SkipU8();
+    event.Online = reader.ReadU8<0, 1>();
 }
 
-void Parser::ParseVIPOnline(DataReader &reader,
-                            [[maybe_unused]] EventList &events) {
-    /* player id */
-    reader.SkipU32();
+void Parser::ParseVIPOnline(DataReader &reader, EventList &events) {
+    auto &event = AddEvent<VIPOnlineChanged>(events);
+
+    event.Id = reader.ReadU32();
 
     if (Version_.Protocol.ExtendedVIPData) {
-        /* Online/offline. */
-        reader.SkipU8();
+        event.Online = reader.ReadU8<0, 1>();
+    } else {
+        event.Online = true;
     }
 }
 
-void Parser::ParseVIPOffline(DataReader &reader,
-                             [[maybe_unused]] EventList &events) {
+void Parser::ParseVIPOffline(DataReader &reader, EventList &events) {
+    auto &event = AddEvent<VIPOnlineChanged>(events);
+
     /* This whole packet type is replaced by a boolean field in
      * `ParseVIPOnline`. */
     ParseAssert(!Version_.Protocol.ExtendedVIPData);
 
-    /* player id */
-    reader.SkipU32();
+    event.Id = reader.ReadU32();
+    event.Online = false;
 }
 
 void Parser::ParseTutorialShow(DataReader &reader,
@@ -2076,20 +2087,20 @@ void Parser::ParseNext(DataReader &reader,
         ParseInventoryClearSlot(reader, events);
         break;
     case 0x7A:
-        ParseNPCVendorBegin(reader, events);
+        ParseNPCTradeOpen(reader, events);
         break;
     case 0x7B:
-        ParseNPCVendorPlayerGoods(reader, events);
+        ParseNPCTradePlayerGoods(reader, events);
         break;
     case 0x7C:
-        /* Single-byte NPC vendor abort */
+        ParseNPCTradeClose(reader, events);
         break;
     case 0x7D:
     case 0x7E:
-        ParsePlayerTradeItems(reader, events);
+        ParsePlayerTradeOpen(reader, events);
         break;
     case 0x7F:
-        /* Single-byte player trade abort */
+        ParsePlayerTradeClose(reader, events);
         break;
     case 0x82:
         ParseAmbientLight(reader, events);

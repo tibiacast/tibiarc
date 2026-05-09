@@ -135,15 +135,16 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
                 ReadNextFrame(reader, parser, *recording);
             }
         }
-
-        if (recording->Frames.empty()) {
-            throw InvalidDataError();
-        }
     } catch ([[maybe_unused]] const InvalidDataError &e) {
         partialReturn = true;
     }
 
-    recording->Runtime = recording->Frames.back().Timestamp;
+    if (!recording->Frames.empty()) {
+        recording->Runtime = recording->Frames.back().Timestamp;
+    } else {
+        recording->Runtime = std::chrono::milliseconds(0);
+        partialReturn = true;
+    }
 
     return std::make_pair(std::move(recording), partialReturn);
 }

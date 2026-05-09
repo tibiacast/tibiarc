@@ -255,56 +255,63 @@ static json ToJSON(const Version &version, const Appearance &appearance) {
 namespace Events {
 NLOHMANN_JSON_SERIALIZE_ENUM(
         Type,
-        {{Type::WorldInitialized, "WorldInitialized"},
-         {Type::AmbientLightChanged, "AmbientLightChanged"},
-         {Type::TileUpdated, "TileUpdated"},
-         {Type::TileObjectAdded, "TileObjectAdded"},
-         {Type::TileObjectTransformed, "TileObjectTransformed"},
-         {Type::TileObjectRemoved, "TileObjectRemoved"},
-         {Type::CreatureMoved, "CreatureMoved"},
-         {Type::CreatureRemoved, "CreatureRemoved"},
-         {Type::CreatureSeen, "CreatureSeen"},
-         {Type::CreatureHealthUpdated, "CreatureHealthUpdated"},
-         {Type::CreatureHeadingUpdated, "CreatureHeadingUpdated"},
-         {Type::CreatureLightUpdated, "CreatureLightUpdated"},
-         {Type::CreatureOutfitUpdated, "CreatureOutfitUpdated"},
-         {Type::CreatureSpeedUpdated, "CreatureSpeedUpdated"},
-         {Type::CreatureSkullUpdated, "CreatureSkullUpdated"},
-         {Type::CreatureShieldUpdated, "CreatureShieldUpdated"},
-         {Type::CreatureImpassableUpdated, "CreatureImpassableUpdated"},
-         {Type::CreaturePvPHelpersUpdated, "CreaturePvPHelpersUpdated"},
-         {Type::CreatureGuildMembersUpdated, "CreatureGuildMembersUpdated"},
-         {Type::CreatureTypeUpdated, "CreatureTypeUpdated"},
-         {Type::CreatureNPCCategoryUpdated, "CreatureNPCCategoryUpdated"},
-         {Type::PlayerMoved, "PlayerMoved"},
-         {Type::PlayerInventoryUpdated, "PlayerInventoryUpdated"},
-         {Type::PlayerBlessingsUpdated, "PlayerBlessingsUpdated"},
-         {Type::PlayerDied, "PlayerDied"},
-         {Type::PlayerHotkeyPresetUpdated, "PlayerHotkeyPresetUpdated"},
-         {Type::PlayerDataBasicUpdated, "PlayerDataBasicUpdated"},
-         {Type::PlayerDataUpdated, "PlayerDataUpdated"},
-         {Type::PlayerSkillsUpdated, "PlayerSkillsUpdated"},
-         {Type::PlayerIconsUpdated, "PlayerIconsUpdated"},
-         {Type::PlayerTacticsUpdated, "PlayerTacticsUpdated"},
-         {Type::PvPSituationsChanged, "PvPSituationsChanged"},
-         {Type::CreatureSpoke, "CreatureSpoke"},
-         {Type::CreatureSpokeOnMap, "CreatureSpokeOnMap"},
-         {Type::CreatureSpokeInChannel, "CreatureSpokeInChannel"},
+        {{Type::AmbientLightChanged, "AmbientLightChanged"},
+         {Type::ChannelClosed, "ChannelClosed"},
          {Type::ChannelListUpdated, "ChannelListUpdated"},
          {Type::ChannelOpened, "ChannelOpened"},
-         {Type::ChannelClosed, "ChannelClosed"},
-         {Type::PrivateConversationOpened, "PrivateConversationOpened"},
-         {Type::ContainerOpened, "ContainerOpened"},
-         {Type::ContainerClosed, "ContainerClosed"},
          {Type::ContainerAddedItem, "ContainerAddedItem"},
-         {Type::ContainerTransformedItem, "ContainerTransformedItem"},
+         {Type::ContainerClosed, "ContainerClosed"},
+         {Type::ContainerOpened, "ContainerOpened"},
          {Type::ContainerRemovedItem, "ContainerRemovedItem"},
-         {Type::NumberEffectPopped, "NumberEffectPopped"},
+         {Type::ContainerTransformedItem, "ContainerTransformedItem"},
+         {Type::CreatureGuildMembersUpdated, "CreatureGuildMembersUpdated"},
+         {Type::CreatureHeadingUpdated, "CreatureHeadingUpdated"},
+         {Type::CreatureHealthUpdated, "CreatureHealthUpdated"},
+         {Type::CreatureImpassableUpdated, "CreatureImpassableUpdated"},
+         {Type::CreatureLightUpdated, "CreatureLightUpdated"},
+         {Type::CreatureMoved, "CreatureMoved"},
+         {Type::CreatureNPCCategoryUpdated, "CreatureNPCCategoryUpdated"},
+         {Type::CreatureOutfitUpdated, "CreatureOutfitUpdated"},
+         {Type::CreaturePvPHelpersUpdated, "CreaturePvPHelpersUpdated"},
+         {Type::CreatureRemoved, "CreatureRemoved"},
+         {Type::CreatureSeen, "CreatureSeen"},
+         {Type::CreatureShieldUpdated, "CreatureShieldUpdated"},
+         {Type::CreatureSkullUpdated, "CreatureSkullUpdated"},
+         {Type::CreatureSpeedUpdated, "CreatureSpeedUpdated"},
+         {Type::CreatureSpoke, "CreatureSpoke"},
+         {Type::CreatureSpokeInChannel, "CreatureSpokeInChannel"},
+         {Type::CreatureSpokeOnMap, "CreatureSpokeOnMap"},
+         {Type::CreatureTypeUpdated, "CreatureTypeUpdated"},
          {Type::GraphicalEffectPopped, "GraphicalEffectPopped"},
          {Type::MissileFired, "MissileFired"},
+         {Type::NPCTradeClosed, "NPCTradeClosed"},
+         {Type::NPCTradeOpened, "NPCTradeOpened"},
+         {Type::NPCTradePlayerGoods, "NPCTradePlayerGoods"},
+         {Type::NumberEffectPopped, "NumberEffectPopped"},
+         {Type::PlayerBlessingsUpdated, "PlayerBlessingsUpdated"},
+         {Type::PlayerDataBasicUpdated, "PlayerDataBasicUpdated"},
+         {Type::PlayerDataUpdated, "PlayerDataUpdated"},
+         {Type::PlayerDied, "PlayerDied"},
+         {Type::PlayerHotkeyPresetUpdated, "PlayerHotkeyPresetUpdated"},
+         {Type::PlayerIconsUpdated, "PlayerIconsUpdated"},
+         {Type::PlayerInventoryUpdated, "PlayerInventoryUpdated"},
+         {Type::PlayerMoved, "PlayerMoved"},
+         {Type::PlayerSkillsUpdated, "PlayerSkillsUpdated"},
+         {Type::PlayerTacticsUpdated, "PlayerTacticsUpdated"},
+         {Type::PlayerTradeClosed, "PlayerTradeClosed"},
+         {Type::PlayerTradeOpened, "PlayerTradeOpened"},
+         {Type::PrivateConversationOpened, "PrivateConversationOpened"},
+         {Type::PvPSituationsChanged, "PvPSituationsChanged"},
          {Type::StatusMessageReceived, "StatusMessageReceived"},
          {Type::StatusMessageReceivedInChannel,
-          "StatusMessageReceivedInChannel"}});
+          "StatusMessageReceivedInChannel"},
+         {Type::TileObjectAdded, "TileObjectAdded"},
+         {Type::TileObjectRemoved, "TileObjectRemoved"},
+         {Type::TileObjectTransformed, "TileObjectTransformed"},
+         {Type::TileUpdated, "TileUpdated"},
+         {Type::VIPOnlineChanged, "VIPOnlineChanged"},
+         {Type::VIPStatus, "VIPStatus"},
+         {Type::WorldInitialized, "WorldInitialized"}});
 
 static json ToJSON([[maybe_unused]] const Version &version,
                    const WorldInitialized &event) {
@@ -597,6 +604,16 @@ static json ToJSON([[maybe_unused]] const Version &version,
 }
 
 static json ToJSON([[maybe_unused]] const Version &version,
+                   const PlayerTradeClosed &event) {
+    return json{};
+}
+
+static json ToJSON(const Version &version, const PlayerTradeOpened &event) {
+    return json{{"Name", CharacterSet::ToUtf8(event.Name)},
+                {"Items", ToJSON(version, event.Items)}};
+}
+
+static json ToJSON([[maybe_unused]] const Version &version,
                    const PvPSituationsChanged &event) {
     return json{{"OpenSituations", event.OpenSituations}};
 }
@@ -707,6 +724,50 @@ static json ToJSON(const Version &version, const ContainerRemovedItem &event) {
                 {"ContainerIndex", event.ContainerIndex}};
 }
 
+static json ToJSON([[maybe_unused]] const Version &version,
+                   [[maybe_unused]] const NPCTradeClosed &event) {
+    return json{};
+}
+
+static json ToJSON(const Version &version, const NPCTradeOpened::Item &item) {
+    Object object;
+
+    object.Id = item.Id;
+    object.ExtraByte = item.ExtraByte;
+
+    json result = ToJSON(version, object);
+
+    result["Name"] = CharacterSet::ToUtf8(item.Name);
+    result["BuyPrice"] = item.BuyPrice;
+    result["SellPrice"] = item.SellPrice;
+
+    if (version.Protocol.NPCTradeWeight) {
+        result["Weight"] = item.Weight;
+    }
+
+    return result;
+}
+
+static json ToJSON(const Version &version, const NPCTradeOpened &event) {
+    return json{{"Name", CharacterSet::ToUtf8(event.Name)},
+                {"Items", ToJSON(version, event.Items)}};
+}
+
+static json ToJSON(const Version &version,
+                   const NPCTradePlayerGoods::Item &item) {
+    Object object;
+
+    object.Id = item.Id;
+    object.ExtraByte = item.ExtraByte;
+
+    return ToJSON(version, object);
+}
+
+static json ToJSON(const Version &version, const NPCTradePlayerGoods &event) {
+    return json{{"Money", event.Money},
+                {"Items", ToJSON(version, event.Items)}};
+}
+
 static json ToJSON(const Version &version, const NumberEffectPopped &event) {
     return json{{"Position", ToJSON(version, event.Position)},
                 {"Color", event.Color},
@@ -735,6 +796,18 @@ static json ToJSON([[maybe_unused]] const Version &version,
     return json{{"Message", CharacterSet::ToUtf8(event.Message)},
                 {"Mode", event.Mode},
                 {"ChannelId", event.ChannelId}};
+}
+
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const VIPOnlineChanged &event) {
+    return json{{"Id", event.Id}, {"Online", event.Online}};
+}
+
+static json ToJSON([[maybe_unused]] const Version &version,
+                   const VIPStatus &event) {
+    return json{{"Id", event.Id},
+                {"Name", CharacterSet::ToUtf8(event.Name)},
+                {"Online", event.Online}};
 }
 
 static json ToJSON(const Version &version, const Events::Base &base) {
@@ -863,6 +936,14 @@ static json ToJSON(const Version &version, const Events::Base &base) {
         j = ToJSON(version,
                    static_cast<const Events::PlayerTacticsUpdated &>(base));
         break;
+    case Events::Type::PlayerTradeClosed:
+        j = ToJSON(version,
+                   static_cast<const Events::PlayerTradeClosed &>(base));
+        break;
+    case Events::Type::PlayerTradeOpened:
+        j = ToJSON(version,
+                   static_cast<const Events::PlayerTradeOpened &>(base));
+        break;
     case Events::Type::PvPSituationsChanged:
         j = ToJSON(version,
                    static_cast<const Events::PvPSituationsChanged &>(base));
@@ -911,6 +992,16 @@ static json ToJSON(const Version &version, const Events::Base &base) {
         j = ToJSON(version,
                    static_cast<const Events::ContainerRemovedItem &>(base));
         break;
+    case Events::Type::NPCTradeClosed:
+        j = ToJSON(version, static_cast<const Events::NPCTradeClosed &>(base));
+        break;
+    case Events::Type::NPCTradeOpened:
+        j = ToJSON(version, static_cast<const Events::NPCTradeOpened &>(base));
+        break;
+    case Events::Type::NPCTradePlayerGoods:
+        j = ToJSON(version,
+                   static_cast<const Events::NPCTradePlayerGoods &>(base));
+        break;
     case Events::Type::NumberEffectPopped:
         j = ToJSON(version,
                    static_cast<const Events::NumberEffectPopped &>(base));
@@ -930,6 +1021,13 @@ static json ToJSON(const Version &version, const Events::Base &base) {
         j = ToJSON(version,
                    static_cast<const Events::StatusMessageReceivedInChannel &>(
                            base));
+        break;
+    case Events::Type::VIPOnlineChanged:
+        j = ToJSON(version,
+                   static_cast<const Events::VIPOnlineChanged &>(base));
+        break;
+    case Events::Type::VIPStatus:
+        j = ToJSON(version, static_cast<const Events::VIPStatus &>(base));
         break;
     default:
         throw InvalidDataError();

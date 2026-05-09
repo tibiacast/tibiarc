@@ -178,9 +178,9 @@ struct VersionBase {
         bool Mounts : 1;
         bool MoveDeniedDirection : 1;
         bool NPCCategory : 1;
-        bool NPCVendorItemCountU16 : 1;
-        bool NPCVendorName : 1;
-        bool NPCVendorWeight : 1;
+        bool NPCTradeItemCountU16 : 1;
+        bool NPCTradeName : 1;
+        bool NPCTradeWeight : 1;
         bool NullObjects : 1;
         bool OfflineStamina : 1;
         bool OutfitAddons : 1;

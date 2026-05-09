@@ -175,16 +175,13 @@ std::pair<std::unique_ptr<Recording>, bool> Read(
                 frameTime += frameDelay;
             }
         }
-
-        if (recording->Frames.empty()) {
-            throw InvalidDataError();
-        }
     } catch ([[maybe_unused]] const InvalidDataError &e) {
         partialReturn = true;
     }
 
-    recording->Runtime =
-            std::max(recording->Runtime, recording->Frames.back().Timestamp);
+    if (recording->Frames.empty()) {
+        partialReturn = true;
+    }
 
     return std::make_pair(std::move(recording), partialReturn);
 #endif
