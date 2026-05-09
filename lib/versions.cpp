@@ -390,7 +390,7 @@ void VersionBase::InitProtocol() {
     }
 
     if (AtLeast(8, 30)) {
-        Protocol.NPCVendorWeight = true;
+        Protocol.NPCTradeWeight = true;
         Protocol.CapacityU32 = true;
     }
 
@@ -429,7 +429,7 @@ void VersionBase::InitProtocol() {
         Protocol.PlayerSpeed = true;
         Protocol.PlayerHunger = true;
         Protocol.ItemAnimation = true;
-        Protocol.NPCVendorName = true;
+        Protocol.NPCTradeName = true;
         Protocol.MessageEffects = true;
         Protocol.ChannelParticipants = true;
 
@@ -440,7 +440,7 @@ void VersionBase::InitProtocol() {
     }
 
     if (AtLeast(9, 32)) {
-        Protocol.NPCVendorItemCountU16 = true;
+        Protocol.NPCTradeItemCountU16 = true;
     }
 
     if (AtLeast(9, 54)) {
