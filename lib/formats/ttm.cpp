@@ -90,6 +90,10 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
         partialReturn = true;
     }
 
+    if (recording->Frames.empty()) {
+        partialReturn = true;
+    }
+
     return std::make_pair(std::move(recording), partialReturn);
 }
 

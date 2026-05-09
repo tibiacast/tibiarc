@@ -430,16 +430,17 @@ std::pair<std::unique_ptr<Recording>, bool> Read(const DataReader &file,
         while (ParsePacket(uncompressed, version, parser, *recording)) {
             /* */
         }
-
-        if (recording->Frames.empty()) {
-            throw InvalidDataError();
-        }
     } catch ([[maybe_unused]] const InvalidDataError &e) {
         partialReturn = true;
     }
 
-    if (!version.AtLeast(9, 54)) {
-        recording->Runtime = recording->Frames.back().Timestamp;
+    if (!recording->Frames.empty()) {
+        if (!version.AtLeast(9, 54)) {
+            recording->Runtime = recording->Frames.back().Timestamp;
+        }
+    } else {
+        recording->Runtime = std::chrono::milliseconds(0);
+        partialReturn = true;
     }
 
     return std::make_pair(std::move(recording), partialReturn);
