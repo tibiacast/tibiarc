@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 "John Högberg"
+ * Copyright 2026 "John Högberg"
  *
  * This file is part of tibiarc.
  *
@@ -26,6 +26,7 @@
 #include "utils.hpp"
 #include "versions.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <compare>
 #include <cstdlib>
@@ -39,6 +40,10 @@
 #include <sstream>
 #include <system_error>
 #include <vector>
+
+#ifdef __cpp_lib_execution
+#    include <execution>
+#endif
 
 using namespace trc;
 
@@ -265,12 +270,16 @@ ProcessRecordings(const std::vector<Collation::RecordingFile> &recordings,
     std::vector<std::pair<Collation::RecordingFile, std::filesystem::path>>
             result(recordings.size());
 
-    std::transform(recordings.begin(),
-                   recordings.end(),
-                   result.begin(),
-                   [&versions](const Collation::RecordingFile &in) {
-                       return ProcessRecording(in, versions);
-                   });
+    std::transform(
+#ifdef __cpp_lib_execution
+            std::execution::par,
+#endif
+            recordings.begin(),
+            recordings.end(),
+            result.begin(),
+            [&versions](const Collation::RecordingFile &in) {
+                return ProcessRecording(in, versions);
+            });
 
     return result;
 }
